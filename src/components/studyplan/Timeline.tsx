@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Check, Clock
 import { getTasksByDate, Task, getSubjectById } from '@/utils/mockData';
 import { format, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import TaskModal from './TaskModal';
+import TaskModal from './task-modal/TaskModal';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';

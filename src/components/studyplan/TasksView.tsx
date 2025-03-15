@@ -4,7 +4,7 @@ import { Calendar, Clock, Check, AlertTriangle } from 'lucide-react';
 import { Task, getSubjectById, getTasksByDate } from '@/utils/mockData';
 import { format, addDays, isPast, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import TaskModal from './TaskModal';
+import TaskModal from './task-modal/TaskModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
