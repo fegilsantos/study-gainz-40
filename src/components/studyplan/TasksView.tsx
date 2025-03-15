@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Check, AlertTriangle } from 'lucide-react';
 import { Task, getSubjectById, getTasksByDate } from '@/utils/mockData';
-import { format, addDays, isPast, isToday } from 'date-fns';
+import { format, addDays, isPast, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TaskModal from './TaskModal';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,16 @@ interface TasksViewProps {
   onTaskUpdate?: () => void;
 }
 
+// Create a new interface that extends Task with a displayDate field
+interface TaskWithDisplayDate extends Task {
+  displayDate: Date;
+}
+
 const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [overdueTasks, setOverdueTasks] = useState<(Task & { date: Date })[]>([]);
-  const [upcomingTasks, setUpcomingTasks] = useState<(Task & { date: Date })[]>([]);
+  const [selectedTask, setSelectedTask] = useState<TaskWithDisplayDate | null>(null);
+  const [overdueTasks, setOverdueTasks] = useState<TaskWithDisplayDate[]>([]);
+  const [upcomingTasks, setUpcomingTasks] = useState<TaskWithDisplayDate[]>([]);
   
   useEffect(() => {
     fetchTasks();
@@ -24,27 +29,29 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   
   const fetchTasks = () => {
     // Get overdue tasks (past 14 days that are not completed)
-    const overdueTasksList: (Task & { date: Date })[] = [];
+    const overdueTasksList: TaskWithDisplayDate[] = [];
     for (let i = 1; i <= 14; i++) {
       const date = addDays(new Date(), -i);
-      const tasksForDate = getTasksByDate(date.toISOString().split('T')[0]);
+      const dateString = format(date, 'yyyy-MM-dd');
+      const tasksForDate = getTasksByDate(dateString);
       const notCompletedTasks = tasksForDate.filter(task => !task.completed);
-      overdueTasksList.push(...notCompletedTasks.map(task => ({ ...task, date })));
+      overdueTasksList.push(...notCompletedTasks.map(task => ({ ...task, displayDate: date })));
     }
     
     // Get upcoming tasks (next 7 days)
-    const upcomingTasksList: (Task & { date: Date })[] = [];
+    const upcomingTasksList: TaskWithDisplayDate[] = [];
     for (let i = 0; i < 7; i++) {
       const date = addDays(new Date(), i);
-      const tasksForDate = getTasksByDate(date.toISOString().split('T')[0]);
-      upcomingTasksList.push(...tasksForDate.map(task => ({ ...task, date })));
+      const dateString = format(date, 'yyyy-MM-dd');
+      const tasksForDate = getTasksByDate(dateString);
+      upcomingTasksList.push(...tasksForDate.map(task => ({ ...task, displayDate: date })));
     }
     
     setOverdueTasks(overdueTasksList);
     setUpcomingTasks(upcomingTasksList);
   };
   
-  const openEditTaskModal = (task: Task & { date: Date }) => {
+  const openEditTaskModal = (task: TaskWithDisplayDate) => {
     setSelectedTask(task);
     setIsModalOpen(true);
   };
@@ -56,7 +63,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
     if (onTaskUpdate) onTaskUpdate();
   };
   
-  const renderTaskItem = (task: Task & { date: Date }) => {
+  const renderTaskItem = (task: TaskWithDisplayDate) => {
     const subject = getSubjectById(task.subject);
     
     return (
@@ -76,8 +83,8 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
             <p className="text-xs text-muted-foreground">{subject?.name}</p>
             <div className="flex items-center mt-1 text-xs">
               <Calendar className="w-3 h-3 mr-1 text-muted-foreground" /> 
-              <span className={`${isToday(task.date) ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                {isToday(task.date) ? 'Hoje' : format(task.date, "d 'de' MMM", { locale: ptBR })}
+              <span className={`${isToday(task.displayDate) ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                {isToday(task.displayDate) ? 'Hoje' : format(task.displayDate, "d 'de' MMM", { locale: ptBR })}
               </span>
               <Clock className="w-3 h-3 ml-2 mr-1 text-muted-foreground" />
               <span className="text-muted-foreground">{task.startTime}</span>
@@ -155,8 +162,8 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
       <TaskModal 
         isOpen={isModalOpen} 
         onClose={closeModal} 
-        task={selectedTask}
-        currentDate={selectedTask?.date || new Date()}
+        task={selectedTask ? { ...selectedTask, date: selectedTask.date } : null}
+        currentDate={selectedTask?.displayDate || new Date()}
       />
     </div>
   );
