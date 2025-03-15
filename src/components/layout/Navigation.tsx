@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, BarChart2, Award } from 'lucide-react';
+import { Home, Calendar, BarChart2, Award, BookOpen } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
@@ -10,6 +10,7 @@ const Navigation: React.FC = () => {
     { icon: Home, label: 'Início', path: '/' },
     { icon: Calendar, label: 'Plano', path: '/studyplan' },
     { icon: BarChart2, label: 'Análise', path: '/analysis' },
+    { icon: BookOpen, label: 'Exercícios', path: '/exercises' },
     { icon: Award, label: 'Badges', path: '/badges' }
   ];
   

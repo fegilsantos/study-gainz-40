@@ -1,10 +1,14 @@
 
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Check, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Check, Clock, Brain } from 'lucide-react';
 import { getTasksByDate, Task, getSubjectById } from '@/utils/mockData';
 import { format, addDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TaskModal from './TaskModal';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { toast } from 'sonner';
 
 interface TimelineProps {
   initialDate?: Date;
@@ -14,6 +18,7 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date() }) => {
   const [currentDate, setCurrentDate] = useState<Date>(initialDate);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState<boolean>(false);
   
   const formatDateToString = (date: Date): string => {
     return date.toISOString().split('T')[0];
@@ -46,6 +51,23 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date() }) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
+  };
+  
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setCurrentDate(date);
+    }
+  };
+  
+  const generateAIStudyPlan = () => {
+    setIsGeneratingPlan(true);
+    // Mock generating a study plan
+    setTimeout(() => {
+      setIsGeneratingPlan(false);
+      toast.success('Plano de estudos gerado com sucesso!', {
+        description: 'Seu plano de estudos personalizado foi criado com base no seu perfil.'
+      });
+    }, 2000);
   };
   
   const getTaskTypeIcon = (type: string) => {
@@ -98,6 +120,35 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date() }) => {
               Hoje
             </button>
           )}
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" className="rounded-full" aria-label="Escolher data">
+                <CalendarIcon className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={currentDate}
+                onSelect={handleDateSelect}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="rounded-full" 
+            aria-label="Gerar plano de estudos com IA"
+            onClick={generateAIStudyPlan}
+            disabled={isGeneratingPlan}
+          >
+            <Brain className="h-4 w-4" />
+          </Button>
+
           <button 
             onClick={openAddTaskModal}
             className="p-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all"
@@ -110,6 +161,32 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date() }) => {
       
       {/* Tasks */}
       <div className="space-y-4">
+        {/* AI Study Plan Generator Button */}
+        {todayTasks.length === 0 && (
+          <div className="glass rounded-xl p-4 mb-4 border border-dashed border-primary/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="p-2 bg-primary/10 rounded-full mr-3">
+                  <Brain className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Plano de Estudos com IA</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Gere um plano personalizado com base no seu perfil e metas
+                  </p>
+                </div>
+              </div>
+              <Button 
+                size="sm" 
+                onClick={generateAIStudyPlan}
+                disabled={isGeneratingPlan}
+              >
+                {isGeneratingPlan ? 'Gerando...' : 'Gerar Plano'}
+              </Button>
+            </div>
+          </div>
+        )}
+      
         {todayTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <div className="p-4 bg-muted rounded-full mb-4">
