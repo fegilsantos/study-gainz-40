@@ -1,9 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { X, Check, Trash2 } from 'lucide-react';
+import { X, Check, Trash2, Search } from 'lucide-react';
 import { Task, subjects } from '@/utils/mockData';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -11,6 +13,98 @@ interface TaskModalProps {
   task: Task | null;
   currentDate: Date;
 }
+
+// Mock topics and subtopics data
+const topicsMap: Record<string, { id: string; name: string; subtopics: { id: string; name: string }[] }[]> = {
+  'math': [
+    { 
+      id: 'algebra', 
+      name: 'Álgebra', 
+      subtopics: [
+        { id: 'equations', name: 'Equações' },
+        { id: 'functions', name: 'Funções' },
+        { id: 'polynomials', name: 'Polinômios' }
+      ] 
+    },
+    { 
+      id: 'geometry', 
+      name: 'Geometria', 
+      subtopics: [
+        { id: 'plane', name: 'Plana' },
+        { id: 'spatial', name: 'Espacial' },
+        { id: 'analytic', name: 'Analítica' }
+      ] 
+    },
+  ],
+  'physics': [
+    { 
+      id: 'mechanics', 
+      name: 'Mecânica', 
+      subtopics: [
+        { id: 'kinematics', name: 'Cinemática' },
+        { id: 'dynamics', name: 'Dinâmica' }
+      ] 
+    },
+    { 
+      id: 'thermodynamics', 
+      name: 'Termodinâmica', 
+      subtopics: [
+        { id: 'heat', name: 'Calor' },
+        { id: 'gases', name: 'Gases' }
+      ] 
+    },
+  ],
+  'chemistry': [
+    { 
+      id: 'organic', 
+      name: 'Química Orgânica', 
+      subtopics: [
+        { id: 'hydrocarbons', name: 'Hidrocarbonetos' },
+        { id: 'functional', name: 'Grupos Funcionais' }
+      ] 
+    },
+  ],
+  'biology': [
+    { 
+      id: 'cell', 
+      name: 'Citologia', 
+      subtopics: [
+        { id: 'membrane', name: 'Membrana' },
+        { id: 'nucleus', name: 'Núcleo' }
+      ] 
+    },
+  ],
+  'portuguese': [
+    { 
+      id: 'grammar', 
+      name: 'Gramática', 
+      subtopics: [
+        { id: 'syntax', name: 'Sintaxe' },
+        { id: 'morphology', name: 'Morfologia' }
+      ] 
+    },
+  ],
+  'history': [
+    { 
+      id: 'brazil', 
+      name: 'História do Brasil', 
+      subtopics: [
+        { id: 'colonial', name: 'Brasil Colônia' },
+        { id: 'empire', name: 'Império' }
+      ] 
+    },
+  ],
+  'geography': [
+    { 
+      id: 'physical', 
+      name: 'Geografia Física', 
+      subtopics: [
+        { id: 'climate', name: 'Climatologia' },
+        { id: 'geomorphology', name: 'Geomorfologia' }
+      ] 
+    },
+  ],
+};
 
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDate }) => {
   const [title, setTitle] = useState('');
@@ -22,6 +116,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
   const [duration, setDuration] = useState('');
   const [type, setType] = useState<'study' | 'review' | 'class' | 'exercise'>('study');
   const [completed, setCompleted] = useState(false);
+  
+  const [availableTopics, setAvailableTopics] = useState<{ id: string; name: string }[]>([]);
+  const [availableSubtopics, setAvailableSubtopics] = useState<{ id: string; name: string }[]>([]);
+  
+  const [topicOpen, setTopicOpen] = useState(false);
+  const [subtopicOpen, setSubtopicOpen] = useState(false);
   
   useEffect(() => {
     if (task) {
@@ -46,6 +146,25 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
       setCompleted(false);
     }
   }, [task]);
+  
+  useEffect(() => {
+    if (subject && topicsMap[subject]) {
+      setAvailableTopics(topicsMap[subject].map(topic => ({ id: topic.id, name: topic.name })));
+    } else {
+      setAvailableTopics([]);
+    }
+    
+    if (topic !== '' && subject) {
+      const selectedTopicObj = topicsMap[subject]?.find(t => t.id === topic);
+      if (selectedTopicObj) {
+        setAvailableSubtopics(selectedTopicObj.subtopics);
+      } else {
+        setAvailableSubtopics([]);
+      }
+    } else {
+      setAvailableSubtopics([]);
+    }
+  }, [subject, topic]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,7 +296,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
             <select
               id="subject"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                setTopic('');
+                setSubtopic('');
+              }}
               required
               className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
             >
@@ -193,28 +316,81 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
               <label htmlFor="topic" className="block text-sm font-medium mb-1">
                 Tópico <span className="text-destructive">*</span>
               </label>
-              <input
-                type="text"
-                id="topic"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                required
-                className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
-                placeholder="ex: Funções"
-              />
+              <Popover open={topicOpen} onOpenChange={setTopicOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    role="combobox"
+                    aria-expanded={topicOpen}
+                    className="w-full flex justify-between items-center px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
+                  >
+                    {topic ? availableTopics.find(t => t.id === topic)?.name : "Selecione um tópico"}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Pesquisar tópico..." />
+                    <CommandEmpty>Nenhum tópico encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {availableTopics.map((item) => (
+                        <CommandItem
+                          key={item.id}
+                          value={item.id}
+                          onSelect={(currentValue) => {
+                            setTopic(currentValue);
+                            setSubtopic('');
+                            setTopicOpen(false);
+                          }}
+                        >
+                          {item.name}
+                          {topic === item.id && <Check className="ml-auto h-4 w-4" />}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <label htmlFor="subtopic" className="block text-sm font-medium mb-1">
                 Subtópico
               </label>
-              <input
-                type="text"
-                id="subtopic"
-                value={subtopic}
-                onChange={(e) => setSubtopic(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
-                placeholder="ex: Exponenciais"
-              />
+              <Popover open={subtopicOpen} onOpenChange={setSubtopicOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    role="combobox"
+                    aria-expanded={subtopicOpen}
+                    className="w-full flex justify-between items-center px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
+                    disabled={!topic || availableSubtopics.length === 0}
+                  >
+                    {subtopic ? availableSubtopics.find(s => s.id === subtopic)?.name : "Selecione um subtópico"}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Pesquisar subtópico..." />
+                    <CommandEmpty>Nenhum subtópico encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {availableSubtopics.map((item) => (
+                        <CommandItem
+                          key={item.id}
+                          value={item.id}
+                          onSelect={(currentValue) => {
+                            setSubtopic(currentValue);
+                            setSubtopicOpen(false);
+                          }}
+                        >
+                          {item.name}
+                          {subtopic === item.id && <Check className="ml-auto h-4 w-4" />}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           

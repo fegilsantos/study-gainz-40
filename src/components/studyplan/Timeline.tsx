@@ -12,9 +12,10 @@ import { toast } from 'sonner';
 
 interface TimelineProps {
   initialDate?: Date;
+  onTaskUpdate?: () => void;
 }
 
-const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date() }) => {
+const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpdate }) => {
   const [currentDate, setCurrentDate] = useState<Date>(initialDate);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -51,6 +52,7 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date() }) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
+    if (onTaskUpdate) onTaskUpdate();
   };
   
   const handleDateSelect = (date: Date | undefined) => {

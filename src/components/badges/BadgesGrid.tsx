@@ -12,7 +12,8 @@ import {
   Globe, 
   Lock
 } from 'lucide-react';
-import { badges } from '@/utils/mockData';
+import { badges, userProfile } from '@/utils/mockData';
+import { Progress } from '@/components/ui/progress';
 
 const BadgesGrid: React.FC = () => {
   const getIconForBadge = (iconName: string) => {
@@ -40,6 +41,28 @@ const BadgesGrid: React.FC = () => {
   
   return (
     <div className="w-full animate-fade-in">
+      {/* Level Progress */}
+      <div className="glass rounded-2xl p-5 shadow-sm mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold">Nível {userProfile.level}</h2>
+          <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+            {Math.round((userProfile.xp / userProfile.xpForNextLevel) * 100)}%
+          </div>
+        </div>
+        
+        <div className="w-full bg-muted rounded-full h-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
+            style={{width: `${(userProfile.xp / userProfile.xpForNextLevel) * 100}%`}}
+          />
+        </div>
+        
+        <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+          <span>{userProfile.xp} XP</span>
+          <span>{userProfile.xpForNextLevel} XP para o próximo nível</span>
+        </div>
+      </div>
+    
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {badges.map((badge) => (
           <div 

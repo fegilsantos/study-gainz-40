@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { subjects, getAveragePerformance } from '@/utils/mockData';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ChartTabsProps {
   children: React.ReactNode;
@@ -274,8 +275,10 @@ const TopicsChart: React.FC = () => {
 };
 
 const TrendsChart: React.FC = () => {
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  
   // Mocked trend data
-  const data = [
+  const allData = [
     { month: 'Feb', performance: 65 },
     { month: 'Mar', performance: 68 },
     { month: 'Apr', performance: 73 },
@@ -284,9 +287,61 @@ const TrendsChart: React.FC = () => {
     { month: 'Jul', performance: 78 },
   ];
   
+  // Subject specific data
+  const subjectData: Record<string, typeof allData> = {
+    math: [
+      { month: 'Feb', performance: 60 },
+      { month: 'Mar', performance: 65 },
+      { month: 'Apr', performance: 72 },
+      { month: 'May', performance: 68 },
+      { month: 'Jun', performance: 74 },
+      { month: 'Jul', performance: 80 },
+    ],
+    physics: [
+      { month: 'Feb', performance: 55 },
+      { month: 'Mar', performance: 58 },
+      { month: 'Apr', performance: 63 },
+      { month: 'May', performance: 67 },
+      { month: 'Jun', performance: 72 },
+      { month: 'Jul', performance: 75 },
+    ],
+    chemistry: [
+      { month: 'Feb', performance: 70 },
+      { month: 'Mar', performance: 72 },
+      { month: 'Apr', performance: 75 },
+      { month: 'May', performance: 78 },
+      { month: 'Jun', performance: 82 },
+      { month: 'Jul', performance: 85 },
+    ],
+    // Add more subjects as needed
+  };
+  
+  const data = selectedSubject === "all" ? allData : (subjectData[selectedSubject] || allData);
+  const subjectColor = selectedSubject === "all" 
+    ? "hsl(var(--primary))" 
+    : subjects.find(s => s.id === selectedSubject)?.color || "hsl(var(--primary))";
+  
   return (
     <div className="glass p-6 rounded-2xl">
-      <h3 className="text-lg font-medium mb-4">Tendências de Desempenho</h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-medium">Tendências de Desempenho</h3>
+        <div className="flex items-center">
+          <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+          <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filtrar por Matéria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Matérias</SelectItem>
+              {subjects.map(subject => (
+                <SelectItem key={subject.id} value={subject.id}>
+                  {subject.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -300,7 +355,7 @@ const TrendsChart: React.FC = () => {
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
             <YAxis 
-              domain={[60, 100]} 
+              domain={[50, 100]} 
               axisLine={false}
               tickLine={false}
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
@@ -317,16 +372,16 @@ const TrendsChart: React.FC = () => {
             <Line 
               type="monotone" 
               dataKey="performance" 
-              stroke="hsl(var(--primary))" 
+              stroke={subjectColor} 
               strokeWidth={3}
-              dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-              activeDot={{ fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2, r: 6 }}
+              dot={{ fill: subjectColor, strokeWidth: 2, r: 4 }}
+              activeDot={{ fill: subjectColor, stroke: 'hsl(var(--background))', strokeWidth: 2, r: 6 }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-4 text-sm text-center text-muted-foreground">
-        Tendência dos últimos 6 meses
+        Tendência dos últimos 6 meses {selectedSubject !== "all" && `- ${subjects.find(s => s.id === selectedSubject)?.name}`}
       </div>
     </div>
   );
