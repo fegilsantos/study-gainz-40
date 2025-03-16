@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { TrendingDown, TrendingUp, Calendar, Clock, AlertTriangle, BookOpen, GraduationCap } from 'lucide-react';
 import { userProfile, getStrongestSubject, getWeakestSubject, getAveragePerformance, getTasksByDate, getSubjectById, subjects } from '@/utils/mockData';
 import { format, addDays, isSameDay, isPast, isToday } from 'date-fns';
@@ -12,32 +12,6 @@ const Dashboard: React.FC = () => {
   const weakestSubject = getWeakestSubject();
   const strongestSubject = getStrongestSubject();
   const averagePerformance = getAveragePerformance();
-  
-  // Get upcoming tasks (next 7 days)
-  const getUpcomingTasks = () => {
-    const tasks = [];
-    for (let i = 0; i < 7; i++) {
-      const date = addDays(new Date(), i);
-      const tasksForDate = getTasksByDate(date.toISOString().split('T')[0]);
-      tasks.push(...tasksForDate.map(task => ({ ...task, date })));
-    }
-    return tasks.slice(0, 5); // Return only 5 tasks
-  };
-  
-  // Get overdue tasks
-  const getOverdueTasks = () => {
-    const tasks = [];
-    for (let i = 1; i <= 14; i++) {
-      const date = addDays(new Date(), -i);
-      const tasksForDate = getTasksByDate(date.toISOString().split('T')[0]);
-      const overdueTasks = tasksForDate.filter(task => !task.completed);
-      tasks.push(...overdueTasks.map(task => ({ ...task, date })));
-    }
-    return tasks.slice(0, 3); // Return only 3 tasks
-  };
-  
-  const upcomingTasks = getUpcomingTasks();
-  const overdueTasks = getOverdueTasks();
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -100,112 +74,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Overdue Tasks */}
-      {overdueTasks.length > 0 && (
-        <div className="w-full glass rounded-2xl p-5 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center">
-              <AlertTriangle className="w-4 h-4 text-amber-500 mr-2" />
-              <h2 className="text-lg font-semibold">Atividades Atrasadas</h2>
-            </div>
-            <Button size="sm" variant="ghost" asChild>
-              <a href="/studyplan">Ver Todas</a>
-            </Button>
-          </div>
-          
-          <div className="space-y-3">
-            {overdueTasks.map((task) => {
-              const subject = getSubjectById(task.subject);
-              
-              return (
-                <div 
-                  key={task.id}
-                  className="p-3 glass rounded-xl border-l-4"
-                  style={{ borderLeftColor: subject?.color }}
-                >
-                  <div className="flex justify-between">
-                    <div>
-                      <h3 className="font-medium">{task.title}</h3>
-                      <p className="text-xs text-muted-foreground">{subject?.name}</p>
-                      <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                        <Calendar className="w-3 h-3 mr-1" /> 
-                        <span>
-                          {format(task.date, "d 'de' MMM", { locale: ptBR })}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="flex items-center px-2 py-1 text-xs rounded-full" 
-                        style={{ backgroundColor: `${subject?.color}20`, color: subject?.color }}>
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span>{task.duration} min</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      
-      {/* Upcoming Tasks */}
-      <div className="w-full glass rounded-2xl p-5 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Próximas Atividades</h2>
-          <Button size="sm" variant="ghost" asChild>
-            <a href="/studyplan">Ver Todas</a>
-          </Button>
-        </div>
-        
-        {upcomingTasks.length > 0 ? (
-          <div className="space-y-3">
-            {upcomingTasks.map((task) => {
-              const subject = getSubjectById(task.subject);
-              
-              return (
-                <div 
-                  key={task.id}
-                  className="p-3 glass rounded-xl border-l-4"
-                  style={{ borderLeftColor: subject?.color }}
-                >
-                  <div className="flex justify-between">
-                    <div>
-                      <h3 className="font-medium">{task.title}</h3>
-                      <p className="text-xs text-muted-foreground">{subject?.name}</p>
-                      <div className="flex items-center mt-1 text-xs">
-                        <Calendar className="w-3 h-3 mr-1 text-muted-foreground" /> 
-                        <span className={`${isToday(task.date) ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                          {isToday(task.date) ? 'Hoje' : format(task.date, "d 'de' MMM", { locale: ptBR })}
-                        </span>
-                        <Clock className="w-3 h-3 ml-2 mr-1 text-muted-foreground" />
-                        <span className="text-muted-foreground">{task.startTime}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="flex items-center px-2 py-1 text-xs rounded-full" 
-                        style={{ backgroundColor: `${subject?.color}20`, color: subject?.color }}>
-                        <span>{task.duration} min</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="p-3 bg-muted rounded-full mb-3">
-              <Calendar className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <h3 className="font-medium">Nenhuma atividade próxima</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Adicione tarefas ao seu plano de estudos
-            </p>
-          </div>
-        )}
       </div>
       
       {/* Goals Component */}
