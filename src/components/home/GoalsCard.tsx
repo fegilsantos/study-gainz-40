@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { GraduationCap, Calendar, BookOpen, Target, Plus, Edit, Trash } from 'lucide-react';
+import { GraduationCap, Calendar, BookOpen, Target, Plus, Edit, Trash, ChevronDown, ChevronUp } from 'lucide-react';
 import { subjects } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -198,29 +199,40 @@ const GoalsCard: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="space-y-3 pt-2">
-                  {subjects.map(subject => {
-                    // Generate a random completion percentage between 20% and 90%
-                    const completionPercentage = Math.floor(Math.random() * 70) + 20;
-                    
-                    return (
-                      <div key={subject.id} className="space-y-1">
-                        <div className="flex justify-between items-center text-sm">
-                          <span>{subject.name}</span>
-                          <span className="font-medium">{completionPercentage}%</span>
+                <Collapsible className="w-full">
+                  <div className="flex items-center justify-center w-full border-t pt-2">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="flex items-center gap-1 w-full">
+                        <span className="text-xs">Ver desempenho por matéria</span>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                  
+                  <CollapsibleContent className="space-y-3 pt-2">
+                    {subjects.map(subject => {
+                      // Generate a random completion percentage between 20% and 90%
+                      const completionPercentage = Math.floor(Math.random() * 70) + 20;
+                      
+                      return (
+                        <div key={subject.id} className="space-y-1">
+                          <div className="flex justify-between items-center text-sm">
+                            <span>{subject.name}</span>
+                            <span className="font-medium">{completionPercentage}%</span>
+                          </div>
+                          <Progress value={completionPercentage} className="h-2" />
                         </div>
-                        <Progress value={completionPercentage} className="h-2" />
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="pt-2">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Ver Detalhes Completos
-                  </Button>
-                </div>
+                      );
+                    })}
+                    
+                    <div className="pt-2">
+                      <Button variant="outline" size="sm" className="w-full">
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        Ver Detalhes Completos
+                      </Button>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             );
           })}

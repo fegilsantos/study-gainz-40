@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MenuIcon, User, HelpCircle, FileText } from 'lucide-react';
+import { MenuIcon, User, HelpCircle, FileText, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
@@ -13,9 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface HeaderProps {
   title: string;
+  showBack?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ title }) => {
+const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -31,6 +32,17 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
     <header className="sticky top-0 z-10 w-full bg-background/80 backdrop-blur-md border-b">
       <div className="flex items-center justify-between h-14 px-4">
         <div className="flex items-center">
+          {showBack && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="mr-2" 
+              onClick={() => navigate(-1)}
+              aria-label="Voltar"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          )}
           <h1 className="text-xl font-semibold">{title}</h1>
         </div>
         
