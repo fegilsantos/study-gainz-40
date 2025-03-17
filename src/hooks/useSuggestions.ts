@@ -59,7 +59,7 @@ export const useSuggestions = () => {
           
         if (strengthsError) throw strengthsError;
         
-        // Fetch opportunities (recommendations)
+        // Fetch opportunities (recommendations) and their related subject data separately
         const { data: opportData, error: opportError } = await supabase
           .from('Suggestions')
           .select(`
@@ -68,15 +68,39 @@ export const useSuggestions = () => {
             Subtitle,
             LongSuggestion,
             Priority,
-            Subject:Subject_id (
-              id,
-              Name
-            )
+            Subject_id
           `)
           .eq('PersonId', person.id)
           .eq('Suggestion type', 'Opportunities');
           
         if (opportError) throw opportError;
+        
+        // For recommendations that have Subject_id, fetch the subject data
+        const processedRecommendations = await Promise.all((opportData || []).map(async (item) => {
+          let subjectName = undefined;
+          let subjectId = item.Subject_id;
+          
+          if (subjectId) {
+            // Fetch subject name separately
+            const { data: subject } = await supabase
+              .from('Subject')
+              .select('Name')
+              .eq('id', subjectId)
+              .single();
+              
+            if (subject) {
+              subjectName = subject.Name;
+            }
+          }
+          
+          return {
+            id: item.id,
+            title: item.Title || 'Sem título',
+            description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
+            subjectId: subjectId,
+            subject_name: subjectName
+          };
+        }));
         
         // Process insights data
         const processedInsights = strengthsData?.map(item => ({
@@ -84,15 +108,6 @@ export const useSuggestions = () => {
           title: item.Title || 'Sem título',
           description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
           type: mapPriorityToType(item.Priority)
-        })) || [];
-        
-        // Process recommendations data
-        const processedRecommendations = opportData?.map(item => ({
-          id: item.id,
-          title: item.Title || 'Sem título',
-          description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
-          subjectId: item.Subject?.id,
-          subject_name: item.Subject?.Name
         })) || [];
         
         setInsights(processedInsights);
