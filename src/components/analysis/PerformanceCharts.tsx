@@ -1,25 +1,45 @@
+
 import React, { useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+
+// Mock data for the Trends tab
+const mockSubjects = [
+  { id: "math", name: "Matemática", color: "hsl(230, 70%, 50%)" },
+  { id: "physics", name: "Física", color: "hsl(10, 70%, 50%)" },
+  { id: "chemistry", name: "Química", color: "hsl(150, 70%, 50%)" },
+];
 
 const TopicsChart: React.FC = () => {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const { subjectData, loading } = usePerformanceData();
   
-  const getProgressBarColor = (performance: number) => {
-    if (performance >= 80) return 'bg-emerald-500';
-    if (performance >= 60) return 'bg-amber-500';
+  const getProgressBarColor = (performance: number, goal: number = 100) => {
+    if (performance >= goal) return 'bg-emerald-500';
+    if (performance >= goal * 0.8) return 'bg-amber-500';
     return 'bg-rose-500';
   };
   
   const toggleSubject = (subjectId: string) => {
     if (expandedSubject === subjectId) {
       setExpandedSubject(null);
+      setExpandedTopic(null);
     } else {
       setExpandedSubject(subjectId);
+      setExpandedTopic(null);
+    }
+  };
+
+  const toggleTopic = (topicId: string) => {
+    if (expandedTopic === topicId) {
+      setExpandedTopic(null);
+    } else {
+      setExpandedTopic(topicId);
     }
   };
 
@@ -109,12 +129,20 @@ const TopicsChart: React.FC = () => {
                 <span className="font-medium">{subject.name}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="text-sm font-medium">{subject.performance}%</div>
-                <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                <div className="text-sm font-medium">
+                  {subject.performance}% / {subject.goal || 100}%
+                </div>
+                <div className="w-24 h-2 bg-muted rounded-full overflow-hidden relative">
                   <div 
-                    className={`h-full ${getProgressBarColor(subject.performance)}`}
+                    className={`h-full ${getProgressBarColor(subject.performance, subject.goal)}`}
                     style={{ width: `${subject.performance}%` }}
                   />
+                  {subject.goal && (
+                    <div 
+                      className="absolute top-0 bottom-0 w-0.5 bg-foreground/70"
+                      style={{ left: `${Math.min(subject.goal, 100)}%` }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -123,18 +151,62 @@ const TopicsChart: React.FC = () => {
               <div className="ml-6 space-y-4">
                 {subject.topics.map(topic => (
                   <div key={topic.id} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{topic.name}</span>
+                    <div 
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleTopic(topic.id.toString())}
+                    >
+                      <div className="flex items-center">
+                        {expandedTopic === topic.id.toString() ? 
+                          <ChevronDown className="w-3 h-3 mr-2 text-muted-foreground" /> : 
+                          <ChevronRight className="w-3 h-3 mr-2 text-muted-foreground" />
+                        }
+                        <span className="text-sm">{topic.name}</span>
+                      </div>
                       <div className="flex items-center space-x-2">
-                        <div className="text-sm">{topic.performance}%</div>
-                        <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="text-xs">
+                          {topic.performance}% / {topic.goal || 100}%
+                        </div>
+                        <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden relative">
                           <div 
-                            className={`h-full ${getProgressBarColor(topic.performance)}`}
+                            className={`h-full ${getProgressBarColor(topic.performance, topic.goal)}`}
                             style={{ width: `${topic.performance}%` }}
                           />
+                          {topic.goal && (
+                            <div 
+                              className="absolute top-0 bottom-0 w-0.5 bg-foreground/70"
+                              style={{ left: `${Math.min(topic.goal, 100)}%` }}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
+
+                    {expandedTopic === topic.id.toString() && topic.subtopics && (
+                      <div className="ml-5 space-y-2">
+                        {topic.subtopics.map(subtopic => (
+                          <div key={subtopic.id} className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground ml-5">{subtopic.name}</span>
+                            <div className="flex items-center space-x-2">
+                              <div className="text-xs text-muted-foreground">
+                                {subtopic.performance}% / {subtopic.goal || 100}%
+                              </div>
+                              <div className="w-16 h-1 bg-muted rounded-full overflow-hidden relative">
+                                <div 
+                                  className={`h-full ${getProgressBarColor(subtopic.performance, subtopic.goal)}`}
+                                  style={{ width: `${subtopic.performance}%` }}
+                                />
+                                {subtopic.goal && (
+                                  <div 
+                                    className="absolute top-0 bottom-0 w-0.5 bg-foreground/70"
+                                    style={{ left: `${Math.min(subtopic.goal, 100)}%` }}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -185,13 +257,12 @@ const TrendsChart: React.FC = () => {
       { month: 'Jun', performance: 82 },
       { month: 'Jul', performance: 85 },
     ],
-    // Add more subjects as needed
   };
   
   const data = selectedSubject === "all" ? allData : (subjectData[selectedSubject] || allData);
   const subjectColor = selectedSubject === "all" 
     ? "hsl(var(--primary))" 
-    : subjects.find(s => s.id === selectedSubject)?.color || "hsl(var(--primary))";
+    : mockSubjects.find(s => s.id === selectedSubject)?.color || "hsl(var(--primary))";
   
   return (
     <div className="glass p-6 rounded-2xl">
@@ -205,7 +276,7 @@ const TrendsChart: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as Matérias</SelectItem>
-              {subjects.map(subject => (
+              {mockSubjects.map(subject => (
                 <SelectItem key={subject.id} value={subject.id}>
                   {subject.name}
                 </SelectItem>
@@ -253,7 +324,7 @@ const TrendsChart: React.FC = () => {
         </ResponsiveContainer>
       </div>
       <div className="mt-4 text-sm text-center text-muted-foreground">
-        Tendência dos últimos 6 meses {selectedSubject !== "all" && `- ${subjects.find(s => s.id === selectedSubject)?.name}`}
+        Tendência dos últimos 6 meses {selectedSubject !== "all" && `- ${mockSubjects.find(s => s.id === selectedSubject)?.name}`}
       </div>
     </div>
   );
