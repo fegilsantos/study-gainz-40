@@ -245,30 +245,30 @@ export type Database = {
           created_at: string
           Date: string | null
           Description: string | null
-          Examen: number | null
+          ExamenId: number | null
           id: number
           Name: string | null
-          StudentId: number
+          PersonId: number
         }
         Insert: {
           Class?: number | null
           created_at?: string
           Date?: string | null
           Description?: string | null
-          Examen?: number | null
+          ExamenId?: number | null
           id?: number
           Name?: string | null
-          StudentId: number
+          PersonId: number
         }
         Update: {
           Class?: number | null
           created_at?: string
           Date?: string | null
           Description?: string | null
-          Examen?: number | null
+          ExamenId?: number | null
           id?: number
           Name?: string | null
-          StudentId?: number
+          PersonId?: number
         }
         Relationships: [
           {
@@ -279,15 +279,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "Goal_Examen_fkey"
-            columns: ["Examen"]
+            foreignKeyName: "Goal_ExamenId_fkey"
+            columns: ["ExamenId"]
             isOneToOne: false
             referencedRelation: "Class"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "Goal_StudentId_fkey"
-            columns: ["StudentId"]
+            foreignKeyName: "Goal_PersonId_fkey"
+            columns: ["PersonId"]
             isOneToOne: false
             referencedRelation: "Person"
             referencedColumns: ["id"]
@@ -330,6 +330,7 @@ export type Database = {
           Gender: Database["public"]["Enums"]["Gender"] | null
           id: number
           Name: string
+          "Overall Performance": number | null
           Parent: number | null
           Phone: string | null
           ProfileId: string | null
@@ -342,6 +343,7 @@ export type Database = {
           Gender?: Database["public"]["Enums"]["Gender"] | null
           id?: number
           Name: string
+          "Overall Performance"?: number | null
           Parent?: number | null
           Phone?: string | null
           ProfileId?: string | null
@@ -354,6 +356,7 @@ export type Database = {
           Gender?: Database["public"]["Enums"]["Gender"] | null
           id?: number
           Name?: string
+          "Overall Performance"?: number | null
           Parent?: number | null
           Phone?: string | null
           ProfileId?: string | null
