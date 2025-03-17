@@ -332,6 +332,7 @@ export type Database = {
           Name: string
           Parent: number | null
           Phone: string | null
+          ProfileId: string | null
           Role: Database["public"]["Enums"]["Role"] | null
           School: number | null
         }
@@ -343,6 +344,7 @@ export type Database = {
           Name: string
           Parent?: number | null
           Phone?: string | null
+          ProfileId?: string | null
           Role?: Database["public"]["Enums"]["Role"] | null
           School?: number | null
         }
@@ -354,6 +356,7 @@ export type Database = {
           Name?: string
           Parent?: number | null
           Phone?: string | null
+          ProfileId?: string | null
           Role?: Database["public"]["Enums"]["Role"] | null
           School?: number | null
         }
@@ -363,6 +366,13 @@ export type Database = {
             columns: ["Parent"]
             isOneToOne: false
             referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Person_ProfileId_fkey"
+            columns: ["ProfileId"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
