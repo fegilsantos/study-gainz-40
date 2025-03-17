@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon } from 'lucide-react';
-import { insights, recommendations, getSubjectById } from '@/utils/mockData';
+import { useSuggestions } from '@/hooks/useSuggestions';
+import { subjects } from '@/utils/mockData'; // We'll keep this for color mapping until we have real subject data
 
 const InsightsCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'insights' | 'recommendations'>('insights');
   const [expanded, setExpanded] = useState(false);
+  const { insights, recommendations, loading } = useSuggestions();
   
   const getIconForType = (type: string) => {
     switch(type) {
@@ -20,14 +22,50 @@ const InsightsCard: React.FC = () => {
     }
   };
   
-  const getColorForSubject = (subjectId: string) => {
-    const subject = getSubjectById(subjectId);
+  const getColorForSubject = (subjectName?: string) => {
+    if (!subjectName) return 'hsl(var(--muted))';
+    
+    const subject = subjects.find(s => 
+      s.name.toLowerCase() === subjectName.toLowerCase());
+    
     return subject ? subject.color : 'hsl(var(--muted))';
   };
   
   const activeItems = activeTab === 'insights' ? insights : recommendations;
   const displayItems = expanded ? activeItems : activeItems.slice(0, 2);
   
+  if (loading) {
+    return (
+      <div>
+        <div className="flex p-4 border-b border-border">
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={`flex-1 pb-2 text-sm font-medium transition-all ${
+              activeTab === 'insights'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Insights
+          </button>
+          <button
+            onClick={() => setActiveTab('recommendations')}
+            className={`flex-1 pb-2 text-sm font-medium transition-all ${
+              activeTab === 'recommendations'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Recomendações
+          </button>
+        </div>
+        <div className="p-4 flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex p-4 border-b border-border">
@@ -54,54 +92,68 @@ const InsightsCard: React.FC = () => {
       </div>
 
       <div className="p-4 space-y-3">
-        {displayItems.map((item) => (
-          <div 
-            key={item.id}
-            className={`p-3 rounded-xl border ${
-              activeTab === 'insights' 
-                ? 'border-muted bg-card' 
-                : 'border-l-4'
-            } ${
-              activeTab === 'recommendations'
-              ? `border-l-[${getColorForSubject((item as any).subjectId)}]`
-              : ''
-            } animate-scale-in`}
-            style={
-              activeTab === 'recommendations' 
-                ? { borderLeftColor: getColorForSubject((item as any).subjectId) } 
-                : {}
-            }
-          >
-            <div className="flex items-start">
-              {activeTab === 'insights' && (
-                <div className="mt-0.5 mr-3">
-                  {getIconForType((item as any).type)}
-                </div>
-              )}
-              {activeTab === 'recommendations' && (
-                <div className="mt-0.5 mr-3">
-                  <LightbulbIcon 
-                    className="w-4 h-4" 
-                    style={{ color: getColorForSubject((item as any).subjectId) }}
-                  />
-                </div>
-              )}
-              <div className="flex-1">
-                <h3 className="text-sm font-medium">{item.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-              </div>
-            </div>
+        {activeItems.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">
+              Nenhum {activeTab === 'insights' ? 'insight' : 'recomendação'} disponível ainda.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Resolver exercícios gerará {activeTab === 'insights' ? 'insights' : 'recomendações'} personalizados.
+            </p>
           </div>
-        ))}
-        
-        {activeItems.length > 2 && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-center py-2 text-xs text-muted-foreground hover:text-primary transition-all"
-          >
-            {expanded ? 'Ver menos' : 'Ver mais'}
-            <ChevronDown className={`ml-1 w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-          </button>
+        ) : (
+          <>
+            {displayItems.map((item) => (
+              <div 
+                key={item.id}
+                className={`p-3 rounded-xl border ${
+                  activeTab === 'insights' 
+                    ? 'border-muted bg-card' 
+                    : 'border-l-4'
+                }`}
+                style={
+                  activeTab === 'recommendations' && item.subject_name
+                    ? { borderLeftColor: getColorForSubject(item.subject_name) } 
+                    : {}
+                }
+              >
+                <div className="flex items-start">
+                  {activeTab === 'insights' && (
+                    <div className="mt-0.5 mr-3">
+                      {getIconForType(item.type || 'info')}
+                    </div>
+                  )}
+                  {activeTab === 'recommendations' && (
+                    <div className="mt-0.5 mr-3">
+                      <LightbulbIcon 
+                        className="w-4 h-4" 
+                        style={{ color: getColorForSubject(item.subject_name) }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium">{item.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                    {activeTab === 'recommendations' && item.subject_name && (
+                      <p className="text-xs font-medium mt-1" style={{ color: getColorForSubject(item.subject_name) }}>
+                        {item.subject_name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {activeItems.length > 2 && (
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="w-full flex items-center justify-center py-2 text-xs text-muted-foreground hover:text-primary transition-all"
+              >
+                {expanded ? 'Ver menos' : 'Ver mais'}
+                <ChevronDown className={`ml-1 w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
