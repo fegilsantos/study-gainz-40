@@ -11,7 +11,19 @@ export interface Suggestion {
   type?: 'improvement' | 'warning' | 'info';
   subjectId?: number;
   subject_name?: string;
+  priority?: string;
 }
+
+// Priority order from highest to lowest
+const priorityOrder = [
+  'Muito Alta',
+  'Alta',
+  'Média Alta',
+  'Média',
+  'Baixa',
+  'Muito Baixa',
+  null
+];
 
 export const useSuggestions = () => {
   const [loading, setLoading] = useState(true);
@@ -59,7 +71,7 @@ export const useSuggestions = () => {
           
         if (strengthsError) throw strengthsError;
         
-        // Fetch opportunities (recommendations) and their related subject data separately
+        // Fetch opportunities (recommendations)
         const { data: opportData, error: opportError } = await supabase
           .from('Suggestions')
           .select(`
@@ -75,43 +87,58 @@ export const useSuggestions = () => {
           
         if (opportError) throw opportError;
         
-        // For recommendations that have Subject_id, fetch the subject data
-        const processedRecommendations = await Promise.all((opportData || []).map(async (item) => {
-          let subjectName = undefined;
-          let subjectId = item.Subject_id;
-          
-          if (subjectId) {
-            // Fetch subject name separately
-            const { data: subject } = await supabase
-              .from('Subject')
-              .select('Name')
-              .eq('id', subjectId)
-              .single();
-              
-            if (subject) {
-              subjectName = subject.Name;
-            }
-          }
-          
-          return {
+        // Process and sort insights data
+        const processedInsights = (strengthsData || [])
+          .map(item => ({
             id: item.id,
             title: item.Title || 'Sem título',
             description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
-            subjectId: subjectId,
-            subject_name: subjectName
-          };
-        }));
-        
-        // Process insights data
-        const processedInsights = strengthsData?.map(item => ({
-          id: item.id,
-          title: item.Title || 'Sem título',
-          description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
-          type: mapPriorityToType(item.Priority)
-        })) || [];
+            type: mapPriorityToType(item.Priority),
+            priority: item.Priority
+          }))
+          .sort((a, b) => {
+            const priorityA = priorityOrder.indexOf(a.priority);
+            const priorityB = priorityOrder.indexOf(b.priority);
+            return priorityA - priorityB;
+          });
+
+        // Process and sort recommendations
+        const processedRecommendations = await Promise.all(
+          (opportData || []).map(async (item) => {
+            let subjectName = undefined;
+            
+            if (item.Subject_id) {
+              const { data: subject } = await supabase
+                .from('Subject')
+                .select('Name')
+                .eq('id', item.Subject_id)
+                .single();
+                
+              if (subject) {
+                subjectName = subject.Name;
+              }
+            }
+            
+            return {
+              id: item.id,
+              title: item.Title || 'Sem título',
+              description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
+              subjectId: item.Subject_id,
+              subject_name: subjectName,
+              priority: item.Priority
+            };
+          })
+        );
+
+        // Sort recommendations by priority
+        const sortedRecommendations = processedRecommendations.sort((a, b) => {
+          const priorityA = priorityOrder.indexOf(a.priority);
+          const priorityB = priorityOrder.indexOf(b.priority);
+          return priorityA - priorityB;
+        });
         
         setInsights(processedInsights);
-        setRecommendations(processedRecommendations);
+        setRecommendations(sortedRecommendations);
       } catch (error) {
         console.error('Error fetching suggestions:', error);
         toast({

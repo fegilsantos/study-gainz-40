@@ -722,6 +722,7 @@ export type Database = {
           LongSuggestion: string | null
           PersonId: number | null
           Priority: Database["public"]["Enums"]["Priority"] | null
+          Subject_id: number | null
           Subtitle: string | null
           "Suggestion type":
             | Database["public"]["Enums"]["Suggestion type"]
@@ -734,6 +735,7 @@ export type Database = {
           LongSuggestion?: string | null
           PersonId?: number | null
           Priority?: Database["public"]["Enums"]["Priority"] | null
+          Subject_id?: number | null
           Subtitle?: string | null
           "Suggestion type"?:
             | Database["public"]["Enums"]["Suggestion type"]
@@ -746,6 +748,7 @@ export type Database = {
           LongSuggestion?: string | null
           PersonId?: number | null
           Priority?: Database["public"]["Enums"]["Priority"] | null
+          Subject_id?: number | null
           Subtitle?: string | null
           "Suggestion type"?:
             | Database["public"]["Enums"]["Suggestion type"]
@@ -758,6 +761,13 @@ export type Database = {
             columns: ["PersonId"]
             isOneToOne: false
             referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Suggestions_Subject_id_fkey"
+            columns: ["Subject_id"]
+            isOneToOne: false
+            referencedRelation: "Subject"
             referencedColumns: ["id"]
           },
         ]
@@ -864,10 +874,10 @@ export type Database = {
       Priority:
         | "Muito Alta"
         | "Alta"
-        | "Média"
+        | "Média Alta"
         | "Baixa"
         | "Muito Baixa"
-        | "very high"
+        | "Média"
       Role: "Student" | "Parent" | "Teacher" | "Owner" | "Coordinator" | "Other"
       "School type": "Private" | "Public" | "ONG"
       "Suggestion type": "Strengths" | "Opportunities"

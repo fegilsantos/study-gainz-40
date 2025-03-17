@@ -1,155 +1,13 @@
-
 import React, { useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { subjects, getAveragePerformance } from '@/utils/mockData';
 import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface ChartTabsProps {
-  children: React.ReactNode;
-  activeTab: string;
-  onChange: (tab: string) => void;
-}
-
-const ChartTabs: React.FC<ChartTabsProps> = ({ children, activeTab, onChange }) => {
-  const tabs = ['topics', 'trends', 'habits'];
-  
-  return (
-    <div>
-      <div className="flex space-x-1 p-1 bg-muted rounded-lg mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => onChange(tab)}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              activeTab === tab
-                ? 'bg-background shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab === 'topics' && 'Tópicos'}
-            {tab === 'trends' && 'Tendências'}
-            {tab === 'habits' && 'Hábitos'}
-          </button>
-        ))}
-      </div>
-      {children}
-    </div>
-  );
-};
+import { usePerformanceData } from '@/hooks/usePerformanceData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TopicsChart: React.FC = () => {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
-  
-  // Mock topic and subtopic data
-  const mockTopics = {
-    'math': [
-      { id: 'algebra', name: 'Álgebra', performance: 85, 
-        subtopics: [
-          { id: 'equations', name: 'Equações', performance: 90 },
-          { id: 'functions', name: 'Funções', performance: 82 },
-          { id: 'polynomials', name: 'Polinômios', performance: 78 }
-        ]
-      },
-      { id: 'geometry', name: 'Geometria', performance: 70,
-        subtopics: [
-          { id: 'plane', name: 'Plana', performance: 75 },
-          { id: 'spatial', name: 'Espacial', performance: 65 },
-          { id: 'analytic', name: 'Analítica', performance: 72 }
-        ]
-      },
-      { id: 'calculus', name: 'Cálculo', performance: 65,
-        subtopics: [
-          { id: 'limits', name: 'Limites', performance: 68 },
-          { id: 'derivatives', name: 'Derivadas', performance: 62 }
-        ]
-      }
-    ],
-    'physics': [
-      { id: 'mechanics', name: 'Mecânica', performance: 75,
-        subtopics: [
-          { id: 'kinematics', name: 'Cinemática', performance: 80 },
-          { id: 'dynamics', name: 'Dinâmica', performance: 70 }
-        ]
-      },
-      { id: 'thermodynamics', name: 'Termodinâmica', performance: 60,
-        subtopics: [
-          { id: 'heat', name: 'Calor', performance: 65 },
-          { id: 'gases', name: 'Gases', performance: 55 }
-        ]
-      }
-    ],
-    'chemistry': [
-      { id: 'organic', name: 'Química Orgânica', performance: 80,
-        subtopics: [
-          { id: 'hydrocarbons', name: 'Hidrocarbonetos', performance: 85 },
-          { id: 'functional', name: 'Grupos Funcionais', performance: 75 }
-        ]
-      },
-      { id: 'inorganic', name: 'Química Inorgânica', performance: 72,
-        subtopics: [
-          { id: 'periodic', name: 'Tabela Periódica', performance: 78 },
-          { id: 'reactions', name: 'Reações', performance: 68 }
-        ]
-      }
-    ],
-    'biology': [
-      { id: 'cell', name: 'Citologia', performance: 88,
-        subtopics: [
-          { id: 'membrane', name: 'Membrana', performance: 90 },
-          { id: 'nucleus', name: 'Núcleo', performance: 85 }
-        ]
-      },
-      { id: 'genetics', name: 'Genética', performance: 78,
-        subtopics: [
-          { id: 'heredity', name: 'Hereditariedade', performance: 80 },
-          { id: 'mutations', name: 'Mutações', performance: 75 }
-        ]
-      }
-    ],
-    'portuguese': [
-      { id: 'grammar', name: 'Gramática', performance: 75,
-        subtopics: [
-          { id: 'syntax', name: 'Sintaxe', performance: 72 },
-          { id: 'morphology', name: 'Morfologia', performance: 78 }
-        ]
-      },
-      { id: 'literature', name: 'Literatura', performance: 82,
-        subtopics: [
-          { id: 'modernism', name: 'Modernismo', performance: 85 },
-          { id: 'romanticism', name: 'Romantismo', performance: 80 }
-        ]
-      }
-    ],
-    'history': [
-      { id: 'brazil', name: 'História do Brasil', performance: 78,
-        subtopics: [
-          { id: 'colonial', name: 'Brasil Colônia', performance: 75 },
-          { id: 'empire', name: 'Império', performance: 80 }
-        ]
-      },
-      { id: 'general', name: 'História Geral', performance: 72,
-        subtopics: [
-          { id: 'ancient', name: 'Idade Antiga', performance: 75 },
-          { id: 'modern', name: 'Idade Moderna', performance: 70 }
-        ]
-      }
-    ],
-    'geography': [
-      { id: 'physical', name: 'Geografia Física', performance: 68,
-        subtopics: [
-          { id: 'climate', name: 'Climatologia', performance: 70 },
-          { id: 'geomorphology', name: 'Geomorfologia', performance: 65 }
-        ]
-      },
-      { id: 'human', name: 'Geografia Humana', performance: 75,
-        subtopics: [
-          { id: 'population', name: 'População', performance: 78 },
-          { id: 'urbanization', name: 'Urbanização', performance: 72 }
-        ]
-      }
-    ],
-  };
+  const { subjectData, loading } = usePerformanceData();
   
   const getProgressBarColor = (performance: number) => {
     if (performance >= 80) return 'bg-emerald-500';
@@ -164,14 +22,39 @@ const TopicsChart: React.FC = () => {
       setExpandedSubject(subjectId);
     }
   };
-  
-  const subjectData = subjects.map(subject => ({
-    name: subject.name,
-    value: subject.performance,
-    color: subject.color,
-    completion: Math.round((subject.completedTopics / subject.totalTopics) * 100),
-    id: subject.id
-  }));
+
+  if (loading) {
+    return (
+      <div className="glass p-6 rounded-2xl space-y-4">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-[300px] w-full" />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!subjectData.length) {
+    return (
+      <div className="glass p-6 rounded-2xl">
+        <h3 className="text-lg font-medium mb-4">Desempenho por Matéria e Tópico</h3>
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            Ainda não há dados de desempenho disponíveis.
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Complete exercícios para visualizar seu desempenho por matéria e tópico.
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="glass p-6 rounded-2xl">
@@ -182,16 +65,22 @@ const TopicsChart: React.FC = () => {
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={subjectData} outerRadius={90}>
               <PolarGrid stroke="hsl(var(--border))" />
-              <PolarAngleAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-              <PolarRadiusAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+              <PolarAngleAxis 
+                dataKey="name" 
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
+              />
+              <PolarRadiusAxis 
+                domain={[0, 100]} 
+                tick={{ fill: 'hsl(var(--muted-foreground))' }} 
+              />
               <Radar
                 name="Desempenho"
-                dataKey="value"
+                dataKey="performance"
                 stroke="hsl(var(--primary))"
                 fill="hsl(var(--primary))"
                 fillOpacity={0.4}
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{
                   backgroundColor: 'hsl(var(--background))',
                   borderColor: 'hsl(var(--border))',
@@ -206,14 +95,14 @@ const TopicsChart: React.FC = () => {
       <div className="space-y-5">
         <h4 className="font-medium text-sm">Detalhamento por Tópicos</h4>
         
-        {subjects.map(subject => (
+        {subjectData.map(subject => (
           <div key={subject.id} className="space-y-3">
             <div 
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => toggleSubject(subject.id)}
+              onClick={() => toggleSubject(subject.id.toString())}
             >
               <div className="flex items-center">
-                {expandedSubject === subject.id ? 
+                {expandedSubject === subject.id.toString() ? 
                   <ChevronDown className="w-4 h-4 mr-2 text-muted-foreground" /> : 
                   <ChevronRight className="w-4 h-4 mr-2 text-muted-foreground" />
                 }
@@ -230,9 +119,9 @@ const TopicsChart: React.FC = () => {
               </div>
             </div>
             
-            {expandedSubject === subject.id && mockTopics[subject.id as keyof typeof mockTopics] && (
+            {expandedSubject === subject.id.toString() && subject.topics && (
               <div className="ml-6 space-y-4">
-                {mockTopics[subject.id as keyof typeof mockTopics].map(topic => (
+                {subject.topics.map(topic => (
                   <div key={topic.id} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">{topic.name}</span>
@@ -245,23 +134,6 @@ const TopicsChart: React.FC = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="ml-4 space-y-2">
-                      {topic.subtopics.map(subtopic => (
-                        <div key={subtopic.id} className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">{subtopic.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <div className="text-xs text-muted-foreground">{subtopic.performance}%</div>
-                            <div className="w-12 h-1 bg-muted/60 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${getProgressBarColor(subtopic.performance)}`}
-                                style={{ width: `${subtopic.performance}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 ))}
@@ -528,6 +400,39 @@ const PerformanceCharts: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+interface ChartTabsProps {
+  children: React.ReactNode;
+  activeTab: string;
+  onChange: (tab: string) => void;
+}
+
+const ChartTabs: React.FC<ChartTabsProps> = ({ children, activeTab, onChange }) => {
+  const tabs = ['topics', 'trends', 'habits'];
+  
+  return (
+    <div>
+      <div className="flex space-x-1 p-1 bg-muted rounded-lg mb-6">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => onChange(tab)}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              activeTab === tab
+                ? 'bg-background shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab === 'topics' && 'Tópicos'}
+            {tab === 'trends' && 'Tendências'}
+            {tab === 'habits' && 'Hábitos'}
+          </button>
+        ))}
+      </div>
+      {children}
     </div>
   );
 };
