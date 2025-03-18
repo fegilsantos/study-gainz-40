@@ -125,7 +125,7 @@ export const useTasksData = (refreshTrigger = 0) => {
             startTime: activity.TIme ? activity.TIme.slice(0, 5) : '09:00', // Format to HH:MM
             duration: activity.Duration || 60,
             type: (activity["Activity type"] as 'study' | 'review' | 'class' | 'exercise') || 'study',
-            completed: activity.Status === 'done',
+            completed: activity.Status === 'Done', // Fixed: Using 'Done' instead of 'done'
             date: activity.Date || format(new Date(), 'yyyy-MM-dd'),
             // Additional data for display
             subjectName,
@@ -171,18 +171,18 @@ export const useTasksData = (refreshTrigger = 0) => {
       // Insert new activity - fix the property names to match Supabase table
       const { data, error } = await supabase
         .from('Activity')
-        .insert({
+        .insert([{ // Added array brackets here to fix the type error
           Title: taskData.title,
           Description: taskData.description,
           Date: taskData.date,
           TIme: taskData.startTime,
           Duration: taskData.duration,
           "Activity type": taskData.type,
-          Status: 'planned',
+          Status: 'Planned', // Fixed: Using 'Planned' instead of 'planned'
           SubjectId: taskData.subject ? parseInt(taskData.subject) : null,
           TopicId: taskData.topic ? parseInt(taskData.topic) : null,
           SubtopicId: taskData.subtopic ? parseInt(taskData.subtopic) : null
-        })
+        }])
         .select()
         .single();
 
@@ -213,7 +213,7 @@ export const useTasksData = (refreshTrigger = 0) => {
       if (updates.startTime !== undefined) updateData.TIme = updates.startTime;
       if (updates.duration !== undefined) updateData.Duration = updates.duration;
       if (updates.type !== undefined) updateData["Activity type"] = updates.type;
-      if (updates.completed !== undefined) updateData.Status = updates.completed ? 'done' : 'planned';
+      if (updates.completed !== undefined) updateData.Status = updates.completed ? 'Done' : 'Planned'; // Fixed: Using 'Done' and 'Planned'
       if (updates.subject !== undefined) updateData.SubjectId = updates.subject ? parseInt(updates.subject) : null;
       if (updates.topic !== undefined) updateData.TopicId = updates.topic ? parseInt(updates.topic) : null;
       if (updates.subtopic !== undefined) updateData.SubtopicId = updates.subtopic ? parseInt(updates.subtopic) : null;
