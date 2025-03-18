@@ -5,6 +5,7 @@ import TopicSelector from './TopicSelector';
 import TaskTypeSelector from './TaskTypeSelector';
 import { useTopicData } from './useTopicData';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 interface Subject {
   id: string;
@@ -50,7 +51,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   type,
   setType,
 }) => {
-  const { availableTopics, availableSubtopics } = useTopicData(subject, topic);
+  const { availableTopics, availableSubtopics, loading: topicsLoading } = useTopicData(subject, topic);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   
@@ -81,6 +82,17 @@ const TaskForm: React.FC<TaskFormProps> = ({
     
     fetchSubjects();
   }, []);
+
+  // Reset topic and subtopic when subject changes
+  useEffect(() => {
+    setTopic('');
+    setSubtopic('');
+  }, [subject, setTopic, setSubtopic]);
+
+  // Reset subtopic when topic changes
+  useEffect(() => {
+    setSubtopic('');
+  }, [topic, setSubtopic]);
   
   return (
     <div className="space-y-4">
@@ -138,8 +150,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
             value={subject}
             onChange={(e) => {
               setSubject(e.target.value);
-              setTopic('');
-              setSubtopic('');
             }}
             required
             className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
@@ -153,23 +163,43 @@ const TaskForm: React.FC<TaskFormProps> = ({
       </div>
       
       <div className="grid grid-cols-2 gap-4">
-        <TopicSelector
-          label="Tópico"
-          placeholder="Selecione um tópico"
-          items={availableTopics}
-          value={topic}
-          onChange={setTopic}
-          required={true}
-          disabled={!subject}
-        />
-        <TopicSelector
-          label="Subtópico"
-          placeholder="Selecione um subtópico"
-          items={availableSubtopics}
-          value={subtopic}
-          onChange={setSubtopic}
-          disabled={!topic || availableSubtopics.length === 0}
-        />
+        <div>
+          <label htmlFor="topic" className="block text-sm font-medium mb-1">
+            Tópico {topicsLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}
+            <span className="text-destructive">*</span>
+          </label>
+          <select
+            id="topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            required
+            disabled={!subject || topicsLoading}
+            className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
+          >
+            <option value="" disabled>Selecione um tópico</option>
+            {availableTopics.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="subtopic" className="block text-sm font-medium mb-1">
+            Subtópico {topicsLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}
+          </label>
+          <select
+            id="subtopic"
+            value={subtopic}
+            onChange={(e) => setSubtopic(e.target.value)}
+            disabled={!topic || topicsLoading || availableSubtopics.length === 0}
+            className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
+          >
+            <option value="">Selecione um subtópico</option>
+            {availableSubtopics.map((st) => (
+              <option key={st.id} value={st.id}>{st.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
