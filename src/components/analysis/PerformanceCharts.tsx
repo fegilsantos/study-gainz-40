@@ -141,7 +141,7 @@ const TopicsChart: React.FC = () => {
                     />
                   )}
                   
-                  {/* Performance percentage */}
+                  {/* Performance percentage - now positioned at the right side of the progress bar */}
                   <span 
                     className="absolute right-0 top-[-18px] text-xs font-medium"
                     style={{ color: subject.performance >= subject.goal ? '#10b981' : (subject.performance >= subject.goal * 0.8 ? '#f59e0b' : '#f43f5e') }}
@@ -149,7 +149,7 @@ const TopicsChart: React.FC = () => {
                     {subject.performance}%
                   </span>
                   
-                  {/* Goal percentage */}
+                  {/* Goal percentage - positioned at the goal marker */}
                   {subject.goal && (
                     <span 
                       className="absolute text-xs font-medium text-blue-500"
@@ -194,7 +194,7 @@ const TopicsChart: React.FC = () => {
                             />
                           )}
                           
-                          {/* Performance percentage */}
+                          {/* Performance percentage - positioned at the right side */}
                           <span 
                             className="absolute right-0 top-[-16px] text-[10px] font-medium"
                             style={{ color: topic.performance >= topic.goal ? '#10b981' : (topic.performance >= topic.goal * 0.8 ? '#f59e0b' : '#f43f5e') }}
@@ -202,7 +202,7 @@ const TopicsChart: React.FC = () => {
                             {topic.performance}%
                           </span>
                           
-                          {/* Goal percentage */}
+                          {/* Goal percentage - positioned at the goal marker */}
                           {topic.goal && (
                             <span 
                               className="absolute text-[10px] font-medium text-blue-500"
@@ -237,7 +237,7 @@ const TopicsChart: React.FC = () => {
                                   />
                                 )}
                                 
-                                {/* Performance percentage */}
+                                {/* Performance percentage - positioned at the right side */}
                                 <span 
                                   className="absolute right-0 top-[-14px] text-[8px] font-medium"
                                   style={{ color: subtopic.performance >= subtopic.goal ? '#10b981' : (subtopic.performance >= subtopic.goal * 0.8 ? '#f59e0b' : '#f43f5e') }}
@@ -245,7 +245,7 @@ const TopicsChart: React.FC = () => {
                                   {subtopic.performance}%
                                 </span>
                                 
-                                {/* Goal percentage */}
+                                {/* Goal percentage - positioned at the goal marker */}
                                 {subtopic.goal && (
                                   <span 
                                     className="absolute text-[8px] font-medium text-blue-500"

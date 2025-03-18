@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -199,8 +200,9 @@ export const useTasksData = (refreshTrigger = 0) => {
       // Map the task type to activity type for database
       const activityType = mapTaskTypeToActivityType(taskData.type);
 
-      // Ensure the date is in the correct format (YYYY-MM-DD)
-      const formattedDate = startOfDay(new Date(taskData.date)).toISOString().split('T')[0];
+      // Don't modify the date when inserting - use the date directly from taskData
+      // This fixes the issue of tasks appearing on the wrong day
+      const formattedDate = taskData.date;
 
       // Insert new activity - fix the property names to match Supabase table
       const { data, error } = await supabase
@@ -208,7 +210,7 @@ export const useTasksData = (refreshTrigger = 0) => {
         .insert([{ 
           Title: taskData.title,
           Description: taskData.description,
-          Date: formattedDate, // Use normalized date format
+          Date: formattedDate, // Use the date directly without modifying it
           TIme: taskData.startTime,
           Duration: taskData.duration,
           "Activity type": activityType,
@@ -244,9 +246,9 @@ export const useTasksData = (refreshTrigger = 0) => {
       if (updates.title !== undefined) updateData.Title = updates.title;
       if (updates.description !== undefined) updateData.Description = updates.description;
       
-      // If date is being updated, ensure it's in the correct format
+      // If date is being updated, use it directly without modifying
       if (updates.date !== undefined) {
-        updateData.Date = startOfDay(new Date(updates.date)).toISOString().split('T')[0];
+        updateData.Date = updates.date;
       }
       
       if (updates.startTime !== undefined) updateData.TIme = updates.startTime;
