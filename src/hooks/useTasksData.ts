@@ -23,6 +23,29 @@ export interface Task {
   subtopicName?: string;
 }
 
+// Helper function to map frontend task types to database activity types
+const mapTaskTypeToActivityType = (taskType: 'study' | 'review' | 'class' | 'exercise'): "Prova" | "Lição de casa" | "Projeto" | "Revisão" | "Aula" => {
+  switch (taskType) {
+    case 'study': return 'Projeto';
+    case 'review': return 'Revisão';
+    case 'class': return 'Aula';
+    case 'exercise': return 'Lição de casa';
+    default: return 'Projeto';
+  }
+};
+
+// Helper function to map database activity types to frontend task types
+const mapActivityTypeToTaskType = (activityType: string | null): 'study' | 'review' | 'class' | 'exercise' => {
+  switch (activityType) {
+    case 'Revisão': return 'review';
+    case 'Aula': return 'class';
+    case 'Lição de casa': return 'exercise';
+    case 'Prova': return 'exercise';
+    case 'Projeto':
+    default: return 'study';
+  }
+};
+
 export const useTasksData = (refreshTrigger = 0) => {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -124,7 +147,7 @@ export const useTasksData = (refreshTrigger = 0) => {
             subtopic: activity.SubtopicId?.toString() || '',
             startTime: activity.TIme ? activity.TIme.slice(0, 5) : '09:00', // Format to HH:MM
             duration: activity.Duration || 60,
-            type: (activity["Activity type"] as 'study' | 'review' | 'class' | 'exercise') || 'study',
+            type: mapActivityTypeToTaskType(activity["Activity type"]),
             completed: activity.Status === 'Done', // Fixed: Using 'Done' instead of 'done'
             date: activity.Date || format(new Date(), 'yyyy-MM-dd'),
             // Additional data for display
@@ -168,6 +191,9 @@ export const useTasksData = (refreshTrigger = 0) => {
       if (personError) throw personError;
       if (!person) return null;
 
+      // Map the task type to activity type for database
+      const activityType = mapTaskTypeToActivityType(taskData.type);
+
       // Insert new activity - fix the property names to match Supabase table
       const { data, error } = await supabase
         .from('Activity')
@@ -177,7 +203,7 @@ export const useTasksData = (refreshTrigger = 0) => {
           Date: taskData.date,
           TIme: taskData.startTime,
           Duration: taskData.duration,
-          "Activity type": taskData.type,
+          "Activity type": activityType,
           Status: 'Planned', // Fixed: Using 'Planned' instead of 'planned'
           SubjectId: taskData.subject ? parseInt(taskData.subject) : null,
           TopicId: taskData.topic ? parseInt(taskData.topic) : null,
@@ -212,7 +238,7 @@ export const useTasksData = (refreshTrigger = 0) => {
       if (updates.date !== undefined) updateData.Date = updates.date;
       if (updates.startTime !== undefined) updateData.TIme = updates.startTime;
       if (updates.duration !== undefined) updateData.Duration = updates.duration;
-      if (updates.type !== undefined) updateData["Activity type"] = updates.type;
+      if (updates.type !== undefined) updateData["Activity type"] = mapTaskTypeToActivityType(updates.type);
       if (updates.completed !== undefined) updateData.Status = updates.completed ? 'Done' : 'Planned'; // Fixed: Using 'Done' and 'Planned'
       if (updates.subject !== undefined) updateData.SubjectId = updates.subject ? parseInt(updates.subject) : null;
       if (updates.topic !== undefined) updateData.TopicId = updates.topic ? parseInt(updates.topic) : null;
