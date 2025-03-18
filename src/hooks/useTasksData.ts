@@ -17,6 +17,10 @@ export interface Task {
   type: 'study' | 'review' | 'class' | 'exercise';
   completed: boolean;
   date: string; // YYYY-MM-DD
+  // Additional display properties
+  subjectName?: string;
+  topicName?: string;
+  subtopicName?: string;
 }
 
 export const useTasksData = (refreshTrigger = 0) => {
@@ -58,13 +62,12 @@ export const useTasksData = (refreshTrigger = 0) => {
             Date,
             TIme,
             Duration,
-            Activity type,
+            "Activity type",
             Status,
             SubjectId,
             TopicId,
             SubtopicId
-          `)
-          .order('Date', { ascending: true });
+          `);
 
         if (activitiesError) throw activitiesError;
 
@@ -121,7 +124,7 @@ export const useTasksData = (refreshTrigger = 0) => {
             subtopic: activity.SubtopicId?.toString() || '',
             startTime: activity.TIme ? activity.TIme.slice(0, 5) : '09:00', // Format to HH:MM
             duration: activity.Duration || 60,
-            type: (activity['Activity type'] as 'study' | 'review' | 'class' | 'exercise') || 'study',
+            type: (activity["Activity type"] as 'study' | 'review' | 'class' | 'exercise') || 'study',
             completed: activity.Status === 'done',
             date: activity.Date || format(new Date(), 'yyyy-MM-dd'),
             // Additional data for display
@@ -165,7 +168,7 @@ export const useTasksData = (refreshTrigger = 0) => {
       if (personError) throw personError;
       if (!person) return null;
 
-      // Insert new activity
+      // Insert new activity - fix the property names to match Supabase table
       const { data, error } = await supabase
         .from('Activity')
         .insert({
@@ -174,13 +177,13 @@ export const useTasksData = (refreshTrigger = 0) => {
           Date: taskData.date,
           TIme: taskData.startTime,
           Duration: taskData.duration,
-          'Activity type': taskData.type,
+          "Activity type": taskData.type,
           Status: 'planned',
           SubjectId: taskData.subject ? parseInt(taskData.subject) : null,
           TopicId: taskData.topic ? parseInt(taskData.topic) : null,
           SubtopicId: taskData.subtopic ? parseInt(taskData.subtopic) : null
         })
-        .select('id')
+        .select()
         .single();
 
       if (error) throw error;
@@ -209,7 +212,7 @@ export const useTasksData = (refreshTrigger = 0) => {
       if (updates.date !== undefined) updateData.Date = updates.date;
       if (updates.startTime !== undefined) updateData.TIme = updates.startTime;
       if (updates.duration !== undefined) updateData.Duration = updates.duration;
-      if (updates.type !== undefined) updateData['Activity type'] = updates.type;
+      if (updates.type !== undefined) updateData["Activity type"] = updates.type;
       if (updates.completed !== undefined) updateData.Status = updates.completed ? 'done' : 'planned';
       if (updates.subject !== undefined) updateData.SubjectId = updates.subject ? parseInt(updates.subject) : null;
       if (updates.topic !== undefined) updateData.TopicId = updates.topic ? parseInt(updates.topic) : null;
