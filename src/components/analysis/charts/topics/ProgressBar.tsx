@@ -1,0 +1,61 @@
+
+import React from 'react';
+
+interface ProgressBarProps {
+  performance: number;
+  goal?: number;
+  width: string;
+  height: string;
+  labelSize: string;
+}
+
+export const ProgressBar: React.FC<ProgressBarProps> = ({ 
+  performance, 
+  goal, 
+  width, 
+  height,
+  labelSize
+}) => {
+  const getProgressBarColor = (performance: number, goal: number = 100) => {
+    if (performance >= goal) return 'bg-emerald-500';
+    if (performance >= goal * 0.8) return 'bg-amber-500';
+    return 'bg-rose-500';
+  };
+
+  return (
+    <div className={`${width} ${height} bg-muted rounded-full overflow-hidden relative`}>
+      <div 
+        className={`h-full ${getProgressBarColor(performance, goal)}`}
+        style={{ width: `${performance}%` }}
+      />
+      {goal && (
+        <div 
+          className="absolute top-0 bottom-0 w-0.5 bg-blue-500"
+          style={{ left: `${Math.min(goal, 100)}%` }}
+        />
+      )}
+      
+      {/* Performance percentage - positioned at the right side */}
+      <span 
+        className={`absolute right-0 top-[-18px] ${labelSize} font-medium`}
+        style={{ color: performance >= (goal || 100) ? '#10b981' : (performance >= (goal || 100) * 0.8 ? '#f59e0b' : '#f43f5e') }}
+      >
+        {performance}%
+      </span>
+      
+      {/* Goal percentage - positioned at the goal marker */}
+      {goal && (
+        <span 
+          className={`absolute ${labelSize} font-medium text-blue-500`}
+          style={{ 
+            left: `${Math.min(goal, 100)}%`, 
+            top: '-18px',
+            transform: 'translateX(-50%)'
+          }}
+        >
+          {goal}%
+        </span>
+      )}
+    </div>
+  );
+};
