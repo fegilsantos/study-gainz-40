@@ -1,14 +1,14 @@
 
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { getTasksByDate, Task } from '@/utils/mockData';
 import { addDays, isSameDay } from 'date-fns';
 import TaskModal from './task-modal/TaskModal';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import DateNavigation from './date-navigation/DateNavigation';
 import PlanGenerator from './plan-generator/PlanGenerator';
 import EmptyTasksView from './tasks/EmptyTasksView';
 import TaskItem from './tasks/TaskItem';
+import { useTasksData, Task } from '@/hooks/useTasksData';
 
 interface TimelineProps {
   initialDate?: Date;
@@ -20,6 +20,9 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState<boolean>(false);
+  const [refreshTasks, setRefreshTasks] = useState(0);
+  
+  const { getTasksByDate, loading } = useTasksData(refreshTasks);
   
   const formatDateToString = (date: Date): string => {
     return date.toISOString().split('T')[0];
@@ -52,6 +55,7 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
+    setRefreshTasks(prev => prev + 1);
     if (onTaskUpdate) onTaskUpdate();
   };
   
@@ -66,7 +70,8 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
     // Mock generating a study plan
     setTimeout(() => {
       setIsGeneratingPlan(false);
-      toast.success('Plano de estudos gerado com sucesso!', {
+      toast({
+        title: 'Plano de estudos gerado com sucesso!',
         description: 'Seu plano de estudos personalizado foi criado com base no seu perfil.'
       });
     }, 2000);
@@ -89,14 +94,22 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
       {/* Tasks */}
       <div className="space-y-4">
         {/* AI Study Plan Generator Button */}
-        {todayTasks.length === 0 && (
+        {!loading && todayTasks.length === 0 && (
           <PlanGenerator
             generateAIStudyPlan={generateAIStudyPlan}
             isGeneratingPlan={isGeneratingPlan}
           />
         )}
       
-        {todayTasks.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-10">
+            <div className="animate-pulse space-y-4 w-full">
+              <div className="h-12 bg-gray-200 rounded-lg w-full"></div>
+              <div className="h-12 bg-gray-200 rounded-lg w-full"></div>
+              <div className="h-12 bg-gray-200 rounded-lg w-full"></div>
+            </div>
+          </div>
+        ) : todayTasks.length === 0 ? (
           <EmptyTasksView />
         ) : (
           todayTasks.map((task) => (

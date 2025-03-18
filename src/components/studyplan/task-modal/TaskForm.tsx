@@ -1,10 +1,15 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { subjects } from '@/utils/mockData';
 import TopicSelector from './TopicSelector';
 import TaskTypeSelector from './TaskTypeSelector';
 import { useTopicData } from './useTopicData';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Subject {
+  id: string;
+  name: string;
+}
 
 interface TaskFormProps {
   currentDate: Date;
@@ -46,6 +51,36 @@ const TaskForm: React.FC<TaskFormProps> = ({
   setType,
 }) => {
   const { availableTopics, availableSubtopics } = useTopicData(subject, topic);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
+  
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        setLoadingSubjects(true);
+        const { data, error } = await supabase
+          .from('Subject')
+          .select('id, Name')
+          .order('Name', { ascending: true });
+          
+        if (error) {
+          console.error('Error fetching subjects:', error);
+          return;
+        }
+        
+        setSubjects(data?.map(subject => ({
+          id: subject.id.toString(),
+          name: subject.Name || 'Unnamed Subject'
+        })) || []);
+      } catch (error) {
+        console.error('Error in fetchSubjects:', error);
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+    
+    fetchSubjects();
+  }, []);
   
   return (
     <div className="space-y-4">
@@ -95,22 +130,26 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <label htmlFor="subject" className="block text-sm font-medium mb-1">
           Matéria <span className="text-destructive">*</span>
         </label>
-        <select
-          id="subject"
-          value={subject}
-          onChange={(e) => {
-            setSubject(e.target.value);
-            setTopic('');
-            setSubtopic('');
-          }}
-          required
-          className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
-        >
-          <option value="" disabled>Selecione uma matéria</option>
-          {subjects.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
+        {loadingSubjects ? (
+          <div className="w-full h-10 bg-gray-200 animate-pulse rounded-lg"></div>
+        ) : (
+          <select
+            id="subject"
+            value={subject}
+            onChange={(e) => {
+              setSubject(e.target.value);
+              setTopic('');
+              setSubtopic('');
+            }}
+            required
+            className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
+          >
+            <option value="" disabled>Selecione uma matéria</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -121,6 +160,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           value={topic}
           onChange={setTopic}
           required={true}
+          disabled={!subject}
         />
         <TopicSelector
           label="Subtópico"

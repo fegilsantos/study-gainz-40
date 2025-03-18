@@ -1,10 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
-import { Task } from '@/utils/mockData';
+import { Task } from '@/hooks/useTasksData';
 import { toast } from '@/hooks/use-toast';
 import TaskModalHeader from './TaskModalHeader';
 import TaskForm from './TaskForm';
 import TaskModalFooter from './TaskModalFooter';
+import { useTasksData } from '@/hooks/useTasksData';
+import { format } from 'date-fns';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -24,6 +26,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
   const [type, setType] = useState<'study' | 'review' | 'class' | 'exercise'>('study');
   const [completed, setCompleted] = useState(false);
   
+  const { createTask, updateTask, deleteTask } = useTasksData();
+  
   useEffect(() => {
     if (task) {
       setTitle(task.title);
@@ -38,7 +42,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
     } else {
       setTitle('');
       setDescription('');
-      setSubject(subjects[0]?.id || '');
+      setSubject('');
       setTopic('');
       setSubtopic('');
       setStartTime('08:00');
@@ -48,51 +52,125 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
     }
   }, [task]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // This would normally save to a database
-    // For now, just show a toast
-    if (task) {
+    if (!title.trim()) {
       toast({
-        title: "Tarefa atualizada",
-        description: "Suas alterações foram salvas com sucesso.",
+        title: "Título obrigatório",
+        description: "Por favor, informe um título para a tarefa.",
+        variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Tarefa criada",
-        description: "Sua nova tarefa foi adicionada com sucesso.",
-      });
+      return;
     }
     
-    onClose();
+    try {
+      if (task) {
+        // Update existing task
+        const success = await updateTask(task.id, {
+          title,
+          description,
+          subject,
+          topic,
+          subtopic,
+          startTime,
+          duration: parseInt(duration),
+          type,
+          completed,
+          date: format(currentDate, 'yyyy-MM-dd')
+        });
+        
+        if (success) {
+          toast({
+            title: "Tarefa atualizada",
+            description: "Suas alterações foram salvas com sucesso.",
+          });
+          onClose();
+        }
+      } else {
+        // Create new task
+        const result = await createTask({
+          title,
+          description,
+          subject,
+          topic,
+          subtopic,
+          startTime,
+          duration: parseInt(duration),
+          type,
+          date: format(currentDate, 'yyyy-MM-dd')
+        });
+        
+        if (result) {
+          toast({
+            title: "Tarefa criada",
+            description: "Sua nova tarefa foi adicionada com sucesso.",
+          });
+          onClose();
+        }
+      }
+    } catch (error) {
+      console.error('Error handling task:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao salvar a tarefa.",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleDelete = () => {
-    // This would normally delete from a database
-    // For now, just show a toast
-    toast({
-      title: "Tarefa removida",
-      description: "A tarefa foi removida com sucesso.",
-      variant: "destructive",
-    });
+  const handleDelete = async () => {
+    if (!task) return;
     
-    onClose();
+    try {
+      const success = await deleteTask(task.id);
+      
+      if (success) {
+        toast({
+          title: "Tarefa removida",
+          description: "A tarefa foi removida com sucesso.",
+          variant: "destructive",
+        });
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao remover a tarefa.",
+        variant: "destructive",
+      });
+    }
   };
   
-  const toggleCompleted = () => {
-    setCompleted(!completed);
+  const toggleCompleted = async () => {
+    if (!task) return;
     
-    // This would normally update the database
-    // For now, just show a toast
-    toast({
-      title: !completed ? "Tarefa concluída" : "Tarefa desmarcada",
-      description: !completed 
-        ? "Parabéns por concluir esta tarefa!" 
-        : "A tarefa foi marcada como não concluída.",
-    });
-    
-    onClose();
+    try {
+      const newCompletedState = !completed;
+      setCompleted(newCompletedState);
+      
+      const success = await updateTask(task.id, {
+        completed: newCompletedState
+      });
+      
+      if (success) {
+        toast({
+          title: newCompletedState ? "Tarefa concluída" : "Tarefa desmarcada",
+          description: newCompletedState 
+            ? "Parabéns por concluir esta tarefa!" 
+            : "A tarefa foi marcada como não concluída.",
+        });
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error toggling task completion:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao atualizar o status da tarefa.",
+        variant: "destructive",
+      });
+    }
   };
   
   if (!isOpen) return null;
@@ -139,8 +217,5 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
     </div>
   );
 };
-
-// Needed for the imports in the component
-import { subjects } from '@/utils/mockData';
 
 export default TaskModal;

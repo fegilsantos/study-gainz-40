@@ -54,27 +54,48 @@ export type Database = {
           ClassId: number | null
           created_at: string
           Date: string | null
+          Description: string | null
+          Duration: number | null
           id: number
-          Name: string | null
           "Responsible professor": number | null
+          Status: Database["public"]["Enums"]["Activity status"] | null
+          SubjectId: number | null
+          SubtopicId: number | null
+          TIme: string | null
+          Title: string | null
+          TopicId: number | null
         }
         Insert: {
           "Activity type"?: Database["public"]["Enums"]["Activity type"] | null
           ClassId?: number | null
           created_at?: string
           Date?: string | null
+          Description?: string | null
+          Duration?: number | null
           id?: number
-          Name?: string | null
           "Responsible professor"?: number | null
+          Status?: Database["public"]["Enums"]["Activity status"] | null
+          SubjectId?: number | null
+          SubtopicId?: number | null
+          TIme?: string | null
+          Title?: string | null
+          TopicId?: number | null
         }
         Update: {
           "Activity type"?: Database["public"]["Enums"]["Activity type"] | null
           ClassId?: number | null
           created_at?: string
           Date?: string | null
+          Description?: string | null
+          Duration?: number | null
           id?: number
-          Name?: string | null
           "Responsible professor"?: number | null
+          Status?: Database["public"]["Enums"]["Activity status"] | null
+          SubjectId?: number | null
+          SubtopicId?: number | null
+          TIme?: string | null
+          Title?: string | null
+          TopicId?: number | null
         }
         Relationships: [
           {
@@ -89,6 +110,27 @@ export type Database = {
             columns: ["Responsible professor"]
             isOneToOne: false
             referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Activity_SubjectId_fkey"
+            columns: ["SubjectId"]
+            isOneToOne: false
+            referencedRelation: "Subject"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Activity_SubtopicId_fkey"
+            columns: ["SubtopicId"]
+            isOneToOne: false
+            referencedRelation: "Subtopic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Activity_TopicId_fkey"
+            columns: ["TopicId"]
+            isOneToOne: false
+            referencedRelation: "Topic"
             referencedColumns: ["id"]
           },
         ]
@@ -235,6 +277,27 @@ export type Database = {
           created_at?: string
           Description?: string | null
           id?: number
+          Name?: string | null
+        }
+        Relationships: []
+      }
+      "Gamification level": {
+        Row: {
+          created_at: string
+          id: number
+          "Max xp": number | null
+          Name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          "Max xp"?: number | null
+          Name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          "Max xp"?: number | null
           Name?: string | null
         }
         Relationships: []
@@ -422,6 +485,45 @@ export type Database = {
           },
           {
             foreignKeyName: "Person class item_PersonId_fkey"
+            columns: ["PersonId"]
+            isOneToOne: false
+            referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      "Person Gamification level score": {
+        Row: {
+          created_at: string
+          GamificationId: number | null
+          id: number
+          PersonId: number | null
+          Score: number | null
+        }
+        Insert: {
+          created_at?: string
+          GamificationId?: number | null
+          id?: number
+          PersonId?: number | null
+          Score?: number | null
+        }
+        Update: {
+          created_at?: string
+          GamificationId?: number | null
+          id?: number
+          PersonId?: number | null
+          Score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Person Gamification level score_GamificationId_fkey"
+            columns: ["GamificationId"]
+            isOneToOne: false
+            referencedRelation: "Gamification level"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Person Gamification level score_PersonId_fkey"
             columns: ["PersonId"]
             isOneToOne: false
             referencedRelation: "Person"
@@ -869,7 +971,14 @@ export type Database = {
         | "Reviewing"
         | "To be reviewed"
         | "Planned"
-      "Activity type": "Examen" | "Homework" | "Project"
+        | "Late"
+        | "Done"
+      "Activity type":
+        | "Prova"
+        | "Lição de casa"
+        | "Projeto"
+        | "Revisão"
+        | "Aula"
       Gender: "Male" | "Female" | "Other"
       Priority:
         | "Muito Alta"

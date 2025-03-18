@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Check, Clock, CalendarIcon } from 'lucide-react';
-import { Task, getSubjectById } from '@/utils/mockData';
+import { Task } from '@/hooks/useTasksData';
 
 interface TaskItemProps {
   task: Task;
@@ -9,8 +9,6 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, onClick }) => {
-  const subject = getSubjectById(task.subject);
-  
   const getTaskTypeIcon = (type: string) => {
     switch(type) {
       case 'study':
@@ -26,20 +24,35 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onClick }) => {
     }
   };
   
+  const getSubjectColor = (subjectName: string): string => {
+    const colors = [
+      '#3b82f6', '#8b5cf6', '#ec4899', '#10b981', 
+      '#f59e0b', '#6366f1', '#ef4444', '#0ea5e9'
+    ];
+    
+    // Simple hash function to get consistent colors
+    let hash = 0;
+    for (let i = 0; i < subjectName.length; i++) {
+      hash = subjectName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+  
   return (
     <div 
       onClick={() => onClick(task)}
       className={`p-4 glass rounded-xl shadow-sm border-l-4 cursor-pointer hover:shadow-md transition-all ${
         task.completed ? 'opacity-70' : ''
       }`}
-      style={{ borderLeftColor: subject?.color }}
+      style={{ borderLeftColor: getSubjectColor(task.subjectName || '') }}
     >
       <div className="flex justify-between">
         <div>
           <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
             {task.title}
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">{subject?.name}</p>
+          <p className="text-xs text-muted-foreground mt-1">{task.subjectName || 'Sem matéria'}</p>
         </div>
         <div className="flex flex-col items-end">
           <div className="flex items-center space-x-1">
@@ -49,7 +62,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onClick }) => {
             </span>
           </div>
           <div className="flex items-center mt-2 px-2 py-1 rounded-full text-xs" 
-            style={{ backgroundColor: `${subject?.color}25`, color: subject?.color }}>
+            style={{ 
+              backgroundColor: `${getSubjectColor(task.subjectName || '')}25`, 
+              color: getSubjectColor(task.subjectName || '') 
+            }}>
             {getTaskTypeIcon(task.type)}
             <span className="ml-1 capitalize">{task.type}</span>
           </div>

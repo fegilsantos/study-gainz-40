@@ -1,97 +1,6 @@
 
 import { useEffect, useState } from 'react';
-
-// Mock topics and subtopics data
-const topicsMap: Record<string, { id: string; name: string; subtopics: { id: string; name: string }[] }[]> = {
-  'math': [
-    { 
-      id: 'algebra', 
-      name: 'Álgebra', 
-      subtopics: [
-        { id: 'equations', name: 'Equações' },
-        { id: 'functions', name: 'Funções' },
-        { id: 'polynomials', name: 'Polinômios' }
-      ] 
-    },
-    { 
-      id: 'geometry', 
-      name: 'Geometria', 
-      subtopics: [
-        { id: 'plane', name: 'Plana' },
-        { id: 'spatial', name: 'Espacial' },
-        { id: 'analytic', name: 'Analítica' }
-      ] 
-    },
-  ],
-  'physics': [
-    { 
-      id: 'mechanics', 
-      name: 'Mecânica', 
-      subtopics: [
-        { id: 'kinematics', name: 'Cinemática' },
-        { id: 'dynamics', name: 'Dinâmica' }
-      ] 
-    },
-    { 
-      id: 'thermodynamics', 
-      name: 'Termodinâmica', 
-      subtopics: [
-        { id: 'heat', name: 'Calor' },
-        { id: 'gases', name: 'Gases' }
-      ] 
-    },
-  ],
-  'chemistry': [
-    { 
-      id: 'organic', 
-      name: 'Química Orgânica', 
-      subtopics: [
-        { id: 'hydrocarbons', name: 'Hidrocarbonetos' },
-        { id: 'functional', name: 'Grupos Funcionais' }
-      ] 
-    },
-  ],
-  'biology': [
-    { 
-      id: 'cell', 
-      name: 'Citologia', 
-      subtopics: [
-        { id: 'membrane', name: 'Membrana' },
-        { id: 'nucleus', name: 'Núcleo' }
-      ] 
-    },
-  ],
-  'portuguese': [
-    { 
-      id: 'grammar', 
-      name: 'Gramática', 
-      subtopics: [
-        { id: 'syntax', name: 'Sintaxe' },
-        { id: 'morphology', name: 'Morfologia' }
-      ] 
-    },
-  ],
-  'history': [
-    { 
-      id: 'brazil', 
-      name: 'História do Brasil', 
-      subtopics: [
-        { id: 'colonial', name: 'Brasil Colônia' },
-        { id: 'empire', name: 'Império' }
-      ] 
-    },
-  ],
-  'geography': [
-    { 
-      id: 'physical', 
-      name: 'Geografia Física', 
-      subtopics: [
-        { id: 'climate', name: 'Climatologia' },
-        { id: 'geomorphology', name: 'Geomorfologia' }
-      ] 
-    },
-  ],
-};
+import { supabase } from '@/integrations/supabase/client';
 
 export interface TopicItem {
   id: string;
@@ -101,25 +10,79 @@ export interface TopicItem {
 export const useTopicData = (subject: string, topic: string) => {
   const [availableTopics, setAvailableTopics] = useState<TopicItem[]>([]);
   const [availableSubtopics, setAvailableSubtopics] = useState<TopicItem[]>([]);
+  const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    if (subject && topicsMap[subject]) {
-      setAvailableTopics(topicsMap[subject].map(topic => ({ id: topic.id, name: topic.name })));
-    } else {
-      setAvailableTopics([]);
-    }
-    
-    if (topic !== '' && subject) {
-      const selectedTopicObj = topicsMap[subject]?.find(t => t.id === topic);
-      if (selectedTopicObj) {
-        setAvailableSubtopics(selectedTopicObj.subtopics);
-      } else {
-        setAvailableSubtopics([]);
+    const fetchTopics = async () => {
+      if (!subject) {
+        setAvailableTopics([]);
+        return;
       }
-    } else {
-      setAvailableSubtopics([]);
-    }
-  }, [subject, topic]);
+      
+      setLoading(true);
+      try {
+        // Fetch topics for the selected subject
+        const { data: topics, error } = await supabase
+          .from('Topic')
+          .select('id, Name')
+          .eq('SubjectId', parseInt(subject));
+          
+        if (error) {
+          console.error('Error fetching topics:', error);
+          return;
+        }
+        
+        setAvailableTopics(topics?.map(topic => ({
+          id: topic.id.toString(),
+          name: topic.Name || 'Unnamed Topic'
+        })) || []);
+      } catch (error) {
+        console.error('Error in fetchTopics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTopics();
+  }, [subject]);
   
-  return { availableTopics, availableSubtopics };
+  useEffect(() => {
+    const fetchSubtopics = async () => {
+      if (!topic) {
+        setAvailableSubtopics([]);
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        // Fetch subtopics for the selected topic
+        const { data: subtopics, error } = await supabase
+          .from('Subtopic')
+          .select('id, Name')
+          .eq('TopicId', parseInt(topic));
+          
+        if (error) {
+          console.error('Error fetching subtopics:', error);
+          return;
+        }
+        
+        setAvailableSubtopics(subtopics?.map(subtopic => ({
+          id: subtopic.id.toString(),
+          name: subtopic.Name || 'Unnamed Subtopic'
+        })) || []);
+      } catch (error) {
+        console.error('Error in fetchSubtopics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSubtopics();
+  }, [topic]);
+  
+  return { 
+    availableTopics, 
+    availableSubtopics,
+    loading
+  };
 };

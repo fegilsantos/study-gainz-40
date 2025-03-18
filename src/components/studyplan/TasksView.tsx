@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Check, AlertTriangle } from 'lucide-react';
-import { Task, getSubjectById, getTasksByDate } from '@/utils/mockData';
 import { format, addDays, isPast, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TaskModal from './task-modal/TaskModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useTasksData, Task } from '@/hooks/useTasksData';
+import { toast } from '@/hooks/use-toast';
 
 interface TasksViewProps {
   onTaskUpdate?: () => void;
@@ -22,34 +23,43 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   const [selectedTask, setSelectedTask] = useState<TaskWithDisplayDate | null>(null);
   const [overdueTasks, setOverdueTasks] = useState<TaskWithDisplayDate[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<TaskWithDisplayDate[]>([]);
+  const [refreshTasks, setRefreshTasks] = useState(0);
+  
+  const { tasks, loading, updateTask } = useTasksData(refreshTasks);
   
   useEffect(() => {
-    fetchTasks();
-  }, []);
-  
-  const fetchTasks = () => {
-    // Get overdue tasks (past 14 days that are not completed)
+    if (loading) return;
+    
     const overdueTasksList: TaskWithDisplayDate[] = [];
+    const upcomingTasksList: TaskWithDisplayDate[] = [];
+    
+    // Process overdue tasks (past 14 days that are not completed)
     for (let i = 1; i <= 14; i++) {
       const date = addDays(new Date(), -i);
       const dateString = format(date, 'yyyy-MM-dd');
-      const tasksForDate = getTasksByDate(dateString);
-      const notCompletedTasks = tasksForDate.filter(task => !task.completed);
-      overdueTasksList.push(...notCompletedTasks.map(task => ({ ...task, displayDate: date })));
+      const tasksForDate = tasks.filter(task => 
+        task.date === dateString && !task.completed
+      );
+      
+      overdueTasksList.push(
+        ...tasksForDate.map(task => ({ ...task, displayDate: date }))
+      );
     }
     
-    // Get upcoming tasks (next 7 days)
-    const upcomingTasksList: TaskWithDisplayDate[] = [];
+    // Process upcoming tasks (next 7 days)
     for (let i = 0; i < 7; i++) {
       const date = addDays(new Date(), i);
       const dateString = format(date, 'yyyy-MM-dd');
-      const tasksForDate = getTasksByDate(dateString);
-      upcomingTasksList.push(...tasksForDate.map(task => ({ ...task, displayDate: date })));
+      const tasksForDate = tasks.filter(task => task.date === dateString);
+      
+      upcomingTasksList.push(
+        ...tasksForDate.map(task => ({ ...task, displayDate: date }))
+      );
     }
     
     setOverdueTasks(overdueTasksList);
     setUpcomingTasks(upcomingTasksList);
-  };
+  }, [tasks, loading]);
   
   const openEditTaskModal = (task: TaskWithDisplayDate) => {
     setSelectedTask(task);
@@ -59,13 +69,41 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
-    fetchTasks();
+    setRefreshTasks(prev => prev + 1);
     if (onTaskUpdate) onTaskUpdate();
   };
   
-  const renderTaskItem = (task: TaskWithDisplayDate) => {
-    const subject = getSubjectById(task.subject);
+  const markAllAsCompleted = async () => {
+    if (overdueTasks.length === 0) return;
     
+    try {
+      let successCount = 0;
+      
+      for (const task of overdueTasks) {
+        const success = await updateTask(task.id, { completed: true });
+        if (success) successCount++;
+      }
+      
+      if (successCount > 0) {
+        toast({
+          title: "Tarefas atualizadas",
+          description: `${successCount} ${successCount === 1 ? 'tarefa foi marcada' : 'tarefas foram marcadas'} como concluída.`,
+        });
+        
+        setRefreshTasks(prev => prev + 1);
+        if (onTaskUpdate) onTaskUpdate();
+      }
+    } catch (error) {
+      console.error('Error marking tasks as completed:', error);
+      toast({
+        title: "Erro ao atualizar tarefas",
+        description: "Ocorreu um erro ao marcar as tarefas como concluídas.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const renderTaskItem = (task: TaskWithDisplayDate) => {
     return (
       <div 
         key={task.id}
@@ -73,14 +111,14 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
         className={`p-3 glass rounded-xl border-l-4 mb-3 cursor-pointer hover:shadow-sm transition-all ${
           task.completed ? 'opacity-70' : ''
         }`}
-        style={{ borderLeftColor: subject?.color }}
+        style={{ borderLeftColor: task.subjectName ? getSubjectColor(task.subjectName) : '#6366f1' }}
       >
         <div className="flex justify-between">
           <div>
             <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
               {task.title}
             </h3>
-            <p className="text-xs text-muted-foreground">{subject?.name}</p>
+            <p className="text-xs text-muted-foreground">{task.subjectName || 'Sem matéria'}</p>
             <div className="flex items-center mt-1 text-xs">
               <Calendar className="w-3 h-3 mr-1 text-muted-foreground" /> 
               <span className={`${isToday(task.displayDate) ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
@@ -92,7 +130,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
           </div>
           <div className="flex items-center">
             <div className="flex items-center px-2 py-1 text-xs rounded-full" 
-              style={{ backgroundColor: `${subject?.color}20`, color: subject?.color }}>
+              style={{ backgroundColor: `${getSubjectColor(task.subjectName || '')}20`, color: getSubjectColor(task.subjectName || '') }}>
               <span>{task.duration} min</span>
             </div>
           </div>
@@ -100,6 +138,34 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
       </div>
     );
   };
+  
+  // Function to get a color based on subject name (for consistency)
+  const getSubjectColor = (subjectName: string): string => {
+    const colors = [
+      '#3b82f6', '#8b5cf6', '#ec4899', '#10b981', 
+      '#f59e0b', '#6366f1', '#ef4444', '#0ea5e9'
+    ];
+    
+    // Simple hash function to get consistent colors
+    let hash = 0;
+    for (let i = 0; i < subjectName.length; i++) {
+      hash = subjectName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+  
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10">
+        <div className="animate-pulse space-y-4 w-full">
+          <div className="h-8 bg-gray-200 rounded-full w-full"></div>
+          <div className="h-32 bg-gray-200 rounded-lg w-full"></div>
+          <div className="h-32 bg-gray-200 rounded-lg w-full"></div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-4 animate-fade-in">
@@ -149,7 +215,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
               
               {overdueTasks.map(task => renderTaskItem(task))}
               
-              <Button className="w-full mt-2" variant="outline">
+              <Button className="w-full mt-2" variant="outline" onClick={markAllAsCompleted}>
                 <Check className="mr-2 h-4 w-4" />
                 Marcar Todas como Concluídas
               </Button>
