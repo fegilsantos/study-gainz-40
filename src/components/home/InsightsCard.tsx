@@ -31,6 +31,19 @@ const InsightsCard: React.FC = () => {
     return subject ? subject.color : 'hsl(var(--muted))';
   };
   
+  const getBorderColorForInsight = (type: string) => {
+    switch(type) {
+      case 'improvement':
+        return 'border-l-4 border-l-emerald-500';
+      case 'warning':
+        return 'border-l-4 border-l-amber-500';
+      case 'info':
+        return 'border-l-4 border-l-blue-500';
+      default:
+        return 'border-l-4 border-l-gray-400';
+    }
+  };
+  
   const activeItems = activeTab === 'insights' ? insights : recommendations;
   const displayItems = expanded ? activeItems : activeItems.slice(0, 2);
   
@@ -106,10 +119,10 @@ const InsightsCard: React.FC = () => {
             {displayItems.map((item) => (
               <div 
                 key={item.id}
-                className={`p-3 rounded-xl border ${
+                className={`p-3 rounded-xl ${
                   activeTab === 'insights' 
-                    ? 'border-muted bg-card' 
-                    : 'border-l-4'
+                    ? `border ${getBorderColorForInsight(item.type || 'info')} bg-card` 
+                    : 'border border-l-4'
                 }`}
                 style={
                   activeTab === 'recommendations' && item.subject_name

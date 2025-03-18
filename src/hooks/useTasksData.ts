@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 
 export interface Task {
   id: string;
@@ -174,7 +173,13 @@ export const useTasksData = (refreshTrigger = 0) => {
   }, [user, toast, refreshTrigger]);
 
   const getTasksByDate = (date: string) => {
-    return tasks.filter(task => task.date === date);
+    // Make sure we're comparing dates in the same format
+    const targetDate = startOfDay(new Date(date)).toISOString().split('T')[0];
+    return tasks.filter(task => {
+      // Normalize the task date format to ensure accurate comparison
+      const taskDate = startOfDay(new Date(task.date)).toISOString().split('T')[0];
+      return taskDate === targetDate;
+    });
   };
 
   const createTask = async (taskData: Omit<Task, 'id' | 'completed'>) => {
@@ -194,17 +199,20 @@ export const useTasksData = (refreshTrigger = 0) => {
       // Map the task type to activity type for database
       const activityType = mapTaskTypeToActivityType(taskData.type);
 
+      // Ensure the date is in the correct format (YYYY-MM-DD)
+      const formattedDate = startOfDay(new Date(taskData.date)).toISOString().split('T')[0];
+
       // Insert new activity - fix the property names to match Supabase table
       const { data, error } = await supabase
         .from('Activity')
-        .insert([{ // Added array brackets here to fix the type error
+        .insert([{ 
           Title: taskData.title,
           Description: taskData.description,
-          Date: taskData.date,
+          Date: formattedDate, // Use normalized date format
           TIme: taskData.startTime,
           Duration: taskData.duration,
           "Activity type": activityType,
-          Status: 'Planned', // Fixed: Using 'Planned' instead of 'planned'
+          Status: 'Planned',
           SubjectId: taskData.subject ? parseInt(taskData.subject) : null,
           TopicId: taskData.topic ? parseInt(taskData.topic) : null,
           SubtopicId: taskData.subtopic ? parseInt(taskData.subtopic) : null
@@ -235,11 +243,16 @@ export const useTasksData = (refreshTrigger = 0) => {
       
       if (updates.title !== undefined) updateData.Title = updates.title;
       if (updates.description !== undefined) updateData.Description = updates.description;
-      if (updates.date !== undefined) updateData.Date = updates.date;
+      
+      // If date is being updated, ensure it's in the correct format
+      if (updates.date !== undefined) {
+        updateData.Date = startOfDay(new Date(updates.date)).toISOString().split('T')[0];
+      }
+      
       if (updates.startTime !== undefined) updateData.TIme = updates.startTime;
       if (updates.duration !== undefined) updateData.Duration = updates.duration;
       if (updates.type !== undefined) updateData["Activity type"] = mapTaskTypeToActivityType(updates.type);
-      if (updates.completed !== undefined) updateData.Status = updates.completed ? 'Done' : 'Planned'; // Fixed: Using 'Done' and 'Planned'
+      if (updates.completed !== undefined) updateData.Status = updates.completed ? 'Done' : 'Planned';
       if (updates.subject !== undefined) updateData.SubjectId = updates.subject ? parseInt(updates.subject) : null;
       if (updates.topic !== undefined) updateData.TopicId = updates.topic ? parseInt(updates.topic) : null;
       if (updates.subtopic !== undefined) updateData.SubtopicId = updates.subtopic ? parseInt(updates.subtopic) : null;

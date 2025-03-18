@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { addDays, isSameDay } from 'date-fns';
+import { addDays, isSameDay, format as formatDate } from 'date-fns';
 import TaskModal from './task-modal/TaskModal';
 import { toast } from '@/hooks/use-toast';
 import DateNavigation from './date-navigation/DateNavigation';
@@ -25,7 +25,8 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
   const { getTasksByDate, loading } = useTasksData(refreshTasks);
   
   const formatDateToString = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    // Ensure consistent date formatting across the application
+    return formatDate(date, 'yyyy-MM-dd');
   };
   
   const todayTasks = getTasksByDate(formatDateToString(currentDate));

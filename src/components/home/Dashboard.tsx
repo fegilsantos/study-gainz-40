@@ -15,7 +15,7 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Header Statistics */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm">
+        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-blue-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Nível</span>
             <div className="flex items-center mt-1">
@@ -33,7 +33,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         
-        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm">
+        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-purple-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Plano de Estudos</span>
             <div className="flex items-center mt-1">
@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
       {/* Subject Statistics */}
       <div className="grid grid-cols-2 gap-4">
         {/* Precisa de Atenção */}
-        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm">
+        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-rose-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Precisa de Atenção</span>
             {loading ? (
@@ -83,7 +83,7 @@ const Dashboard: React.FC = () => {
         </div>
         
         {/* Melhor Desempenho */}
-        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm">
+        <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-emerald-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Melhor Desempenho</span>
             {loading ? (
@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
       <GoalsCard />
       
       {/* Insights & Recommendations */}
-      <div className="w-full glass rounded-2xl shadow-sm overflow-hidden">
+      <div className="w-full glass rounded-2xl shadow-sm overflow-hidden border-l-4 border-l-amber-400">
         <InsightsCard />
       </div>
     </div>

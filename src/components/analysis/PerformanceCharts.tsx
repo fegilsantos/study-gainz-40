@@ -129,9 +129,6 @@ const TopicsChart: React.FC = () => {
                 <span className="font-medium">{subject.name}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="text-sm font-medium">
-                  {subject.performance}% / {subject.goal || 100}%
-                </div>
                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden relative">
                   <div 
                     className={`h-full ${getProgressBarColor(subject.performance, subject.goal)}`}
@@ -139,9 +136,31 @@ const TopicsChart: React.FC = () => {
                   />
                   {subject.goal && (
                     <div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-foreground/70"
+                      className="absolute top-0 bottom-0 w-0.5 bg-blue-500"
                       style={{ left: `${Math.min(subject.goal, 100)}%` }}
                     />
+                  )}
+                  
+                  {/* Performance percentage */}
+                  <span 
+                    className="absolute right-0 top-[-18px] text-xs font-medium"
+                    style={{ color: subject.performance >= subject.goal ? '#10b981' : (subject.performance >= subject.goal * 0.8 ? '#f59e0b' : '#f43f5e') }}
+                  >
+                    {subject.performance}%
+                  </span>
+                  
+                  {/* Goal percentage */}
+                  {subject.goal && (
+                    <span 
+                      className="absolute text-xs font-medium text-blue-500"
+                      style={{ 
+                        left: `${Math.min(subject.goal, 100)}%`, 
+                        top: '-18px',
+                        transform: 'translateX(-50%)'
+                      }}
+                    >
+                      {subject.goal}%
+                    </span>
                   )}
                 </div>
               </div>
@@ -163,9 +182,6 @@ const TopicsChart: React.FC = () => {
                         <span className="text-sm">{topic.name}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className="text-xs">
-                          {topic.performance}% / {topic.goal || 100}%
-                        </div>
                         <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden relative">
                           <div 
                             className={`h-full ${getProgressBarColor(topic.performance, topic.goal)}`}
@@ -173,9 +189,31 @@ const TopicsChart: React.FC = () => {
                           />
                           {topic.goal && (
                             <div 
-                              className="absolute top-0 bottom-0 w-0.5 bg-foreground/70"
+                              className="absolute top-0 bottom-0 w-0.5 bg-blue-500"
                               style={{ left: `${Math.min(topic.goal, 100)}%` }}
                             />
+                          )}
+                          
+                          {/* Performance percentage */}
+                          <span 
+                            className="absolute right-0 top-[-16px] text-[10px] font-medium"
+                            style={{ color: topic.performance >= topic.goal ? '#10b981' : (topic.performance >= topic.goal * 0.8 ? '#f59e0b' : '#f43f5e') }}
+                          >
+                            {topic.performance}%
+                          </span>
+                          
+                          {/* Goal percentage */}
+                          {topic.goal && (
+                            <span 
+                              className="absolute text-[10px] font-medium text-blue-500"
+                              style={{ 
+                                left: `${Math.min(topic.goal, 100)}%`, 
+                                top: '-16px',
+                                transform: 'translateX(-50%)'
+                              }}
+                            >
+                              {topic.goal}%
+                            </span>
                           )}
                         </div>
                       </div>
@@ -187,9 +225,6 @@ const TopicsChart: React.FC = () => {
                           <div key={subtopic.id} className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground ml-5">{subtopic.name}</span>
                             <div className="flex items-center space-x-2">
-                              <div className="text-xs text-muted-foreground">
-                                {subtopic.performance}% / {subtopic.goal || 100}%
-                              </div>
                               <div className="w-16 h-1 bg-muted rounded-full overflow-hidden relative">
                                 <div 
                                   className={`h-full ${getProgressBarColor(subtopic.performance, subtopic.goal)}`}
@@ -197,9 +232,31 @@ const TopicsChart: React.FC = () => {
                                 />
                                 {subtopic.goal && (
                                   <div 
-                                    className="absolute top-0 bottom-0 w-0.5 bg-foreground/70"
+                                    className="absolute top-0 bottom-0 w-0.5 bg-blue-500"
                                     style={{ left: `${Math.min(subtopic.goal, 100)}%` }}
                                   />
+                                )}
+                                
+                                {/* Performance percentage */}
+                                <span 
+                                  className="absolute right-0 top-[-14px] text-[8px] font-medium"
+                                  style={{ color: subtopic.performance >= subtopic.goal ? '#10b981' : (subtopic.performance >= subtopic.goal * 0.8 ? '#f59e0b' : '#f43f5e') }}
+                                >
+                                  {subtopic.performance}%
+                                </span>
+                                
+                                {/* Goal percentage */}
+                                {subtopic.goal && (
+                                  <span 
+                                    className="absolute text-[8px] font-medium text-blue-500"
+                                    style={{ 
+                                      left: `${Math.min(subtopic.goal, 100)}%`, 
+                                      top: '-14px',
+                                      transform: 'translateX(-50%)'
+                                    }}
+                                  >
+                                    {subtopic.goal}%
+                                  </span>
                                 )}
                               </div>
                             </div>
