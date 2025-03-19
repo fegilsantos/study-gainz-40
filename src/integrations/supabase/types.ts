@@ -368,6 +368,7 @@ export type Database = {
       Goal: {
         Row: {
           Class: number | null
+          CourseId: number | null
           created_at: string
           Date: string | null
           Description: string | null
@@ -375,9 +376,11 @@ export type Database = {
           id: number
           Name: string | null
           PersonId: number
+          Progression: number | null
         }
         Insert: {
           Class?: number | null
+          CourseId?: number | null
           created_at?: string
           Date?: string | null
           Description?: string | null
@@ -385,9 +388,11 @@ export type Database = {
           id?: number
           Name?: string | null
           PersonId: number
+          Progression?: number | null
         }
         Update: {
           Class?: number | null
+          CourseId?: number | null
           created_at?: string
           Date?: string | null
           Description?: string | null
@@ -395,6 +400,7 @@ export type Database = {
           id?: number
           Name?: string | null
           PersonId?: number
+          Progression?: number | null
         }
         Relationships: [
           {
@@ -402,6 +408,13 @@ export type Database = {
             columns: ["Class"]
             isOneToOne: false
             referencedRelation: "Class"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Goal_CourseId_fkey"
+            columns: ["CourseId"]
+            isOneToOne: false
+            referencedRelation: "Courses"
             referencedColumns: ["id"]
           },
           {
@@ -1013,6 +1026,42 @@ export type Database = {
             columns: ["ExamenId"]
             isOneToOne: false
             referencedRelation: "Examen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      "University Course relationship": {
+        Row: {
+          CourseId: number | null
+          created_at: string
+          id: number
+          UniversityId: number | null
+        }
+        Insert: {
+          CourseId?: number | null
+          created_at?: string
+          id?: number
+          UniversityId?: number | null
+        }
+        Update: {
+          CourseId?: number | null
+          created_at?: string
+          id?: number
+          UniversityId?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "University Course relationship_CourseId_fkey"
+            columns: ["CourseId"]
+            isOneToOne: false
+            referencedRelation: "Courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "University Course relationship_UniversityId_fkey"
+            columns: ["UniversityId"]
+            isOneToOne: false
+            referencedRelation: "University"
             referencedColumns: ["id"]
           },
         ]

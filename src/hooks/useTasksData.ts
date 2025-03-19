@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useFetchTasks } from './tasks/useFetchTasks';
@@ -12,6 +12,7 @@ export type { Task } from '@/types/task';
 export const useTasksData = (refreshTrigger = 0) => {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [fetchCount, setFetchCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -19,13 +20,24 @@ export const useTasksData = (refreshTrigger = 0) => {
   const { fetchTasks } = useFetchTasks(setTasks, setLoading, toast);
   const { createTask, updateTask, deleteTask } = useTaskOperations(user, toast);
   
-  useEffect(() => {
+  // Use useCallback to prevent recreation of this function on every render
+  const fetchTasksData = useCallback(async () => {
     if (user) {
-      fetchTasks(user);
+      // Prevent multiple fetches
+      if (fetchCount > 0) return;
+      setFetchCount(prev => prev + 1);
+      
+      await fetchTasks(user);
     } else {
       setLoading(false);
     }
-  }, [user, toast, refreshTrigger, fetchTasks]);
+  }, [user, fetchTasks, fetchCount]);
+  
+  useEffect(() => {
+    // Reset fetchCount when refreshTrigger changes
+    setFetchCount(0);
+    fetchTasksData();
+  }, [fetchTasksData, refreshTrigger]);
 
   const getTasksByDate = (date: string) => {
     // Make sure we're comparing dates in the same format
@@ -43,6 +55,7 @@ export const useTasksData = (refreshTrigger = 0) => {
     getTasksByDate,
     createTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    refreshTasks: () => setFetchCount(0) // Function to manually refresh tasks
   };
 };

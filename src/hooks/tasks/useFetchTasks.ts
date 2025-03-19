@@ -10,6 +10,13 @@ export const useFetchTasks = (
   toast: any
 ) => {
   const fetchTasks = async (user: User) => {
+    if (!user || !user.id) {
+      console.error("Invalid user object or missing ID");
+      setLoading(false);
+      setTasks([]);
+      return;
+    }
+    
     try {
       setLoading(true);
       console.log("Starting to fetch tasks for user:", user.id);
@@ -66,57 +73,47 @@ export const useFetchTasks = (
         return;
       }
 
-      // Transform activities into the Task format
-      const transformedTasks = await Promise.all(activities.map(async (activity) => {
+      // Transform activities into the Task format without using Promise.all for multiple sequential queries
+      const transformedTasks: Task[] = [];
+      
+      for (const activity of activities) {
         // Get subject name
         let subjectName = '';
         if (activity.SubjectId) {
-          try {
-            const { data: subject } = await supabase
-              .from('Subject')
-              .select('Name')
-              .eq('id', activity.SubjectId)
-              .maybeSingle();
-            
-            subjectName = subject?.Name || '';
-          } catch (error) {
-            console.error("Error fetching subject:", error);
-          }
+          const { data: subject } = await supabase
+            .from('Subject')
+            .select('Name')
+            .eq('id', activity.SubjectId)
+            .maybeSingle();
+          
+          subjectName = subject?.Name || '';
         }
 
         // Get topic name
         let topicName = '';
         if (activity.TopicId) {
-          try {
-            const { data: topic } = await supabase
-              .from('Topic')
-              .select('Name')
-              .eq('id', activity.TopicId)
-              .maybeSingle();
-            
-            topicName = topic?.Name || '';
-          } catch (error) {
-            console.error("Error fetching topic:", error);
-          }
+          const { data: topic } = await supabase
+            .from('Topic')
+            .select('Name')
+            .eq('id', activity.TopicId)
+            .maybeSingle();
+          
+          topicName = topic?.Name || '';
         }
 
         // Get subtopic name if it exists
         let subtopicName = '';
         if (activity.SubtopicId) {
-          try {
-            const { data: subtopic } = await supabase
-              .from('Subtopic')
-              .select('Name')
-              .eq('id', activity.SubtopicId)
-              .maybeSingle();
-            
-            subtopicName = subtopic?.Name || '';
-          } catch (error) {
-            console.error("Error fetching subtopic:", error);
-          }
+          const { data: subtopic } = await supabase
+            .from('Subtopic')
+            .select('Name')
+            .eq('id', activity.SubtopicId)
+            .maybeSingle();
+          
+          subtopicName = subtopic?.Name || '';
         }
 
-        return {
+        transformedTasks.push({
           id: activity.id.toString(),
           title: activity.Title || 'Untitled Task',
           description: activity.Description || '',
@@ -132,11 +129,12 @@ export const useFetchTasks = (
           subjectName,
           topicName,
           subtopicName
-        };
-      }));
+        });
+      }
 
       console.log("Transformed tasks:", transformedTasks.length);
       setTasks(transformedTasks);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       // More descriptive error message
@@ -147,7 +145,6 @@ export const useFetchTasks = (
       });
       // Set empty tasks array to prevent UI from waiting indefinitely
       setTasks([]);
-    } finally {
       setLoading(false);
     }
   };
