@@ -6,7 +6,8 @@ import { ptBR } from 'date-fns/locale';
 import TaskModal from './task-modal/TaskModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useTasksData, Task } from '@/hooks/useTasksData';
+import { useTasks } from '@/context/TasksContext';
+import { Task } from '@/types/task';
 import { toast } from '@/hooks/use-toast';
 
 interface TasksViewProps {
@@ -23,9 +24,8 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   const [selectedTask, setSelectedTask] = useState<TaskWithDisplayDate | null>(null);
   const [overdueTasks, setOverdueTasks] = useState<TaskWithDisplayDate[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<TaskWithDisplayDate[]>([]);
-  const [refreshTasks, setRefreshTasks] = useState(0);
   
-  const { tasks, loading, updateTask } = useTasksData(refreshTasks);
+  const { tasks, loading, updateTask, refreshTasks } = useTasks();
   
   useEffect(() => {
     if (loading) return;
@@ -69,7 +69,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
-    setRefreshTasks(prev => prev + 1);
+    refreshTasks();
     if (onTaskUpdate) onTaskUpdate();
   };
   
@@ -90,7 +90,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
           description: `${successCount} ${successCount === 1 ? 'tarefa foi marcada' : 'tarefas foram marcadas'} como concluída.`,
         });
         
-        setRefreshTasks(prev => prev + 1);
+        refreshTasks();
         if (onTaskUpdate) onTaskUpdate();
       }
     } catch (error) {

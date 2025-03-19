@@ -462,6 +462,48 @@ export type Database = {
           },
         ]
       }
+      "Performance History": {
+        Row: {
+          created_at: string
+          id: number
+          Month: string
+          Performance: number
+          PersonId: number
+          SubjectId: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          Month: string
+          Performance?: number
+          PersonId: number
+          SubjectId?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          Month?: string
+          Performance?: number
+          PersonId?: number
+          SubjectId?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Performance History_PersonId_fkey"
+            columns: ["PersonId"]
+            isOneToOne: false
+            referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Performance History_SubjectId_fkey"
+            columns: ["SubjectId"]
+            isOneToOne: false
+            referencedRelation: "Subject"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Person: {
         Row: {
           created_at: string

@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { addDays, isSameDay, format as formatDate } from 'date-fns';
 import TaskModal from './task-modal/TaskModal';
+import { useTasks } from '@/context/TasksContext';
 import { toast } from '@/hooks/use-toast';
 import DateNavigation from './date-navigation/DateNavigation';
 import PlanGenerator from './plan-generator/PlanGenerator';
 import EmptyTasksView from './tasks/EmptyTasksView';
 import TaskItem from './tasks/TaskItem';
-import { useTasksData, Task } from '@/hooks/useTasksData';
+import { Task } from '@/types/task';
 
 interface TimelineProps {
   initialDate?: Date;
@@ -20,12 +21,10 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState<boolean>(false);
-  const [refreshTasks, setRefreshTasks] = useState(0);
   
-  const { getTasksByDate, loading } = useTasksData(refreshTasks);
+  const { getTasksByDate, loading } = useTasks();
   
   const formatDateToString = (date: Date): string => {
-    // Ensure consistent date formatting across the application
     return formatDate(date, 'yyyy-MM-dd');
   };
   
@@ -56,7 +55,6 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
-    setRefreshTasks(prev => prev + 1);
     if (onTaskUpdate) onTaskUpdate();
   };
   

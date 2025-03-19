@@ -1,61 +1,227 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { Filter } from 'lucide-react';
+import { Filter, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 export const TrendsChart: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [subjects, setSubjects] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [performanceData, setPerformanceData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   
-  // Mock data
-  const mockSubjects = [
-    { id: "math", name: "Matemática", color: "hsl(230, 70%, 50%)" },
-    { id: "physics", name: "Física", color: "hsl(10, 70%, 50%)" },
-    { id: "chemistry", name: "Química", color: "hsl(150, 70%, 50%)" },
-  ];
-  
-  // Mocked trend data
-  const allData = [
-    { month: 'Feb', performance: 65 },
-    { month: 'Mar', performance: 68 },
-    { month: 'Apr', performance: 73 },
-    { month: 'May', performance: 70 },
-    { month: 'Jun', performance: 75 },
-    { month: 'Jul', performance: 78 },
-  ];
-  
-  // Subject specific data
-  const subjectData: Record<string, typeof allData> = {
-    math: [
-      { month: 'Feb', performance: 60 },
-      { month: 'Mar', performance: 65 },
-      { month: 'Apr', performance: 72 },
-      { month: 'May', performance: 68 },
-      { month: 'Jun', performance: 74 },
-      { month: 'Jul', performance: 80 },
-    ],
-    physics: [
-      { month: 'Feb', performance: 55 },
-      { month: 'Mar', performance: 58 },
-      { month: 'Apr', performance: 63 },
-      { month: 'May', performance: 67 },
-      { month: 'Jun', performance: 72 },
-      { month: 'Jul', performance: 75 },
-    ],
-    chemistry: [
-      { month: 'Feb', performance: 70 },
-      { month: 'Mar', performance: 72 },
-      { month: 'Apr', performance: 75 },
-      { month: 'May', performance: 78 },
-      { month: 'Jun', performance: 82 },
-      { month: 'Jul', performance: 85 },
-    ],
+  // Generate colors for subjects
+  const generateColor = (index: number): string => {
+    const colors = [
+      "hsl(230, 70%, 50%)", 
+      "hsl(10, 70%, 50%)", 
+      "hsl(150, 70%, 50%)",
+      "hsl(50, 70%, 50%)",
+      "hsl(290, 70%, 50%)",
+      "hsl(190, 70%, 50%)"
+    ];
+    return colors[index % colors.length];
   };
   
-  const data = selectedSubject === "all" ? allData : (subjectData[selectedSubject] || allData);
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        if (!user) return;
+        
+        // Get the person id first
+        const { data: personData, error: personError } = await supabase
+          .from('Person')
+          .select('id')
+          .eq('ProfileId', user.id)
+          .maybeSingle();
+          
+        if (personError) {
+          console.error('Error fetching person:', personError);
+          toast({
+            title: 'Erro ao carregar dados',
+            description: 'Não foi possível carregar os dados de desempenho.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        if (!personData) {
+          console.log('No person found for this user');
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch subjects
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('Subject')
+          .select('id, Name')
+          .order('Name');
+          
+        if (subjectsError) {
+          console.error('Error fetching subjects:', subjectsError);
+          return;
+        }
+        
+        const formattedSubjects = subjectsData.map((subject, index) => ({
+          id: subject.id.toString(),
+          name: subject.Name || 'Unnamed Subject',
+          color: generateColor(index)
+        }));
+        
+        setSubjects(formattedSubjects);
+        
+        // Fetch performance history data
+        const fetchPerformanceData = async () => {
+          try {
+            const { data: historyData, error: historyError } = await supabase
+              .from('Performance History')
+              .select('Month, Performance, SubjectId')
+              .eq('PersonId', personData.id)
+              .order('Month');
+              
+            if (historyError) {
+              console.error('Error fetching performance history:', historyError);
+              return;
+            }
+            
+            // Process the data for all subjects
+            const allSubjectsData = processAllSubjectsData(historyData);
+            setPerformanceData(allSubjectsData);
+            
+            setLoading(false);
+          } catch (error) {
+            console.error('Error in fetchPerformanceData:', error);
+            setLoading(false);
+          }
+        };
+        
+        fetchPerformanceData();
+      } catch (error) {
+        console.error('Error in fetchSubjects:', error);
+        setLoading(false);
+      }
+    };
+    
+    fetchSubjects();
+  }, [user]);
+  
+  // Process data for when "All Subjects" is selected
+  const processAllSubjectsData = (data: any[]) => {
+    // Group by month
+    const monthGroups = data.reduce((acc, curr) => {
+      const month = format(new Date(curr.Month), 'MMM', { locale: ptBR });
+      if (!acc[month]) {
+        acc[month] = { count: 0, sum: 0 };
+      }
+      acc[month].count++;
+      acc[month].sum += curr.Performance;
+      return acc;
+    }, {});
+    
+    // Calculate average for each month
+    return Object.entries(monthGroups).map(([month, data]: [string, any]) => ({
+      month,
+      performance: Math.round(data.sum / data.count)
+    }));
+  };
+  
+  // Process data for a specific subject
+  const processSubjectData = (data: any[], subjectId: string) => {
+    const filteredData = data.filter(item => item.SubjectId === Number(subjectId));
+    
+    return filteredData.map(item => ({
+      month: format(new Date(item.Month), 'MMM', { locale: ptBR }),
+      performance: Math.round(item.Performance)
+    }));
+  };
+  
+  useEffect(() => {
+    if (loading || !user) return;
+    
+    const fetchSubjectPerformance = async () => {
+      try {
+        setLoading(true);
+        
+        if (selectedSubject === "all") {
+          // We already have all the data, just process it
+          const allSubjectsData = processAllSubjectsData(performanceData);
+          setPerformanceData(allSubjectsData);
+        } else {
+          // Get the person id first
+          const { data: personData, error: personError } = await supabase
+            .from('Person')
+            .select('id')
+            .eq('ProfileId', user.id)
+            .maybeSingle();
+            
+          if (personError || !personData) {
+            console.error('Error fetching person:', personError);
+            return;
+          }
+          
+          // Fetch performance history for the selected subject
+          const { data: historyData, error: historyError } = await supabase
+            .from('Performance History')
+            .select('Month, Performance, SubjectId')
+            .eq('PersonId', personData.id)
+            .eq('SubjectId', selectedSubject)
+            .order('Month');
+            
+          if (historyError) {
+            console.error('Error fetching subject performance history:', historyError);
+            return;
+          }
+          
+          const subjectData = historyData.map(item => ({
+            month: format(new Date(item.Month), 'MMM', { locale: ptBR }),
+            performance: Math.round(item.Performance)
+          }));
+          
+          setPerformanceData(subjectData);
+        }
+      } catch (error) {
+        console.error('Error in fetchSubjectPerformance:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSubjectPerformance();
+  }, [selectedSubject, user]);
+  
+  // Get the color for the selected subject
   const subjectColor = selectedSubject === "all" 
     ? "hsl(var(--primary))" 
-    : mockSubjects.find(s => s.id === selectedSubject)?.color || "hsl(var(--primary))";
+    : subjects.find(s => s.id === selectedSubject)?.color || "hsl(var(--primary))";
+  
+  if (loading) {
+    return (
+      <div className="glass p-6 rounded-2xl flex items-center justify-center h-[400px]">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+          <p className="text-muted-foreground">Carregando dados de desempenho...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (performanceData.length === 0) {
+    return (
+      <div className="glass p-6 rounded-2xl flex flex-col items-center justify-center h-[400px]">
+        <p className="text-muted-foreground text-center">
+          Nenhum dado de desempenho disponível.
+          <br />
+          Continue estudando para ver seu progresso aqui!
+        </p>
+      </div>
+    );
+  }
   
   return (
     <div className="glass p-6 rounded-2xl">
@@ -69,7 +235,7 @@ export const TrendsChart: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as Matérias</SelectItem>
-              {mockSubjects.map(subject => (
+              {subjects.map(subject => (
                 <SelectItem key={subject.id} value={subject.id}>
                   {subject.name}
                 </SelectItem>
@@ -81,7 +247,7 @@ export const TrendsChart: React.FC = () => {
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={data}
+            data={performanceData}
             margin={{ top: 20, right: 5, left: 0, bottom: 5 }}
           >
             <XAxis 
@@ -91,7 +257,7 @@ export const TrendsChart: React.FC = () => {
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
             <YAxis 
-              domain={[50, 100]} 
+              domain={[0, 100]} 
               axisLine={false}
               tickLine={false}
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
@@ -117,7 +283,7 @@ export const TrendsChart: React.FC = () => {
         </ResponsiveContainer>
       </div>
       <div className="mt-4 text-sm text-center text-muted-foreground">
-        Tendência dos últimos 6 meses {selectedSubject !== "all" && `- ${mockSubjects.find(s => s.id === selectedSubject)?.name}`}
+        Tendência dos últimos 6 meses {selectedSubject !== "all" && `- ${subjects.find(s => s.id === selectedSubject)?.name}`}
       </div>
     </div>
   );

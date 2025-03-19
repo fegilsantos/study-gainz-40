@@ -8,7 +8,7 @@ interface ChartTabsProps {
 }
 
 export const ChartTabs: React.FC<ChartTabsProps> = ({ children, activeTab, onChange }) => {
-  const tabs = ['topics', 'trends', 'habits'];
+  const tabs = ['topics', 'trends'];
   
   return (
     <div>
@@ -25,7 +25,6 @@ export const ChartTabs: React.FC<ChartTabsProps> = ({ children, activeTab, onCha
           >
             {tab === 'topics' && 'Tópicos'}
             {tab === 'trends' && 'Tendências'}
-            {tab === 'habits' && 'Hábitos'}
           </button>
         ))}
       </div>

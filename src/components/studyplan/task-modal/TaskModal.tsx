@@ -1,11 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { Task } from '@/hooks/useTasksData';
+import { Task } from '@/types/task';
 import { toast } from '@/hooks/use-toast';
+import { useTasks } from '@/context/TasksContext';
 import TaskModalHeader from './TaskModalHeader';
 import TaskForm from './TaskForm';
 import TaskModalFooter from './TaskModalFooter';
-import { useTasksData } from '@/hooks/useTasksData';
 import { format } from 'date-fns';
 
 interface TaskModalProps {
@@ -26,7 +26,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
   const [type, setType] = useState<'study' | 'review' | 'class' | 'exercise'>('study');
   const [completed, setCompleted] = useState(false);
   
-  const { createTask, updateTask, deleteTask } = useTasksData();
+  const { createTask, updateTask, deleteTask } = useTasks();
   
   useEffect(() => {
     if (task) {
@@ -89,7 +89,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
         }
       } else {
         // Create new task
-        const result = await createTask({
+        const taskId = await createTask({
           title,
           description,
           subject,
@@ -101,7 +101,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
           date: format(currentDate, 'yyyy-MM-dd')
         });
         
-        if (result) {
+        if (taskId) {
           toast({
             title: "Tarefa criada",
             description: "Sua nova tarefa foi adicionada com sucesso.",

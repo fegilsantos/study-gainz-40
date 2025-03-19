@@ -1,17 +1,33 @@
 
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { mapActivityTypeToTaskType } from './taskTypeMappers';
 import { User } from '@supabase/supabase-js';
+import { toast } from '@/hooks/use-toast';
 
-export const useFetchTasks = (
-  setTasks: React.Dispatch<React.SetStateAction<Task[]>>, 
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  toast: any
-) => {
+export const useFetchTasks = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
+
+  // Add a function to manually refresh tasks
+  const refreshTasks = () => {
+    setRefreshCounter(prev => prev + 1);
+  };
+
+  // Get tasks by date
+  const getTasksByDate = (date: string) => {
+    const targetDate = new Date(date).toISOString().split('T')[0];
+    return tasks.filter(task => {
+      const taskDate = new Date(task.date).toISOString().split('T')[0];
+      return taskDate === targetDate;
+    });
+  };
+
   const fetchTasks = async (user: User) => {
     if (!user || !user.id) {
-      console.error("Invalid user object or missing ID");
       setLoading(false);
       setTasks([]);
       return;
@@ -19,7 +35,7 @@ export const useFetchTasks = (
     
     try {
       setLoading(true);
-      console.log("Starting to fetch tasks for user:", user.id);
+      console.log("Fetching tasks for user:", user.id);
 
       // Get person ID
       const { data: person, error: personError } = await supabase
@@ -29,7 +45,6 @@ export const useFetchTasks = (
         .maybeSingle();
 
       if (personError) {
-        console.error("Error fetching person:", personError);
         throw personError;
       }
       
@@ -40,9 +55,7 @@ export const useFetchTasks = (
         return;
       }
 
-      console.log("Found person ID:", person.id);
-
-      // Fetch activities (tasks) for this person
+      // Fetch activities
       const { data: activities, error: activitiesError } = await supabase
         .from('Activity')
         .select(`
@@ -61,11 +74,8 @@ export const useFetchTasks = (
         .eq('PersonId', person.id);
 
       if (activitiesError) {
-        console.error("Error fetching activities:", activitiesError);
         throw activitiesError;
       }
-
-      console.log("Fetched activities:", activities?.length || 0);
 
       if (!activities || activities.length === 0) {
         setTasks([]);
@@ -73,12 +83,15 @@ export const useFetchTasks = (
         return;
       }
 
-      // Transform activities into the Task format without using Promise.all for multiple sequential queries
+      // Transform activities to tasks
       const transformedTasks: Task[] = [];
       
       for (const activity of activities) {
-        // Get subject name
         let subjectName = '';
+        let topicName = '';
+        let subtopicName = '';
+        
+        // Get subject name if it exists
         if (activity.SubjectId) {
           const { data: subject } = await supabase
             .from('Subject')
@@ -89,8 +102,7 @@ export const useFetchTasks = (
           subjectName = subject?.Name || '';
         }
 
-        // Get topic name
-        let topicName = '';
+        // Get topic name if it exists
         if (activity.TopicId) {
           const { data: topic } = await supabase
             .from('Topic')
@@ -102,7 +114,6 @@ export const useFetchTasks = (
         }
 
         // Get subtopic name if it exists
-        let subtopicName = '';
         if (activity.SubtopicId) {
           const { data: subtopic } = await supabase
             .from('Subtopic')
@@ -120,7 +131,7 @@ export const useFetchTasks = (
           subject: activity.SubjectId?.toString() || '',
           topic: activity.TopicId?.toString() || '',
           subtopic: activity.SubtopicId?.toString() || '',
-          startTime: activity.TIme ? activity.TIme.slice(0, 5) : '09:00', // Format to HH:MM
+          startTime: activity.TIme ? activity.TIme.slice(0, 5) : '09:00',
           duration: activity.Duration || 60,
           type: mapActivityTypeToTaskType(activity["Activity type"]),
           completed: activity.Status === 'Done',
@@ -132,22 +143,28 @@ export const useFetchTasks = (
         });
       }
 
-      console.log("Transformed tasks:", transformedTasks.length);
       setTasks(transformedTasks);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      // More descriptive error message
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       toast({
         title: "Erro ao carregar tarefas",
         description: "Verifique sua conexão com a internet e tente novamente.",
         variant: "destructive",
       });
-      // Set empty tasks array to prevent UI from waiting indefinitely
       setTasks([]);
+    } finally {
       setLoading(false);
     }
   };
 
-  return { fetchTasks };
+  return {
+    tasks,
+    loading,
+    error,
+    getTasksByDate,
+    refreshTasks,
+    fetchTasks
+  };
 };
