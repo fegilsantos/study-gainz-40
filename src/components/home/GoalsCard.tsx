@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Calendar, BookOpen, Target, Plus, Edit, Trash, ChevronDown, ChevronUp } from 'lucide-react';
+import { GraduationCap, Calendar, Target, Plus, Edit, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,12 +21,6 @@ interface Goal {
   date: Date;
 }
 
-interface SubjectPerformance {
-  id: string;
-  name: string;
-  percentage: number;
-}
-
 const GoalsCard: React.FC = () => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedExam, setSelectedExam] = useState<string>('');
@@ -38,7 +31,6 @@ const GoalsCard: React.FC = () => {
   const [exams, setExams] = useState<{ id: string; name: string }[]>([]);
   const [courses, setCourses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [subjectPerformances, setSubjectPerformances] = useState<{[goalId: string]: SubjectPerformance[]}>({});
   const { user } = useAuth();
   
   // Fetch exams and courses from Supabase
@@ -163,9 +155,6 @@ const GoalsCard: React.FC = () => {
           courseName,
           date: goal.Date ? new Date(goal.Date) : new Date()
         });
-        
-        // Fetch subject performances for each goal
-        await fetchSubjectPerformancesForGoal(goal.id.toString(), person.id);
       }
       
       setGoals(transformedGoals);
@@ -176,41 +165,6 @@ const GoalsCard: React.FC = () => {
         description: "Ocorreu um erro ao carregar suas metas.",
         variant: "destructive",
       });
-    }
-  };
-  
-  const fetchSubjectPerformancesForGoal = async (goalId: string, personId: number) => {
-    try {
-      // Fetch subject performances for this person
-      const { data: performanceData, error: performanceError } = await supabase
-        .from('Subject Performance')
-        .select(`
-          id, 
-          Performance,
-          SubjectId,
-          Subject:SubjectId (Name)
-        `)
-        .eq('PersonId', personId);
-        
-      if (performanceError) throw performanceError;
-      
-      if (!performanceData || performanceData.length === 0) {
-        return;
-      }
-      
-      // Transform subject performances
-      const performances: SubjectPerformance[] = performanceData.map(perf => ({
-        id: perf.id.toString(),
-        name: perf.Subject?.Name || 'Unknown Subject',
-        percentage: perf.Performance || 0
-      }));
-      
-      setSubjectPerformances(prev => ({
-        ...prev,
-        [goalId]: performances
-      }));
-    } catch (error) {
-      console.error('Error fetching subject performances:', error);
     }
   };
   
@@ -469,41 +423,6 @@ const GoalsCard: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
-              <Collapsible className="w-full">
-                <div className="flex items-center justify-center w-full border-t pt-2">
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="flex items-center gap-1 w-full">
-                      <span className="text-xs">Ver desempenho por matéria</span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </CollapsibleTrigger>
-                </div>
-                
-                <CollapsibleContent className="space-y-3 pt-2">
-                  {subjectPerformances[goal.id] ? 
-                    subjectPerformances[goal.id].map(subject => (
-                      <div key={subject.id} className="space-y-1">
-                        <div className="flex justify-between items-center text-sm">
-                          <span>{subject.name}</span>
-                          <span className="font-medium">{subject.percentage}%</span>
-                        </div>
-                        <Progress value={subject.percentage} className="h-2" />
-                      </div>
-                    )) : 
-                    <div className="text-center py-2 text-sm text-muted-foreground">
-                      Não há dados de desempenho disponíveis
-                    </div>
-                  }
-                  
-                  <div className="pt-2">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      Ver Detalhes Completos
-                    </Button>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
             </div>
           ))}
           

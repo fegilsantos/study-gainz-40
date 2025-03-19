@@ -22,12 +22,25 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { user } = useAuth();
   const { tasks, loading, error, getTasksByDate, refreshTasks, fetchTasks } = useFetchTasks();
   const { createTask, updateTask, deleteTask } = useTaskOperations(user);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isInitialized) {
       fetchTasks(user);
+      setIsInitialized(true);
     }
-  }, [user, refreshTasks]);
+  }, [user, fetchTasks, isInitialized]);
+
+  // Add this effect to refresh tasks when necessary
+  useEffect(() => {
+    if (user && isInitialized) {
+      const intervalId = setInterval(() => {
+        refreshTasks();
+      }, 300000); // Refresh every 5 minutes
+
+      return () => clearInterval(intervalId);
+    }
+  }, [user, isInitialized, refreshTasks]);
 
   const value: TasksContextType = {
     tasks,

@@ -13,29 +13,36 @@ export const useTasksData = (refreshTrigger = 0) => {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [fetchCount, setFetchCount] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   
   // Use the extracted hooks
-  const { fetchTasks } = useFetchTasks(setTasks, setLoading, toast);
+  const { fetchTasks } = useFetchTasks();
   const { createTask, updateTask, deleteTask } = useTaskOperations(user, toast);
   
   // Use useCallback to prevent recreation of this function on every render
   const fetchTasksData = useCallback(async () => {
-    if (user) {
+    if (user && !isInitialized) {
       // Prevent multiple fetches
       if (fetchCount > 0) return;
       setFetchCount(prev => prev + 1);
       
-      await fetchTasks(user);
+      try {
+        await fetchTasks(user);
+        setIsInitialized(true);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }
-  }, [user, fetchTasks, fetchCount]);
+  }, [user, fetchTasks, fetchCount, isInitialized]);
   
   useEffect(() => {
     // Reset fetchCount when refreshTrigger changes
     setFetchCount(0);
+    setIsInitialized(false);
     fetchTasksData();
   }, [fetchTasksData, refreshTrigger]);
 
@@ -56,6 +63,9 @@ export const useTasksData = (refreshTrigger = 0) => {
     createTask,
     updateTask,
     deleteTask,
-    refreshTasks: () => setFetchCount(0) // Function to manually refresh tasks
+    refreshTasks: () => {
+      setFetchCount(0);
+      setIsInitialized(false);
+    } // Function to manually refresh tasks
   };
 };

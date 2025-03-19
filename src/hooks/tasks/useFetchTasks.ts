@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { mapActivityTypeToTaskType } from './taskTypeMappers';
@@ -11,6 +11,7 @@ export const useFetchTasks = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [isFetching, setIsFetching] = useState(false);
 
   // Add a function to manually refresh tasks
   const refreshTasks = () => {
@@ -26,14 +27,14 @@ export const useFetchTasks = () => {
     });
   };
 
-  const fetchTasks = async (user: User) => {
-    if (!user || !user.id) {
+  const fetchTasks = useCallback(async (user: User) => {
+    if (!user || !user.id || isFetching) {
       setLoading(false);
-      setTasks([]);
       return;
     }
     
     try {
+      setIsFetching(true);
       setLoading(true);
       console.log("Fetching tasks for user:", user.id);
 
@@ -50,7 +51,6 @@ export const useFetchTasks = () => {
       
       if (!person) {
         console.log("No person found for this user");
-        setLoading(false);
         setTasks([]);
         return;
       }
@@ -79,7 +79,6 @@ export const useFetchTasks = () => {
 
       if (!activities || activities.length === 0) {
         setTasks([]);
-        setLoading(false);
         return;
       }
 
@@ -153,11 +152,11 @@ export const useFetchTasks = () => {
         description: "Verifique sua conexão com a internet e tente novamente.",
         variant: "destructive",
       });
-      setTasks([]);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
-  };
+  }, [isFetching]);
 
   return {
     tasks,
