@@ -248,8 +248,8 @@ const GoalsCard: React.FC = () => {
         const { error: updateError } = await supabase
           .from('Goal')
           .update({
-            ExamenId: Number(selectedExam),
-            CourseId: Number(selectedCourse),
+            ExamenId: parseInt(selectedExam), // Convert string to number
+            CourseId: parseInt(selectedCourse), // Convert string to number
             Date: examDate?.toISOString().split('T')[0]
           })
           .eq('id', editingGoalId)
@@ -280,8 +280,8 @@ const GoalsCard: React.FC = () => {
           .from('Goal')
           .insert({
             PersonId: person.id,
-            ExamenId: Number(selectedExam),
-            CourseId: Number(selectedCourse),
+            ExamenId: parseInt(selectedExam), // Convert string to number
+            CourseId: parseInt(selectedCourse), // Convert string to number
             Date: examDate?.toISOString().split('T')[0],
             Progression: 0 // Initial progression
           })
