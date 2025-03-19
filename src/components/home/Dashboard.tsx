@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { TrendingDown, TrendingUp, BookOpen, AlertTriangle } from 'lucide-react';
 import { useSubjectPerformance } from '@/hooks/useSubjectPerformance';
 import { userProfile } from '@/utils/mockData';
@@ -7,69 +7,9 @@ import InsightsCard from './InsightsCard';
 import GoalsCard from './GoalsCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 
 const Dashboard: React.FC = () => {
-  const { weakestSubject, strongestSubject, loading: performanceLoading } = useSubjectPerformance();
-  const { user } = useAuth();
-  const [studyPlanProgress, setStudyPlanProgress] = useState<number>(0);
-  const [level, setLevel] = useState<number>(1);
-  const [xp, setXp] = useState<number>(0);
-  const [xpForNextLevel, setXpForNextLevel] = useState<number>(100);
-  const [loading, setLoading] = useState<boolean>(true);
-  
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        const { data: person, error } = await supabase
-          .from('Person')
-          .select(`
-            Overall Plan Study Progress,
-            Gamification score
-          `)
-          .eq('ProfileId', user.id)
-          .maybeSingle();
-          
-        if (error) throw error;
-        
-        if (person) {
-          // Set study plan progress
-          setStudyPlanProgress(person['Overall Plan Study Progress'] || 0);
-          
-          // Set gamification score (XP)
-          setXp(person['Gamification score'] || 0);
-          
-          // Calculate level based on XP (simple algorithm, can be adjusted)
-          const calculatedLevel = Math.floor((person['Gamification score'] || 0) / 100) + 1;
-          setLevel(calculatedLevel);
-          setXpForNextLevel((calculatedLevel) * 100);
-        } else {
-          // Use mock data as fallback
-          setStudyPlanProgress(userProfile.studyPlanCompletion);
-          setLevel(userProfile.level);
-          setXp(userProfile.xp);
-          setXpForNextLevel(userProfile.xpForNextLevel);
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        // Use mock data as fallback
-        setStudyPlanProgress(userProfile.studyPlanCompletion);
-        setLevel(userProfile.level);
-        setXp(userProfile.xp);
-        setXpForNextLevel(userProfile.xpForNextLevel);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserData();
-  }, [user]);
+  const { weakestSubject, strongestSubject, loading } = useSubjectPerformance();
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -79,15 +19,15 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Nível</span>
             <div className="flex items-center mt-1">
-              <span className="text-3xl font-bold">{level}</span>
+              <span className="text-3xl font-bold">{userProfile.level}</span>
               <div className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                {Math.round((xp / xpForNextLevel) * 100)}%
+                {Math.round((userProfile.xp / userProfile.xpForNextLevel) * 100)}%
               </div>
             </div>
             <div className="w-full mt-2 bg-muted rounded-full h-1.5">
               <div 
                 className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
-                style={{width: `${(xp / xpForNextLevel) * 100}%`}}
+                style={{width: `${(userProfile.xp / userProfile.xpForNextLevel) * 100}%`}}
               />
             </div>
           </div>
@@ -97,12 +37,12 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Plano de Estudos</span>
             <div className="flex items-center mt-1">
-              <span className="text-3xl font-bold">{Math.round(studyPlanProgress)}%</span>
+              <span className="text-3xl font-bold">{userProfile.studyPlanCompletion}%</span>
             </div>
             <div className="w-full mt-2 bg-muted rounded-full h-1.5">
               <div 
                 className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
-                style={{width: `${studyPlanProgress}%`}}
+                style={{width: `${userProfile.studyPlanCompletion}%`}}
               />
             </div>
           </div>
@@ -115,7 +55,7 @@ const Dashboard: React.FC = () => {
         <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-rose-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Precisa de Atenção</span>
-            {performanceLoading || loading ? (
+            {loading ? (
               <div className="flex flex-col items-center justify-center h-16">
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
               </div>
@@ -146,7 +86,7 @@ const Dashboard: React.FC = () => {
         <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-emerald-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Melhor Desempenho</span>
-            {performanceLoading || loading ? (
+            {loading ? (
               <div className="flex flex-col items-center justify-center h-16">
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
               </div>

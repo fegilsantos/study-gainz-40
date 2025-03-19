@@ -30,7 +30,7 @@ export const useFetchTasks = () => {
     if (!user || !user.id) {
       setLoading(false);
       setTasks([]);
-      return [];
+      return;
     }
     
     try {
@@ -52,7 +52,7 @@ export const useFetchTasks = () => {
         console.log("No person found for this user");
         setLoading(false);
         setTasks([]);
-        return [];
+        return;
       }
 
       // Fetch activities
@@ -80,7 +80,7 @@ export const useFetchTasks = () => {
       if (!activities || activities.length === 0) {
         setTasks([]);
         setLoading(false);
-        return [];
+        return;
       }
 
       // Transform activities to tasks
@@ -145,20 +145,17 @@ export const useFetchTasks = () => {
 
       setTasks(transformedTasks);
       setError(null);
-      setLoading(false);
-      return transformedTasks;
     } catch (err) {
       console.error('Error fetching tasks:', err);
-      const error = err instanceof Error ? err : new Error('Unknown error occurred');
-      setError(error);
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       toast({
         title: "Erro ao carregar tarefas",
         description: "Verifique sua conexão com a internet e tente novamente.",
         variant: "destructive",
       });
       setTasks([]);
+    } finally {
       setLoading(false);
-      return [];
     }
   };
 

@@ -12,7 +12,6 @@ import Exercises from "./pages/Exercises";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
-import Plan2 from "./pages/Plan2";
 import { AuthProvider } from "./context/AuthContext";
 import { TasksProvider } from "./context/TasksContext";
 
@@ -34,7 +33,6 @@ const App = () => (
               <Route path="/analysis" element={<Analysis />} />
               <Route path="/exercises" element={<Exercises />} />
               <Route path="/badges" element={<Badges />} />
-              <Route path="/plan2" element={<Plan2 />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

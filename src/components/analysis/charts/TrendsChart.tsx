@@ -1,241 +1,290 @@
 
 import React, { useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { Filter, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { format, addMonths, subMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
-interface PerformanceData {
-  month: string;
-  performance: number;
-  subject?: string;
-}
+import { toast } from '@/hooks/use-toast';
 
 export const TrendsChart: React.FC = () => {
-  const [timeRange, setTimeRange] = useState<string>('6months');
-  const [subjectData, setSubjectData] = useState<PerformanceData[]>([]);
-  const [subjects, setSubjects] = useState<{id: number, name: string}[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [subjects, setSubjects] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [performanceData, setPerformanceData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-
+  
+  // Generate colors for subjects
+  const generateColor = (index: number): string => {
+    const colors = [
+      "hsl(230, 70%, 50%)", 
+      "hsl(10, 70%, 50%)", 
+      "hsl(150, 70%, 50%)",
+      "hsl(50, 70%, 50%)",
+      "hsl(290, 70%, 50%)",
+      "hsl(190, 70%, 50%)"
+    ];
+    return colors[index % colors.length];
+  };
+  
   useEffect(() => {
     const fetchSubjects = async () => {
-      if (!user) return;
-      
       try {
-        const { data: subjectsData, error } = await supabase
-          .from('Subject')
-          .select('id, Name');
+        if (!user) return;
         
-        if (error) throw error;
-        
-        if (subjectsData) {
-          setSubjects(subjectsData.map(s => ({
-            id: s.id,
-            name: s.Name || 'Unnamed Subject'
-          })));
+        // Get the person id first
+        const { data: personData, error: personError } = await supabase
+          .from('Person')
+          .select('id')
+          .eq('ProfileId', user.id)
+          .maybeSingle();
           
-          // Set first subject as selected if none is selected
-          if (subjectsData.length > 0 && !selectedSubject) {
-            setSelectedSubject(subjectsData[0].id.toString());
-          }
+        if (personError) {
+          console.error('Error fetching person:', personError);
+          toast({
+            title: 'Erro ao carregar dados',
+            description: 'Não foi possível carregar os dados de desempenho.',
+            variant: 'destructive',
+          });
+          return;
         }
+        
+        if (!personData) {
+          console.log('No person found for this user');
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch subjects
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('Subject')
+          .select('id, Name')
+          .order('Name');
+          
+        if (subjectsError) {
+          console.error('Error fetching subjects:', subjectsError);
+          return;
+        }
+        
+        const formattedSubjects = subjectsData.map((subject, index) => ({
+          id: subject.id.toString(),
+          name: subject.Name || 'Unnamed Subject',
+          color: generateColor(index)
+        }));
+        
+        setSubjects(formattedSubjects);
+        
+        // Fetch performance history data
+        const fetchPerformanceData = async () => {
+          try {
+            const { data: historyData, error: historyError } = await supabase
+              .from('Performance History')
+              .select('Month, Performance, SubjectId')
+              .eq('PersonId', personData.id)
+              .order('Month');
+              
+            if (historyError) {
+              console.error('Error fetching performance history:', historyError);
+              return;
+            }
+            
+            // Process the data for all subjects
+            const allSubjectsData = processAllSubjectsData(historyData);
+            setPerformanceData(allSubjectsData);
+            
+            setLoading(false);
+          } catch (error) {
+            console.error('Error in fetchPerformanceData:', error);
+            setLoading(false);
+          }
+        };
+        
+        fetchPerformanceData();
       } catch (error) {
-        console.error('Error fetching subjects:', error);
+        console.error('Error in fetchSubjects:', error);
+        setLoading(false);
       }
     };
     
     fetchSubjects();
   }, [user]);
-
+  
+  // Process data for when "All Subjects" is selected
+  const processAllSubjectsData = (data: any[]) => {
+    // Group by month
+    const monthGroups = data.reduce((acc, curr) => {
+      const month = format(new Date(curr.Month), 'MMM', { locale: ptBR });
+      if (!acc[month]) {
+        acc[month] = { count: 0, sum: 0 };
+      }
+      acc[month].count++;
+      acc[month].sum += curr.Performance;
+      return acc;
+    }, {});
+    
+    // Calculate average for each month
+    return Object.entries(monthGroups).map(([month, data]: [string, any]) => ({
+      month,
+      performance: Math.round(data.sum / data.count)
+    }));
+  };
+  
+  // Process data for a specific subject
+  const processSubjectData = (data: any[], subjectId: string) => {
+    const filteredData = data.filter(item => item.SubjectId === Number(subjectId));
+    
+    return filteredData.map(item => ({
+      month: format(new Date(item.Month), 'MMM', { locale: ptBR }),
+      performance: Math.round(item.Performance)
+    }));
+  };
+  
   useEffect(() => {
-    const fetchPerformanceData = async () => {
-      if (!user || !selectedSubject) return;
-      
-      setLoading(true);
-      
+    if (loading || !user) return;
+    
+    const fetchSubjectPerformance = async () => {
       try {
-        // Get person ID
-        const { data: person, error: personError } = await supabase
-          .from('Person')
-          .select('id')
-          .eq('ProfileId', user.id)
-          .maybeSingle();
+        setLoading(true);
         
-        if (personError) throw personError;
-        if (!person) return;
-        
-        // Calculate date range
-        const now = new Date();
-        let startDate;
-        
-        switch (timeRange) {
-          case '3months':
-            startDate = subMonths(now, 3);
-            break;
-          case '6months':
-            startDate = subMonths(now, 6);
-            break;
-          case '12months':
-            startDate = subMonths(now, 12);
-            break;
-          default:
-            startDate = subMonths(now, 6);
+        if (selectedSubject === "all") {
+          // We already have all the data, just process it
+          const allSubjectsData = processAllSubjectsData(performanceData);
+          setPerformanceData(allSubjectsData);
+        } else {
+          // Get the person id first
+          const { data: personData, error: personError } = await supabase
+            .from('Person')
+            .select('id')
+            .eq('ProfileId', user.id)
+            .maybeSingle();
+            
+          if (personError || !personData) {
+            console.error('Error fetching person:', personError);
+            return;
+          }
+          
+          // Fetch performance history for the selected subject
+          const { data: historyData, error: historyError } = await supabase
+            .from('Performance History')
+            .select('Month, Performance, SubjectId')
+            .eq('PersonId', personData.id)
+            .eq('SubjectId', selectedSubject)
+            .order('Month');
+            
+          if (historyError) {
+            console.error('Error fetching subject performance history:', historyError);
+            return;
+          }
+          
+          const subjectData = historyData.map(item => ({
+            month: format(new Date(item.Month), 'MMM', { locale: ptBR }),
+            performance: Math.round(item.Performance)
+          }));
+          
+          setPerformanceData(subjectData);
         }
-        
-        // Format dates for query
-        const formattedStartDate = startDate.toISOString().split('T')[0];
-        const formattedEndDate = now.toISOString().split('T')[0];
-        
-        // Fetch performance history for the selected subject
-        const { data: historyData, error: historyError } = await supabase
-          .from('Performance History')
-          .select(`
-            Month,
-            Performance,
-            Subject:SubjectId (Name)
-          `)
-          .eq('PersonId', person.id)
-          .eq('SubjectId', parseInt(selectedSubject))
-          .gte('Month', formattedStartDate)
-          .lte('Month', formattedEndDate)
-          .order('Month', { ascending: true });
-        
-        if (historyError) throw historyError;
-        
-        // Transform data for the chart
-        const transformedData: PerformanceData[] = historyData ? historyData.map(item => ({
-          month: format(new Date(item.Month), 'MMM yyyy', { locale: ptBR }),
-          performance: item.Performance,
-          subject: item.Subject?.Name || 'Unknown'
-        })) : [];
-        
-        setSubjectData(transformedData);
       } catch (error) {
-        console.error('Error fetching performance data:', error);
+        console.error('Error in fetchSubjectPerformance:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchPerformanceData();
-  }, [user, timeRange, selectedSubject]);
-
-  // Generate empty data if no data is available
-  const getChartData = () => {
-    if (subjectData.length > 0) return subjectData;
-    
-    // Generate placeholder data
-    const now = new Date();
-    const months = [];
-    
-    const monthCount = timeRange === '3months' ? 3 : timeRange === '12months' ? 12 : 6;
-    
-    for (let i = 0; i < monthCount; i++) {
-      const date = subMonths(now, i);
-      months.unshift({
-        month: format(date, 'MMM yyyy', { locale: ptBR }),
-        performance: 0
-      });
-    }
-    
-    return months;
-  };
-
-  const chartData = getChartData();
-
+    fetchSubjectPerformance();
+  }, [selectedSubject, user]);
+  
+  // Get the color for the selected subject
+  const subjectColor = selectedSubject === "all" 
+    ? "hsl(var(--primary))" 
+    : subjects.find(s => s.id === selectedSubject)?.color || "hsl(var(--primary))";
+  
+  if (loading) {
+    return (
+      <div className="glass p-6 rounded-2xl flex items-center justify-center h-[400px]">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+          <p className="text-muted-foreground">Carregando dados de desempenho...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (performanceData.length === 0) {
+    return (
+      <div className="glass p-6 rounded-2xl flex flex-col items-center justify-center h-[400px]">
+        <p className="text-muted-foreground text-center">
+          Nenhum dado de desempenho disponível.
+          <br />
+          Continue estudando para ver seu progresso aqui!
+        </p>
+      </div>
+    );
+  }
+  
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 justify-between mb-4">
-        <div className="w-full sm:w-1/3">
-          <label className="block text-sm font-medium mb-1">Matéria</label>
-          <Select 
-            value={selectedSubject || ''} 
-            onValueChange={setSelectedSubject}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione uma matéria" />
+    <div className="glass p-6 rounded-2xl">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-medium">Tendências de Desempenho</h3>
+        <div className="flex items-center">
+          <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+          <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filtrar por Matéria" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todas as Matérias</SelectItem>
               {subjects.map(subject => (
-                <SelectItem key={subject.id} value={subject.id.toString()}>
+                <SelectItem key={subject.id} value={subject.id}>
                   {subject.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        
-        <div className="w-full sm:w-1/4">
-          <label className="block text-sm font-medium mb-1">Período</label>
-          <Select 
-            value={timeRange} 
-            onValueChange={setTimeRange}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione um período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3months">3 meses</SelectItem>
-              <SelectItem value="6months">6 meses</SelectItem>
-              <SelectItem value="12months">12 meses</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart
-            data={chartData}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+      <div className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={performanceData}
+            margin={{ top: 20, right: 5, left: 0, bottom: 5 }}
           >
-            <defs>
-              <linearGradient id="colorPerformance" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
             <XAxis 
               dataKey="month" 
-              tick={{ fontSize: 12 }}
-              tickMargin={10}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
-            <YAxis
-              tickFormatter={(value) => `${value}%`}
-              tick={{ fontSize: 12 }}
-              domain={[0, 100]}
+            <YAxis 
+              domain={[0, 100]} 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
-            <Tooltip
-              formatter={(value) => [`${value}%`, 'Desempenho']}
-              labelFormatter={(label) => `${label}`}
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+            <Tooltip 
+              cursor={false}
               contentStyle={{
                 backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
+                borderColor: 'hsl(var(--border))',
                 borderRadius: '0.5rem',
-                padding: '0.5rem',
               }}
             />
-            <Area
-              type="monotone"
-              dataKey="performance"
-              stroke="hsl(var(--primary))"
-              fillOpacity={1}
-              fill="url(#colorPerformance)"
-              strokeWidth={2}
-              name="Desempenho"
+            <Line 
+              type="monotone" 
+              dataKey="performance" 
+              stroke={subjectColor} 
+              strokeWidth={3}
+              dot={{ fill: subjectColor, strokeWidth: 2, r: 4 }}
+              activeDot={{ fill: subjectColor, stroke: 'hsl(var(--background))', strokeWidth: 2, r: 6 }}
             />
-          </AreaChart>
+          </LineChart>
         </ResponsiveContainer>
-      )}
+      </div>
+      <div className="mt-4 text-sm text-center text-muted-foreground">
+        Tendência dos últimos 6 meses {selectedSubject !== "all" && `- ${subjects.find(s => s.id === selectedSubject)?.name}`}
+      </div>
     </div>
   );
 };
