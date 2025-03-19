@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Calendar, BookOpen, Target, Plus, Edit, Trash, ChevronDown, ChevronUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { GraduationCap, Calendar, BookOpen, Target, Plus, Edit, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -248,8 +247,8 @@ const GoalsCard: React.FC = () => {
         const { error: updateError } = await supabase
           .from('Goal')
           .update({
-            ExamenId: parseInt(selectedExam), // Convert string to number
-            CourseId: parseInt(selectedCourse), // Convert string to number
+            ExamenId: parseInt(selectedExam),
+            CourseId: parseInt(selectedCourse),
             Date: examDate?.toISOString().split('T')[0]
           })
           .eq('id', editingGoalId)
@@ -280,8 +279,8 @@ const GoalsCard: React.FC = () => {
           .from('Goal')
           .insert({
             PersonId: person.id,
-            ExamenId: parseInt(selectedExam), // Convert string to number
-            CourseId: parseInt(selectedCourse), // Convert string to number
+            ExamenId: parseInt(selectedExam),
+            CourseId: parseInt(selectedCourse),
             Date: examDate?.toISOString().split('T')[0],
             Progression: 0 // Initial progression
           })
@@ -461,6 +460,12 @@ const GoalsCard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-1">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/analysis">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Ver Detalhes
+                    </Link>
+                  </Button>
                   <Button variant="ghost" size="icon" onClick={() => handleEditGoal(goal)}>
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -469,41 +474,6 @@ const GoalsCard: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
-              <Collapsible className="w-full">
-                <div className="flex items-center justify-center w-full border-t pt-2">
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="flex items-center gap-1 w-full">
-                      <span className="text-xs">Ver desempenho por matéria</span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </CollapsibleTrigger>
-                </div>
-                
-                <CollapsibleContent className="space-y-3 pt-2">
-                  {subjectPerformances[goal.id] ? 
-                    subjectPerformances[goal.id].map(subject => (
-                      <div key={subject.id} className="space-y-1">
-                        <div className="flex justify-between items-center text-sm">
-                          <span>{subject.name}</span>
-                          <span className="font-medium">{subject.percentage}%</span>
-                        </div>
-                        <Progress value={subject.percentage} className="h-2" />
-                      </div>
-                    )) : 
-                    <div className="text-center py-2 text-sm text-muted-foreground">
-                      Não há dados de desempenho disponíveis
-                    </div>
-                  }
-                  
-                  <div className="pt-2">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      Ver Detalhes Completos
-                    </Button>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
             </div>
           ))}
           

@@ -513,6 +513,7 @@ export type Database = {
           id: number
           Name: string
           "Overall Performance": number | null
+          "Overall Plan Study Progress": number | null
           Parent: number | null
           Phone: string | null
           ProfileId: string | null
@@ -527,6 +528,7 @@ export type Database = {
           id?: number
           Name: string
           "Overall Performance"?: number | null
+          "Overall Plan Study Progress"?: number | null
           Parent?: number | null
           Phone?: string | null
           ProfileId?: string | null
@@ -541,6 +543,7 @@ export type Database = {
           id?: number
           Name?: string
           "Overall Performance"?: number | null
+          "Overall Plan Study Progress"?: number | null
           Parent?: number | null
           Phone?: string | null
           ProfileId?: string | null
