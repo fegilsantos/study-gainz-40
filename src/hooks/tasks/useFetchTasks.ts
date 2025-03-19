@@ -12,19 +12,28 @@ export const useFetchTasks = (
   const fetchTasks = async (user: User) => {
     try {
       setLoading(true);
+      console.log("Starting to fetch tasks for user:", user.id);
 
       // Get person ID
       const { data: person, error: personError } = await supabase
         .from('Person')
         .select('id')
         .eq('ProfileId', user.id)
-        .single();
+        .maybeSingle();
 
-      if (personError) throw personError;
+      if (personError) {
+        console.error("Error fetching person:", personError);
+        throw personError;
+      }
+      
       if (!person) {
+        console.log("No person found for this user");
         setLoading(false);
+        setTasks([]);
         return;
       }
+
+      console.log("Found person ID:", person.id);
 
       // Fetch activities (tasks) for this person
       const { data: activities, error: activitiesError } = await supabase
@@ -41,9 +50,15 @@ export const useFetchTasks = (
           SubjectId,
           TopicId,
           SubtopicId
-        `);
+        `)
+        .eq('PersonId', person.id);
 
-      if (activitiesError) throw activitiesError;
+      if (activitiesError) {
+        console.error("Error fetching activities:", activitiesError);
+        throw activitiesError;
+      }
+
+      console.log("Fetched activities:", activities?.length || 0);
 
       if (!activities || activities.length === 0) {
         setTasks([]);
@@ -56,37 +71,49 @@ export const useFetchTasks = (
         // Get subject name
         let subjectName = '';
         if (activity.SubjectId) {
-          const { data: subject } = await supabase
-            .from('Subject')
-            .select('Name')
-            .eq('id', activity.SubjectId)
-            .single();
-          
-          subjectName = subject?.Name || '';
+          try {
+            const { data: subject } = await supabase
+              .from('Subject')
+              .select('Name')
+              .eq('id', activity.SubjectId)
+              .maybeSingle();
+            
+            subjectName = subject?.Name || '';
+          } catch (error) {
+            console.error("Error fetching subject:", error);
+          }
         }
 
         // Get topic name
         let topicName = '';
         if (activity.TopicId) {
-          const { data: topic } = await supabase
-            .from('Topic')
-            .select('Name')
-            .eq('id', activity.TopicId)
-            .single();
-          
-          topicName = topic?.Name || '';
+          try {
+            const { data: topic } = await supabase
+              .from('Topic')
+              .select('Name')
+              .eq('id', activity.TopicId)
+              .maybeSingle();
+            
+            topicName = topic?.Name || '';
+          } catch (error) {
+            console.error("Error fetching topic:", error);
+          }
         }
 
         // Get subtopic name if it exists
         let subtopicName = '';
         if (activity.SubtopicId) {
-          const { data: subtopic } = await supabase
-            .from('Subtopic')
-            .select('Name')
-            .eq('id', activity.SubtopicId)
-            .single();
-          
-          subtopicName = subtopic?.Name || '';
+          try {
+            const { data: subtopic } = await supabase
+              .from('Subtopic')
+              .select('Name')
+              .eq('id', activity.SubtopicId)
+              .maybeSingle();
+            
+            subtopicName = subtopic?.Name || '';
+          } catch (error) {
+            console.error("Error fetching subtopic:", error);
+          }
         }
 
         return {
@@ -108,14 +135,18 @@ export const useFetchTasks = (
         };
       }));
 
+      console.log("Transformed tasks:", transformedTasks.length);
       setTasks(transformedTasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      // More descriptive error message
       toast({
         title: "Erro ao carregar tarefas",
-        description: "Não foi possível buscar as tarefas.",
+        description: "Verifique sua conexão com a internet e tente novamente.",
         variant: "destructive",
       });
+      // Set empty tasks array to prevent UI from waiting indefinitely
+      setTasks([]);
     } finally {
       setLoading(false);
     }

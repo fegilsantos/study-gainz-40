@@ -57,6 +57,7 @@ export type Database = {
           Description: string | null
           Duration: number | null
           id: number
+          PersonId: number | null
           "Responsible professor": number | null
           Status: Database["public"]["Enums"]["Activity status"] | null
           SubjectId: number | null
@@ -73,6 +74,7 @@ export type Database = {
           Description?: string | null
           Duration?: number | null
           id?: number
+          PersonId?: number | null
           "Responsible professor"?: number | null
           Status?: Database["public"]["Enums"]["Activity status"] | null
           SubjectId?: number | null
@@ -89,6 +91,7 @@ export type Database = {
           Description?: string | null
           Duration?: number | null
           id?: number
+          PersonId?: number | null
           "Responsible professor"?: number | null
           Status?: Database["public"]["Enums"]["Activity status"] | null
           SubjectId?: number | null
@@ -103,6 +106,13 @@ export type Database = {
             columns: ["ClassId"]
             isOneToOne: false
             referencedRelation: "Class"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Activity_PersonId_fkey"
+            columns: ["PersonId"]
+            isOneToOne: false
+            referencedRelation: "Person"
             referencedColumns: ["id"]
           },
           {
@@ -260,6 +270,24 @@ export type Database = {
           },
         ]
       }
+      Courses: {
+        Row: {
+          created_at: string
+          id: number
+          Name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          Name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          Name?: string | null
+        }
+        Relationships: []
+      }
       Examen: {
         Row: {
           created_at: string
@@ -280,6 +308,41 @@ export type Database = {
           Name?: string | null
         }
         Relationships: []
+      }
+      "Examen Year": {
+        Row: {
+          created_at: string
+          "Date first phase": string | null
+          "Date second phase": string | null
+          ExamenId: number | null
+          id: number
+          Year: number | null
+        }
+        Insert: {
+          created_at?: string
+          "Date first phase"?: string | null
+          "Date second phase"?: string | null
+          ExamenId?: number | null
+          id?: number
+          Year?: number | null
+        }
+        Update: {
+          created_at?: string
+          "Date first phase"?: string | null
+          "Date second phase"?: string | null
+          ExamenId?: number | null
+          id?: number
+          Year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Examen Year_ExamenId_fkey"
+            columns: ["ExamenId"]
+            isOneToOne: false
+            referencedRelation: "Examen"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       "Gamification level": {
         Row: {
@@ -390,6 +453,7 @@ export type Database = {
         Row: {
           created_at: string
           Email: string | null
+          "Gamification score": number | null
           Gender: Database["public"]["Enums"]["Gender"] | null
           id: number
           Name: string
@@ -403,6 +467,7 @@ export type Database = {
         Insert: {
           created_at?: string
           Email?: string | null
+          "Gamification score"?: number | null
           Gender?: Database["public"]["Enums"]["Gender"] | null
           id?: number
           Name: string
@@ -416,6 +481,7 @@ export type Database = {
         Update: {
           created_at?: string
           Email?: string | null
+          "Gamification score"?: number | null
           Gender?: Database["public"]["Enums"]["Gender"] | null
           id?: number
           Name?: string
@@ -485,45 +551,6 @@ export type Database = {
           },
           {
             foreignKeyName: "Person class item_PersonId_fkey"
-            columns: ["PersonId"]
-            isOneToOne: false
-            referencedRelation: "Person"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      "Person Gamification level score": {
-        Row: {
-          created_at: string
-          GamificationId: number | null
-          id: number
-          PersonId: number | null
-          Score: number | null
-        }
-        Insert: {
-          created_at?: string
-          GamificationId?: number | null
-          id?: number
-          PersonId?: number | null
-          Score?: number | null
-        }
-        Update: {
-          created_at?: string
-          GamificationId?: number | null
-          id?: number
-          PersonId?: number | null
-          Score?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "Person Gamification level score_GamificationId_fkey"
-            columns: ["GamificationId"]
-            isOneToOne: false
-            referencedRelation: "Gamification level"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "Person Gamification level score_PersonId_fkey"
             columns: ["PersonId"]
             isOneToOne: false
             referencedRelation: "Person"
@@ -689,6 +716,7 @@ export type Database = {
           id: number
           Performance: number | null
           PersonId: number | null
+          ProfileId: string | null
           SubjectId: number | null
         }
         Insert: {
@@ -698,6 +726,7 @@ export type Database = {
           id?: number
           Performance?: number | null
           PersonId?: number | null
+          ProfileId?: string | null
           SubjectId?: number | null
         }
         Update: {
@@ -707,6 +736,7 @@ export type Database = {
           id?: number
           Performance?: number | null
           PersonId?: number | null
+          ProfileId?: string | null
           SubjectId?: number | null
         }
         Relationships: [
@@ -958,12 +988,59 @@ export type Database = {
           },
         ]
       }
+      University: {
+        Row: {
+          created_at: string
+          ExamenId: number | null
+          id: number
+          Name: string | null
+        }
+        Insert: {
+          created_at?: string
+          ExamenId?: number | null
+          id?: number
+          Name?: string | null
+        }
+        Update: {
+          created_at?: string
+          ExamenId?: number | null
+          id?: number
+          Name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "University_ExamenId_fkey"
+            columns: ["ExamenId"]
+            isOneToOne: false
+            referencedRelation: "Examen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_access_person_data:
+        | {
+            Args: {
+              person_id: number
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              person_id: string
+            }
+            Returns: boolean
+          }
+      can_access_subject_performance: {
+        Args: {
+          subject_performance_row: unknown
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       "Activity status":
