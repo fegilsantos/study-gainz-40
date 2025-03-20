@@ -162,18 +162,6 @@ export const useFetchTasks = () => {
     }
   }, [isFetching]);
 
-  // Add effect to trigger fetching tasks when refreshCounter changes
-  useEffect(() => {
-    if (refreshCounter > 0) {
-      const fetchData = async () => {
-        if (user) {
-          await fetchTasks(user);
-        }
-      };
-      fetchData();
-    }
-  }, [refreshCounter, fetchTasks, user]);
-
   return {
     tasks,
     loading,

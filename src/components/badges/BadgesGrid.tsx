@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
   Award, 
@@ -137,12 +136,10 @@ const BadgesGrid: React.FC = () => {
     fetchUserData();
   }, [user]);
   
-  // Calculate level based on gamification score
   const calculateLevel = (score: number): number => {
     return Math.floor(score / 100) + 1;
   };
-  
-  // Calculate XP progress to next level
+
   const calculateXpProgress = (score: number): { current: number, next: number, percentage: number } => {
     const level = calculateLevel(score);
     const xpForCurrentLevel = (level - 1) * 100;
@@ -156,10 +153,7 @@ const BadgesGrid: React.FC = () => {
       percentage
     };
   };
-  
-  const level = calculateLevel(gamificationScore);
-  const xpProgress = calculateXpProgress(gamificationScore);
-  
+
   const getIconForBadge = (iconName: string) => {
     switch(iconName) {
       case 'calculator':
@@ -206,22 +200,22 @@ const BadgesGrid: React.FC = () => {
         ) : (
           <>
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">Nível {level}</h2>
+              <h2 className="text-lg font-semibold">Nível {calculateLevel(gamificationScore)}</h2>
               <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                {Math.round(xpProgress.percentage)}%
+                {Math.round(calculateXpProgress(gamificationScore).percentage)}%
               </div>
             </div>
             
             <div className="w-full bg-muted rounded-full h-2">
               <div 
                 className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
-                style={{width: `${xpProgress.percentage}%`}}
+                style={{width: `${calculateXpProgress(gamificationScore).percentage}%`}}
               />
             </div>
             
             <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-              <span>{xpProgress.current} XP</span>
-              <span>{xpProgress.next} XP para o próximo nível</span>
+              <span>{calculateXpProgress(gamificationScore).current} XP</span>
+              <span>{calculateXpProgress(gamificationScore).next} XP para o próximo nível</span>
             </div>
 
             <div className="mt-3">

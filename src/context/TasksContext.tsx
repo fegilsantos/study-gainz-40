@@ -54,7 +54,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const taskId = await createTask(taskData);
     if (taskId) {
       // Immediately refresh tasks after creation
-      await refreshTasks();
+      await fetchTasks(user!);
     }
     return taskId;
   };
@@ -64,7 +64,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const success = await updateTask(taskId, updates);
     if (success) {
       // Immediately refresh tasks after update
-      await refreshTasks();
+      await fetchTasks(user!);
     }
     return success;
   };
@@ -74,7 +74,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const success = await deleteTask(taskId);
     if (success) {
       // Immediately refresh tasks after deletion
-      await refreshTasks();
+      await fetchTasks(user!);
     }
     return success;
   };
@@ -87,7 +87,11 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     createTask: handleCreateTask,
     updateTask: handleUpdateTask,
     deleteTask: handleDeleteTask,
-    refreshTasks
+    refreshTasks: () => {
+      if (user) {
+        fetchTasks(user);
+      }
+    }
   };
 
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>;
