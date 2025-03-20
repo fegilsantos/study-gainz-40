@@ -63,8 +63,21 @@ export const useTaskOperations = (user: User | null, toast: any) => {
     if (!user) return false;
 
     try {
+      // Get person ID to ensure it's properly set
+      const { data: person, error: personError } = await supabase
+        .from('Person')
+        .select('id')
+        .eq('ProfileId', user.id)
+        .single();
+
+      if (personError) throw personError;
+      if (!person) return false;
+
       // Prepare the update object for Supabase
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, any> = {
+        // Always ensure PersonId is set
+        PersonId: person.id
+      };
       
       if (updates.title !== undefined) updateData.Title = updates.title;
       if (updates.description !== undefined) updateData.Description = updates.description;
@@ -81,19 +94,6 @@ export const useTaskOperations = (user: User | null, toast: any) => {
       if (updates.subject !== undefined) updateData.SubjectId = updates.subject ? parseInt(updates.subject) : null;
       if (updates.topic !== undefined) updateData.TopicId = updates.topic ? parseInt(updates.topic) : null;
       if (updates.subtopic !== undefined) updateData.SubtopicId = updates.subtopic ? parseInt(updates.subtopic) : null;
-      
-      // Get person ID if not already set
-      if (!updateData.PersonId) {
-        const { data: person } = await supabase
-          .from('Person')
-          .select('id')
-          .eq('ProfileId', user.id)
-          .single();
-        
-        if (person) {
-          updateData.PersonId = person.id;
-        }
-      }
       
       // Update the activity
       const { error } = await supabase

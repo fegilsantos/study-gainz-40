@@ -232,6 +232,112 @@ export type Database = {
           },
         ]
       }
+      badge_levels: {
+        Row: {
+          created_at: string
+          id: number
+          max_value: number
+          min_value: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          max_value: number
+          min_value: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          max_value?: number
+          min_value?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      badge_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          color: string
+          created_at: string
+          description: string
+          icon: string
+          id: number
+          is_general: boolean | null
+          level_id: number | null
+          name: string
+          subject_id: number | null
+          type_id: number | null
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          description: string
+          icon: string
+          id?: number
+          is_general?: boolean | null
+          level_id?: number | null
+          name: string
+          subject_id?: number | null
+          type_id?: number | null
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: number
+          is_general?: boolean | null
+          level_id?: number | null
+          name?: string
+          subject_id?: number | null
+          type_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badges_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "badge_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "badges_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "Subject"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "badges_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "badge_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       Class: {
         Row: {
           created_at: string
@@ -610,6 +716,51 @@ export type Database = {
           {
             foreignKeyName: "Person class item_PersonId_fkey"
             columns: ["PersonId"]
+            isOneToOne: false
+            referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      person_badges: {
+        Row: {
+          badge_id: number
+          created_at: string
+          id: number
+          person_id: number
+          progress: number | null
+          unlocked: boolean | null
+          unlocked_at: string | null
+        }
+        Insert: {
+          badge_id: number
+          created_at?: string
+          id?: number
+          person_id: number
+          progress?: number | null
+          unlocked?: boolean | null
+          unlocked_at?: string | null
+        }
+        Update: {
+          badge_id?: number
+          created_at?: string
+          id?: number
+          person_id?: number
+          progress?: number | null
+          unlocked?: boolean | null
+          unlocked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_badges_person_id_fkey"
+            columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "Person"
             referencedColumns: ["id"]

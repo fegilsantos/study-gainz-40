@@ -49,29 +49,32 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user, isInitialized, refreshTasks]);
 
-  // Create a wrapped createTask function that also refreshes tasks
+  // Create a wrapped createTask function that immediately refreshes tasks
   const handleCreateTask = async (taskData: Omit<Task, 'id' | 'completed' | 'subjectName' | 'topicName' | 'subtopicName'>) => {
     const taskId = await createTask(taskData);
     if (taskId) {
-      refreshTasks();
+      // Immediately refresh tasks after creation
+      await refreshTasks();
     }
     return taskId;
   };
 
-  // Create a wrapped updateTask function that also refreshes tasks
+  // Create a wrapped updateTask function that immediately refreshes tasks
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     const success = await updateTask(taskId, updates);
     if (success) {
-      refreshTasks();
+      // Immediately refresh tasks after update
+      await refreshTasks();
     }
     return success;
   };
 
-  // Create a wrapped deleteTask function that also refreshes tasks
+  // Create a wrapped deleteTask function that immediately refreshes tasks
   const handleDeleteTask = async (taskId: string) => {
     const success = await deleteTask(taskId);
     if (success) {
-      refreshTasks();
+      // Immediately refresh tasks after deletion
+      await refreshTasks();
     }
     return success;
   };
