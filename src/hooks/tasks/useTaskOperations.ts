@@ -6,7 +6,7 @@ import { User } from '@supabase/supabase-js';
 
 export const useTaskOperations = (user: User | null, toast: any) => {
   
-  const createTask = async (taskData: Omit<Task, 'id' | 'completed'>) => {
+  const createTask = async (taskData: Omit<Task, 'id' | 'completed' | 'subjectName' | 'topicName' | 'subtopicName'>) => {
     if (!user) return null;
 
     try {
@@ -39,14 +39,15 @@ export const useTaskOperations = (user: User | null, toast: any) => {
           Status: 'Planned',
           SubjectId: taskData.subject ? parseInt(taskData.subject) : null,
           TopicId: taskData.topic ? parseInt(taskData.topic) : null,
-          SubtopicId: taskData.subtopic ? parseInt(taskData.subtopic) : null
+          SubtopicId: taskData.subtopic ? parseInt(taskData.subtopic) : null,
+          PersonId: person.id // Explicitly set the PersonId
         }])
         .select()
         .single();
 
       if (error) throw error;
       
-      return data;
+      return data.id.toString();
     } catch (error) {
       console.error('Error creating task:', error);
       toast({

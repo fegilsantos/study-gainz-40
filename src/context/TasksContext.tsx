@@ -4,6 +4,7 @@ import { useFetchTasks } from '@/hooks/tasks/useFetchTasks';
 import { useTaskOperations } from '@/hooks/tasks/useTaskOperations';
 import { useAuth } from '@/context/AuthContext';
 import { Task } from '@/types/task';
+import { useToast } from '@/hooks/use-toast';
 
 interface TasksContextType {
   tasks: Task[];
@@ -20,8 +21,9 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 
 export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { tasks, loading, error, getTasksByDate, refreshTasks, fetchTasks } = useFetchTasks();
-  const { createTask, updateTask, deleteTask } = useTaskOperations(user);
+  const { createTask, updateTask, deleteTask } = useTaskOperations(user, toast);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
