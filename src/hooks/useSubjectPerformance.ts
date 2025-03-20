@@ -13,10 +13,16 @@ export interface SubjectPerformance {
   difference: number;
 }
 
+export interface PerformanceHistoryItem {
+  date: string;
+  average_performance: number;
+}
+
 export const useSubjectPerformance = () => {
   const [loading, setLoading] = useState(true);
   const [weakestSubject, setWeakestSubject] = useState<SubjectPerformance | null>(null);
   const [strongestSubject, setStrongestSubject] = useState<SubjectPerformance | null>(null);
+  const [performanceHistory, setPerformanceHistory] = useState<PerformanceHistoryItem[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -90,6 +96,18 @@ export const useSubjectPerformance = () => {
           setWeakestSubject(weakest);
           setStrongestSubject(strongest);
         }
+
+        // Fetch performance history data (mocked for now)
+        const mockPerformanceHistory = [
+          { date: '2024-01-01', average_performance: 65 },
+          { date: '2024-02-01', average_performance: 70 },
+          { date: '2024-03-01', average_performance: 75 },
+          { date: '2024-04-01', average_performance: 73 },
+          { date: '2024-05-01', average_performance: 78 },
+          { date: '2024-06-01', average_performance: 82 }
+        ];
+
+        setPerformanceHistory(mockPerformanceHistory);
       } catch (error) {
         console.error('Error fetching subject performance:', error);
         toast({
@@ -108,6 +126,7 @@ export const useSubjectPerformance = () => {
   return {
     weakestSubject,
     strongestSubject,
+    performanceHistory,
     loading,
   };
 };

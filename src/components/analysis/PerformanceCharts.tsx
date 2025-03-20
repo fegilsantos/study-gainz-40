@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import TopicsChart from './charts/TopicsChart';
+import { TopicsChart } from './charts/TopicsChart';
 import TrendsChart from './charts/TrendsChart';
-import HabitsChart from './charts/HabitsChart';
-import ImprovementTips from './charts/ImprovementTips';
+import { HabitsChart } from './charts/HabitsChart';
+import { ImprovementTips } from './charts/ImprovementTips';
 
 const PerformanceCharts: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('topics');
