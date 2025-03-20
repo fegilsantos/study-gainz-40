@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useFetchTasks } from '@/hooks/tasks/useFetchTasks';
 import { useTaskOperations } from '@/hooks/tasks/useTaskOperations';
 import { useAuth } from '@/context/AuthContext';
@@ -26,14 +26,19 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { createTask, updateTask, deleteTask } = useTaskOperations(user, toast);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
+  const initializeTasks = useCallback(async () => {
     if (user && !isInitialized) {
-      fetchTasks(user);
+      await fetchTasks(user);
       setIsInitialized(true);
     }
   }, [user, fetchTasks, isInitialized]);
 
-  // Add this effect to refresh tasks when necessary
+  // Initialize tasks when component mounts
+  useEffect(() => {
+    initializeTasks();
+  }, [initializeTasks]);
+
+  // Add this effect to refresh tasks periodically
   useEffect(() => {
     if (user && isInitialized) {
       const intervalId = setInterval(() => {
@@ -44,14 +49,41 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user, isInitialized, refreshTasks]);
 
+  // Create a wrapped createTask function that also refreshes tasks
+  const handleCreateTask = async (taskData: Omit<Task, 'id' | 'completed' | 'subjectName' | 'topicName' | 'subtopicName'>) => {
+    const taskId = await createTask(taskData);
+    if (taskId) {
+      refreshTasks();
+    }
+    return taskId;
+  };
+
+  // Create a wrapped updateTask function that also refreshes tasks
+  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    const success = await updateTask(taskId, updates);
+    if (success) {
+      refreshTasks();
+    }
+    return success;
+  };
+
+  // Create a wrapped deleteTask function that also refreshes tasks
+  const handleDeleteTask = async (taskId: string) => {
+    const success = await deleteTask(taskId);
+    if (success) {
+      refreshTasks();
+    }
+    return success;
+  };
+
   const value: TasksContextType = {
     tasks,
     loading,
     error,
     getTasksByDate,
-    createTask,
-    updateTask,
-    deleteTask,
+    createTask: handleCreateTask,
+    updateTask: handleUpdateTask,
+    deleteTask: handleDeleteTask,
     refreshTasks
   };
 

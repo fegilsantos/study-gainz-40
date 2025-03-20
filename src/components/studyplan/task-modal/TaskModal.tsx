@@ -26,7 +26,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
   const [type, setType] = useState<'study' | 'review' | 'class' | 'exercise'>('study');
   const [completed, setCompleted] = useState(false);
   
-  const { createTask, updateTask, deleteTask } = useTasks();
+  const { createTask, updateTask, deleteTask, refreshTasks } = useTasks();
   
   useEffect(() => {
     if (task) {
@@ -85,6 +85,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
             title: "Tarefa atualizada",
             description: "Suas alterações foram salvas com sucesso.",
           });
+          refreshTasks(); // Refresh tasks after update
           onClose();
         }
       } else {
@@ -106,6 +107,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
             title: "Tarefa criada",
             description: "Sua nova tarefa foi adicionada com sucesso.",
           });
+          refreshTasks(); // Refresh tasks after creation
           onClose();
         }
       }
@@ -131,6 +133,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
           description: "A tarefa foi removida com sucesso.",
           variant: "destructive",
         });
+        refreshTasks(); // Refresh tasks after deletion
         onClose();
       }
     } catch (error) {
@@ -161,6 +164,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
             ? "Parabéns por concluir esta tarefa!" 
             : "A tarefa foi marcada como não concluída.",
         });
+        refreshTasks(); // Refresh tasks after toggling completion
         onClose();
       }
     } catch (error) {

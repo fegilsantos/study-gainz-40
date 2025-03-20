@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { mapActivityTypeToTaskType } from './taskTypeMappers';
@@ -14,18 +14,18 @@ export const useFetchTasks = () => {
   const [isFetching, setIsFetching] = useState(false);
 
   // Add a function to manually refresh tasks
-  const refreshTasks = () => {
+  const refreshTasks = useCallback(() => {
     setRefreshCounter(prev => prev + 1);
-  };
+  }, []);
 
   // Get tasks by date
-  const getTasksByDate = (date: string) => {
+  const getTasksByDate = useCallback((date: string) => {
     const targetDate = new Date(date).toISOString().split('T')[0];
     return tasks.filter(task => {
       const taskDate = new Date(task.date).toISOString().split('T')[0];
       return taskDate === targetDate;
     });
-  };
+  }, [tasks]);
 
   const fetchTasks = useCallback(async (user: User) => {
     if (!user || !user.id || isFetching) {
@@ -52,6 +52,8 @@ export const useFetchTasks = () => {
       if (!person) {
         console.log("No person found for this user");
         setTasks([]);
+        setLoading(false);
+        setIsFetching(false);
         return;
       }
 
@@ -79,6 +81,8 @@ export const useFetchTasks = () => {
 
       if (!activities || activities.length === 0) {
         setTasks([]);
+        setLoading(false);
+        setIsFetching(false);
         return;
       }
 
@@ -157,6 +161,18 @@ export const useFetchTasks = () => {
       setIsFetching(false);
     }
   }, [isFetching]);
+
+  // Add effect to trigger fetching tasks when refreshCounter changes
+  useEffect(() => {
+    if (refreshCounter > 0) {
+      const fetchData = async () => {
+        if (user) {
+          await fetchTasks(user);
+        }
+      };
+      fetchData();
+    }
+  }, [refreshCounter, fetchTasks, user]);
 
   return {
     tasks,

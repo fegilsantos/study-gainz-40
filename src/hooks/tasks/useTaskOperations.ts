@@ -82,6 +82,19 @@ export const useTaskOperations = (user: User | null, toast: any) => {
       if (updates.topic !== undefined) updateData.TopicId = updates.topic ? parseInt(updates.topic) : null;
       if (updates.subtopic !== undefined) updateData.SubtopicId = updates.subtopic ? parseInt(updates.subtopic) : null;
       
+      // Get person ID if not already set
+      if (!updateData.PersonId) {
+        const { data: person } = await supabase
+          .from('Person')
+          .select('id')
+          .eq('ProfileId', user.id)
+          .single();
+        
+        if (person) {
+          updateData.PersonId = person.id;
+        }
+      }
+      
       // Update the activity
       const { error } = await supabase
         .from('Activity')
