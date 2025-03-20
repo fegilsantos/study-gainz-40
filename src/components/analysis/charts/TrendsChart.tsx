@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { BarChart } from '@/components/ui/chart';
+import { useSubjectPerformance } from '@/hooks/useSubjectPerformance';
 import { format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useSubjectPerformance } from '@/hooks/useSubjectPerformance';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Define a value formatter function
 export const valueFormatter = (value: number) => `${value.toFixed(1)}%`;
@@ -49,21 +48,21 @@ const TrendsChart: React.FC = () => {
         <Button 
           variant={selectedMonths === 3 ? "default" : "outline"} 
           size="sm"
-          onClick={() => handleTimeframeChange(3)}
+          onClick={() => setSelectedMonths(3)}
         >
           3 meses
         </Button>
         <Button 
           variant={selectedMonths === 6 ? "default" : "outline"} 
           size="sm"
-          onClick={() => handleTimeframeChange(6)}
+          onClick={() => setSelectedMonths(6)}
         >
           6 meses
         </Button>
         <Button 
           variant={selectedMonths === 12 ? "default" : "outline"} 
           size="sm"
-          onClick={() => handleTimeframeChange(12)}
+          onClick={() => setSelectedMonths(12)}
         >
           1 ano
         </Button>
@@ -71,18 +70,17 @@ const TrendsChart: React.FC = () => {
       
       {/* Chart */}
       <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={getChartData()}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis domain={[0, 100]} label={{ value: 'Desempenho (%)', angle: -90, position: 'insideLeft' }} />
-            <Tooltip formatter={(value) => [`${value}%`, 'Desempenho']} />
-            <Bar dataKey="performance" fill="hsl(var(--primary))" />
-          </BarChart>
-        </ResponsiveContainer>
+        <BarChart
+          data={getChartData()}
+          index="month"
+          categories={['performance']}
+          colors={['violet']}
+          valueFormatter={valueFormatter}
+          showLegend={false}
+          showGridLines={false}
+          startEndOnly={true}
+          showAnimation={true}
+        />
       </div>
     </Card>
   );
