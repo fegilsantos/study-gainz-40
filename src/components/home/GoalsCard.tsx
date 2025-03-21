@@ -328,7 +328,7 @@ const GoalsCard: React.FC = () => {
               {goals.map((goal) => (
                 <div key={goal.id} className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-base">{goal.Name || "Meta sem nome"}</h3>
+                    <h3 className="font-medium text-base">{goal.Name }</h3>
                     <Button 
                       variant="ghost" 
                       size="icon" 
