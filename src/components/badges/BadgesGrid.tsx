@@ -238,7 +238,7 @@ const BadgesGrid: React.FC = () => {
                 className="flex justify-between items-center"
                 onClick={handleViewAllBadges}
               >
-                <span>Ver todos</span>
+                <span>Ver medalhas</span>
                 <ListFilter className="w-4 h-4" />
               </Button>
             </div>

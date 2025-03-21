@@ -25,23 +25,32 @@ const AllBadges: React.FC = () => {
       try {
         setLoading(true);
         
+        // Fixed query to correctly join badge_types and badge_levels tables
         const { data, error } = await supabase
           .from('badges')
-          .select('*, badge_type:badge_type_id(name), badge_level:badge_level_id(name)')
-          .order('badge_type_id');
+          .select(`
+            id, 
+            name, 
+            description, 
+            icon, 
+            color,
+            badge_types!type_id(name),
+            badge_levels!level_id(name)
+          `)
+          .order('type_id');
         
         if (error) throw error;
         
         if (data) {
-          // Format the badges data
+          // Format the badges data with correct field access
           const formattedBadges = data.map(badge => ({
             id: badge.id,
             name: badge.name,
             description: badge.description,
             icon: badge.icon,
             color: badge.color,
-            badge_type: badge.badge_type?.name || 'Geral',
-            level: badge.badge_level?.name || 'Básico'
+            badge_type: badge.badge_types?.name || 'Geral',
+            level: badge.badge_levels?.name || 'Básico'
           }));
           
           setBadges(formattedBadges);
@@ -91,7 +100,7 @@ const AllBadges: React.FC = () => {
   
   return (
     <div className="min-h-screen pb-20">
-      <Header title="Todos os Badges" showBack />
+      <Header title="Todas as Medalhas" showBack />
       <main className="px-4 py-6 max-w-3xl mx-auto">
         <div className="animate-fade-in space-y-8">
           {loading ? (
@@ -149,9 +158,9 @@ const AllBadges: React.FC = () => {
           {!loading && Object.keys(groupedBadges).length === 0 && (
             <div className="text-center py-12">
               <Award className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium">Nenhum badge encontrado</h3>
+              <h3 className="text-lg font-medium">Nenhuma medalha encontrada</h3>
               <p className="text-muted-foreground">
-                Não há badges cadastrados no sistema.
+                Não há medalhas cadastradas no sistema.
               </p>
             </div>
           )}

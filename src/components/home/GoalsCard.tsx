@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -71,12 +70,10 @@ const GoalsCard: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   
-  // Dialog state
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   
-  // Form state
   const [formExam, setFormExam] = useState<number | null>(null);
   const [formCourse, setFormCourse] = useState<number | null>(null);
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
@@ -89,7 +86,6 @@ const GoalsCard: React.FC = () => {
       try {
         setLoading(true);
         
-        // Get person ID
         const { data: personData, error: personError } = await supabase
           .from('Person')
           .select('id')
@@ -104,7 +100,6 @@ const GoalsCard: React.FC = () => {
         if (personData) {
           setPerson(personData);
           
-          // Fetch goals
           const { data: goalsData, error: goalsError } = await supabase
             .from('Goal')
             .select(`
@@ -129,7 +124,6 @@ const GoalsCard: React.FC = () => {
             setGoals(goalsData);
           }
           
-          // Fetch exams
           const { data: examsData, error: examsError } = await supabase
             .from('Examen')
             .select('id, Name');
@@ -143,7 +137,6 @@ const GoalsCard: React.FC = () => {
             setExams(examsData);
           }
           
-          // Fetch courses
           const { data: coursesData, error: coursesError } = await supabase
             .from('Courses')
             .select('id, Name');
@@ -169,14 +162,12 @@ const GoalsCard: React.FC = () => {
   
   const handleOpenDialog = (goal?: Goal) => {
     if (goal) {
-      // Edit mode
       setIsEditing(true);
       setSelectedGoal(goal);
       setFormExam(goal.ExamenId);
       setFormCourse(goal.CourseId);
       setFormDate(goal.Date ? new Date(goal.Date) : undefined);
     } else {
-      // Create mode
       setIsEditing(false);
       setSelectedGoal(null);
       setFormExam(null);
@@ -200,7 +191,6 @@ const GoalsCard: React.FC = () => {
       setFormSubmitting(true);
       
       if (isEditing && selectedGoal) {
-        // Update goal
         const { error } = await supabase
           .from('Goal')
           .update({
@@ -217,11 +207,10 @@ const GoalsCard: React.FC = () => {
           description: 'Sua meta foi atualizada com sucesso!',
         });
       } else {
-        // Create goal
         const { error } = await supabase
           .from('Goal')
           .insert({
-            Name: 'Meta',
+            Name: '',
             ExamenId: formExam,
             CourseId: formCourse,
             Date: formDate ? formDate.toISOString().split('T')[0] : null,
@@ -237,7 +226,6 @@ const GoalsCard: React.FC = () => {
         });
       }
       
-      // Refresh goals
       const { data: goalsData } = await supabase
         .from('Goal')
         .select(`
@@ -340,7 +328,7 @@ const GoalsCard: React.FC = () => {
               {goals.map((goal) => (
                 <div key={goal.id} className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-base">{goal.Name}</h3>
+                    <h3 className="font-medium text-base">{goal.Name || "Meta sem nome"}</h3>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -384,7 +372,6 @@ const GoalsCard: React.FC = () => {
         </CardContent>
       </Card>
       
-      {/* Edit/Create Goal Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -440,7 +427,7 @@ const GoalsCard: React.FC = () => {
                     {formDate ? format(formDate, "dd/MM/yyyy") : <span>Selecione uma data</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={formDate}
