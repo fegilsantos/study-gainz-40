@@ -31,6 +31,11 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
     });
   };
   
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+  
   return (
     <header className="sticky top-0 z-10 w-full bg-background/80 backdrop-blur-md border-b">
       <div className="flex items-center justify-between h-14 px-4">
@@ -72,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
               {user && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut} className="text-destructive">
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     Sair
                   </DropdownMenuItem>

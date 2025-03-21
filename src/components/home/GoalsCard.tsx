@@ -14,7 +14,8 @@ import {
   CheckCircle2, 
   Circle, 
   XIcon,
-  LoaderIcon
+  LoaderIcon,
+  CalendarIcon
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -24,12 +25,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { format } from 'date-fns';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Goal {
   id: number;
@@ -38,12 +41,13 @@ interface Goal {
   Progression: number | null;
   ExamenId: number | null;
   CourseId: number | null;
+  Date: string | null;
   examen?: {
     Name: string;
-  };
+  } | null;
   course?: {
     Name: string;
-  };
+  } | null;
 }
 
 interface Exam {
@@ -73,10 +77,9 @@ const GoalsCard: React.FC = () => {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   
   // Form state
-  const [formName, setFormName] = useState('');
-  const [formDescription, setFormDescription] = useState('');
   const [formExam, setFormExam] = useState<number | null>(null);
   const [formCourse, setFormCourse] = useState<number | null>(null);
+  const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formSubmitting, setFormSubmitting] = useState(false);
   
   useEffect(() => {
@@ -111,8 +114,9 @@ const GoalsCard: React.FC = () => {
               Progression,
               ExamenId,
               CourseId,
-              examen:ExamenId (Name),
-              course:CourseId (Name)
+              Date,
+              examen:Examen(Name),
+              course:CourseId(Name)
             `)
             .eq('PersonId', personData.id);
           
@@ -168,18 +172,16 @@ const GoalsCard: React.FC = () => {
       // Edit mode
       setIsEditing(true);
       setSelectedGoal(goal);
-      setFormName(goal.Name);
-      setFormDescription(goal.Description || '');
       setFormExam(goal.ExamenId);
       setFormCourse(goal.CourseId);
+      setFormDate(goal.Date ? new Date(goal.Date) : undefined);
     } else {
       // Create mode
       setIsEditing(false);
       setSelectedGoal(null);
-      setFormName('');
-      setFormDescription('');
       setFormExam(null);
       setFormCourse(null);
+      setFormDate(undefined);
     }
     
     setIsOpen(true);
@@ -202,10 +204,9 @@ const GoalsCard: React.FC = () => {
         const { error } = await supabase
           .from('Goal')
           .update({
-            Name: formName,
-            Description: formDescription,
             ExamenId: formExam,
-            CourseId: formCourse
+            CourseId: formCourse,
+            Date: formDate ? formDate.toISOString().split('T')[0] : null
           })
           .eq('id', selectedGoal.id);
         
@@ -220,10 +221,10 @@ const GoalsCard: React.FC = () => {
         const { error } = await supabase
           .from('Goal')
           .insert({
-            Name: formName,
-            Description: formDescription,
+            Name: 'Meta',
             ExamenId: formExam,
             CourseId: formCourse,
+            Date: formDate ? formDate.toISOString().split('T')[0] : null,
             PersonId: person.id,
             Progression: 0
           });
@@ -246,8 +247,9 @@ const GoalsCard: React.FC = () => {
           Progression,
           ExamenId,
           CourseId,
-          examen:ExamenId (Name),
-          course:CourseId (Name)
+          Date,
+          examen:Examen(Name),
+          course:CourseId(Name)
         `)
         .eq('PersonId', person.id);
         
@@ -349,24 +351,24 @@ const GoalsCard: React.FC = () => {
                     </Button>
                   </div>
                   
-                  {(goal.examen?.Name || goal.course?.Name) && (
-                    <div className="flex gap-2 text-xs text-muted-foreground">
-                      {goal.examen?.Name && (
-                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                          {goal.examen.Name}
-                        </span>
-                      )}
-                      {goal.course?.Name && (
-                        <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">
-                          {goal.course.Name}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  
-                  {goal.Description && (
-                    <p className="text-sm text-muted-foreground">{goal.Description}</p>
-                  )}
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {goal.examen?.Name && (
+                      <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        {goal.examen.Name}
+                      </span>
+                    )}
+                    {goal.course?.Name && (
+                      <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">
+                        {goal.course.Name}
+                      </span>
+                    )}
+                    {goal.Date && (
+                      <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center">
+                        <CalendarIcon className="h-3 w-3 mr-1" />
+                        {new Date(goal.Date).toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
                   
                   <div className="pt-2">
                     <div className="flex justify-between text-xs text-muted-foreground pb-1">
@@ -393,57 +395,60 @@ const GoalsCard: React.FC = () => {
           
           <form onSubmit={handleSubmit} className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="goalName">Nome da Meta</Label>
-              <Input 
-                id="goalName"
-                placeholder="Ex: Passar no vestibular"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                required
-              />
+              <Label htmlFor="goalExam">Vestibular</Label>
+              <select
+                id="goalExam"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={formExam || ''}
+                onChange={(e) => setFormExam(e.target.value ? parseInt(e.target.value) : null)}
+              >
+                <option value="">Selecione</option>
+                {exams.map(exam => (
+                  <option key={exam.id} value={exam.id}>{exam.Name}</option>
+                ))}
+              </select>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="goalDescription">Descrição (opcional)</Label>
-              <Textarea 
-                id="goalDescription"
-                placeholder="Descreva sua meta em detalhes"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                rows={3}
-              />
+              <Label htmlFor="goalCourse">Curso Desejado</Label>
+              <select
+                id="goalCourse"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={formCourse || ''}
+                onChange={(e) => setFormCourse(e.target.value ? parseInt(e.target.value) : null)}
+              >
+                <option value="">Selecione</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>{course.Name}</option>
+                ))}
+              </select>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="goalExam">Vestibular</Label>
-                <select
-                  id="goalExam"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formExam || ''}
-                  onChange={(e) => setFormExam(e.target.value ? parseInt(e.target.value) : null)}
-                >
-                  <option value="">Selecione</option>
-                  {exams.map(exam => (
-                    <option key={exam.id} value={exam.id}>{exam.Name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="goalCourse">Curso Desejado</Label>
-                <select
-                  id="goalCourse"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formCourse || ''}
-                  onChange={(e) => setFormCourse(e.target.value ? parseInt(e.target.value) : null)}
-                >
-                  <option value="">Selecione</option>
-                  {courses.map(course => (
-                    <option key={course.id} value={course.id}>{course.Name}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="goalDate">Data</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="goalDate"
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formDate ? format(formDate, "dd/MM/yyyy") : <span>Selecione uma data</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formDate}
+                    onSelect={setFormDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             
             <DialogFooter className="gap-2 sm:gap-0">
