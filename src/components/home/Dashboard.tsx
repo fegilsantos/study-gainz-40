@@ -193,13 +193,15 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
       
-      {/* Goals Component */}
-      <GoalsCard />
+
       
       {/* Insights & Recommendations */}
       <div className="w-full glass rounded-2xl shadow-sm overflow-hidden border-l-4 border-l-amber-400">
         <InsightsCard />
       </div>
+      {/* Goals Component */}
+      <GoalsCard />
+      
     </div>
   );
 };
