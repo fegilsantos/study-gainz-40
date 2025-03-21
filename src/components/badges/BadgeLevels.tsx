@@ -94,7 +94,7 @@ const BadgeLevels: React.FC = () => {
       <section>
         <h2 className="text-xl font-bold mb-4 flex items-center">
           <Sparkles className="mr-2 h-5 w-5 text-amber-500" />
-          Níveis e Gamificação
+          Níveis disponíveis
         </h2>
         
         <div className="glass rounded-xl p-5">
@@ -138,32 +138,7 @@ const BadgeLevels: React.FC = () => {
         </div>
       </section>
       
-      <section>
-        <h2 className="text-xl font-bold mb-4 flex items-center">
-          <Trophy className="mr-2 h-5 w-5 text-amber-500" />
-          Níveis de Conquista
-        </h2>
-        
-        <div className="grid gap-4">
-          {levels.map(level => (
-            <div key={level.id} className="glass rounded-xl overflow-hidden">
-              <div className={`p-4 bg-gradient-to-r ${getLevelColorClass(level.name)} text-white`}>
-                <h3 className="font-bold text-lg">{level.name}</h3>
-                <p className="text-sm opacity-90">
-                  {level.min_value}% - {level.max_value}% de progresso
-                </p>
-              </div>
-              <div className="p-4">
-                <p className="text-sm text-muted-foreground mb-3">
-                  {level.name === 'Iniciante' ? 'Comece sua jornada de aprendizado!' : 
-                   level.name === 'Intermediário' ? 'Continue se aperfeiçoando!' : 
-                   'Torne-se um especialista no assunto!'}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+     
       
       <section>
         <h2 className="text-xl font-bold mb-4 flex items-center">
