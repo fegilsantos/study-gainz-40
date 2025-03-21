@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
@@ -32,7 +30,6 @@ const Auth = () => {
     
     checkUser();
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session) {
@@ -176,7 +173,6 @@ const Auth = () => {
     }
   };
 
-  // Check URL params for mode (like reset password flow)
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     const modeParam = query.get("mode");
@@ -187,7 +183,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header title="Autenticação" showBack={true} />
+      <Header title="Autenticação" showBack={false} />
       <main className="container max-w-md mx-auto p-4 pt-8">
         <Card className="w-full">
           <CardHeader>
@@ -213,7 +209,6 @@ const Auth = () => {
               handleResetPassword
             }>
               <div className="grid gap-4">
-                {/* Name field - only for signup */}
                 {mode === "signup" && (
                   <div className="grid gap-2">
                     <Label htmlFor="name">Nome</Label>
@@ -231,7 +226,6 @@ const Auth = () => {
                   </div>
                 )}
 
-                {/* Email field - for all except reset password */}
                 {mode !== "resetPassword" && (
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
@@ -251,7 +245,6 @@ const Auth = () => {
                   </div>
                 )}
 
-                {/* Password field - not for forgot password */}
                 {mode !== "forgotPassword" && (
                   <div className="grid gap-2">
                     <Label htmlFor="password">Senha</Label>
@@ -285,7 +278,6 @@ const Auth = () => {
               </div>
             </form>
 
-            {/* Google signin button */}
             {(mode === "signin" || mode === "signup") && (
               <>
                 <div className="relative my-4">

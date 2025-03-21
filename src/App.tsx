@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import StudyPlan from "./pages/StudyPlan";
 import Analysis from "./pages/Analysis";
 import Badges from "./pages/Badges";
+import AllBadges from "./pages/AllBadges";
 import Exercises from "./pages/Exercises";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/exercises" element={<Exercises />} />
               <Route path="/badges" element={<Badges />} />
               <Route path="/badges/levels" element={<Badges />} />
+              <Route path="/badges/all" element={<AllBadges />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

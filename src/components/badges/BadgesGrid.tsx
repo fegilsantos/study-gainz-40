@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
   Award, 
@@ -11,7 +10,8 @@ import {
   Flame, 
   Globe, 
   Lock,
-  ChevronRight
+  ChevronRight,
+  ListFilter
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,7 +59,6 @@ const BadgesGrid: React.FC = () => {
       try {
         setLoading(true);
         
-        // Fetch person data to get gamification score
         const { data: personData, error } = await supabase
           .from('Person')
           .select('id, "Gamification score"')
@@ -74,7 +73,6 @@ const BadgesGrid: React.FC = () => {
         if (personData) {
           setGamificationScore(personData["Gamification score"] || 0);
           
-          // Fetch badges with person's progress
           const { data: personBadges, error: badgeError } = await supabase
             .from('person_badges')
             .select(`
@@ -89,7 +87,6 @@ const BadgesGrid: React.FC = () => {
           }
           
           if (personBadges && personBadges.length > 0) {
-            // Transform the data to match our Badge interface
             const transformedBadges: Badge[] = personBadges.map((pb: PersonBadge) => ({
               id: pb.badge_id,
               name: pb.badge.name,
@@ -102,7 +99,6 @@ const BadgesGrid: React.FC = () => {
             
             setBadges(transformedBadges);
           } else {
-            // If no badges are found for the user, fetch all badges and set them as locked
             const { data: allBadges, error: allBadgesError } = await supabase
               .from('badges')
               .select('id, name, description, icon, color');
@@ -137,12 +133,10 @@ const BadgesGrid: React.FC = () => {
     fetchUserData();
   }, [user]);
   
-  // Calculate level based on gamification score
   const calculateLevel = (score: number): number => {
     return Math.floor(score / 100) + 1;
   };
   
-  // Calculate XP progress to next level
   const calculateXpProgress = (score: number): { current: number, next: number, percentage: number } => {
     const level = calculateLevel(score);
     const xpForCurrentLevel = (level - 1) * 100;
@@ -187,9 +181,12 @@ const BadgesGrid: React.FC = () => {
     navigate('/badges/levels');
   };
   
+  const handleViewAllBadges = () => {
+    navigate('/badges/all');
+  };
+  
   return (
     <div className="w-full animate-fade-in">
-      {/* Level Progress */}
       <div className="glass rounded-2xl p-5 shadow-sm mb-6">
         {loading ? (
           <div className="space-y-4">
@@ -224,15 +221,25 @@ const BadgesGrid: React.FC = () => {
               <span>{xpProgress.next} XP para o próximo nível</span>
             </div>
 
-            <div className="mt-3">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="w-full flex justify-between items-center"
+                className="flex justify-between items-center"
                 onClick={handleViewAllLevels}
               >
-                <span>Ver todos os níveis</span>
+                <span>Ver níveis</span>
                 <ChevronRight className="w-4 h-4" />
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex justify-between items-center"
+                onClick={handleViewAllBadges}
+              >
+                <span>Ver todos</span>
+                <ListFilter className="w-4 h-4" />
               </Button>
             </div>
           </>
@@ -241,7 +248,6 @@ const BadgesGrid: React.FC = () => {
     
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {loading ? (
-          // Loading skeletons for badges
           Array(6).fill(0).map((_, index) => (
             <div key={index} className="p-5 glass rounded-2xl shadow-sm animate-pulse">
               <div className="flex flex-col items-center">
@@ -306,7 +312,6 @@ const BadgesGrid: React.FC = () => {
         
         <div className="space-y-4">
           {loading ? (
-            // Loading skeletons for upcoming achievements
             Array(3).fill(0).map((_, index) => (
               <div key={index} className="p-3 border border-muted rounded-lg animate-pulse">
                 <div className="flex items-center">
