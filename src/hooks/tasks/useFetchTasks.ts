@@ -164,15 +164,9 @@ export const useFetchTasks = () => {
 
   // Add effect to trigger fetching tasks when refreshCounter changes
   useEffect(() => {
-    if (refreshCounter > 0) {
-      const fetchData = async () => {
-        if (user) {
-          await fetchTasks(user);
-        }
-      };
-      fetchData();
-    }
-  }, [refreshCounter, fetchTasks, user]);
+    // This effect doesn't need to depend on a user variable since it will be managed
+    // by the component that uses this hook
+  }, [refreshCounter, fetchTasks]);
 
   return {
     tasks,

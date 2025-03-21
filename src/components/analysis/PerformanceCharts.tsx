@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ChartTabs } from './charts/ChartTabs';
 import { TopicsChart } from './charts/TopicsChart';
-import { TrendsChart } from './charts/TrendsChart';
+import TrendsChart from './charts/TrendsChart';
 import { ImprovementTips } from './charts/ImprovementTips';
 
 const PerformanceCharts: React.FC = () => {
