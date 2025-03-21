@@ -308,7 +308,7 @@ const BadgesGrid: React.FC = () => {
       </div>
       
       <div className="mt-10 glass p-6 rounded-2xl">
-        <h3 className="text-lg font-medium mb-4">Próximas Conquistas</h3>
+        <h3 className="text-lg font-medium mb-4">Próximas Medalhas</h3>
         
         <div className="space-y-4">
           {loading ? (
