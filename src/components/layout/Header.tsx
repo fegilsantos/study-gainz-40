@@ -1,15 +1,17 @@
 
 import React from 'react';
-import { MenuIcon, User, HelpCircle, FileText, ChevronLeft } from 'lucide-react';
+import { MenuIcon, User, HelpCircle, FileText, ChevronLeft, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface HeaderProps {
   title: string;
@@ -19,6 +21,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut, user } = useAuth();
   
   const handleMenuItemClick = (option: string) => {
     // Aqui você pode implementar navegação ou mostrar modais para cada opção
@@ -66,6 +69,15 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
                 <FileText className="mr-2 h-4 w-4" />
                 Termos e Condições
               </DropdownMenuItem>
+              {user && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
