@@ -361,7 +361,7 @@ const BadgesGrid: React.FC = () => {
           {!loading && badges.filter(badge => !badge.unlocked && badge.progress && badge.progress > 0).length === 0 && (
             <div className="text-center p-6">
               <p className="text-muted-foreground">
-                Ainda não há conquistas em andamento.
+                No momento não há medalhas em andamento.
               </p>
             </div>
           )}
