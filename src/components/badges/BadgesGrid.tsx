@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { 
   Award, 
@@ -45,12 +46,19 @@ interface PersonBadge {
   };
 }
 
+interface GamificationLevel {
+  id: number;
+  name: string;
+  max_xp: number;
+}
+
 const BadgesGrid: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [gamificationScore, setGamificationScore] = useState<number>(0);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [gamificationLevels, setGamificationLevels] = useState<GamificationLevel[]>([]);
   
   useEffect(() => {
     const fetchUserData = async () => {
@@ -58,6 +66,23 @@ const BadgesGrid: React.FC = () => {
       
       try {
         setLoading(true);
+        
+        // Fetch gamification levels
+        const { data: levelsData, error: levelsError } = await supabase
+          .from('Gamification level')
+          .select('id, Name, Max xp')
+          .order('Max xp', { ascending: true });
+          
+        if (levelsError) {
+          console.error('Error fetching gamification levels:', levelsError);
+        } else if (levelsData) {
+          const formattedLevels = levelsData.map(level => ({
+            id: level.id,
+            name: level.Name,
+            max_xp: level['Max xp']
+          }));
+          setGamificationLevels(formattedLevels);
+        }
         
         const { data: personData, error } = await supabase
           .from('Person')
@@ -133,26 +158,51 @@ const BadgesGrid: React.FC = () => {
     fetchUserData();
   }, [user]);
   
-  const calculateLevel = (score: number): number => {
-    return Math.floor(score / 100) + 1;
-  };
-  
-  const calculateXpProgress = (score: number): { current: number, next: number, percentage: number } => {
-    const level = calculateLevel(score);
-    const xpForCurrentLevel = (level - 1) * 100;
-    const xpForNextLevel = level * 100;
-    const currentXp = score - xpForCurrentLevel;
-    const percentage = (currentXp / 100) * 100;
+  // Calculate level based on gamification score and levels from database
+  const calculateLevel = (score: number): {level: number, name: string, max_xp: number, min_xp: number} => {
+    if (!gamificationLevels.length) {
+      return { level: 1, name: 'Iniciante', max_xp: 100, min_xp: 0 };
+    }
     
+    for (let i = 0; i < gamificationLevels.length; i++) {
+      if (score < gamificationLevels[i].max_xp) {
+        const min_xp = i > 0 ? gamificationLevels[i-1].max_xp : 0;
+        return {
+          level: i + 1,
+          name: gamificationLevels[i].name,
+          max_xp: gamificationLevels[i].max_xp,
+          min_xp
+        };
+      }
+    }
+    
+    // If score is higher than all levels, return the highest level
+    const highestLevel = gamificationLevels.length;
+    const highestLevelData = gamificationLevels[highestLevel - 1];
     return {
-      current: currentXp,
-      next: 100,
-      percentage
+      level: highestLevel,
+      name: highestLevelData.name,
+      max_xp: highestLevelData.max_xp,
+      min_xp: highestLevel > 1 ? gamificationLevels[highestLevel - 2].max_xp : 0
     };
   };
   
-  const level = calculateLevel(gamificationScore);
-  const xpProgress = calculateXpProgress(gamificationScore);
+  // Calculate XP progress to next level
+  const calculateXpProgress = (score: number, levelData: {max_xp: number, min_xp: number}): { current: number, next: number, percentage: number } => {
+    const rangeSize = levelData.max_xp - levelData.min_xp;
+    const currentXp = score - levelData.min_xp;
+    const percentage = (currentXp / rangeSize) * 100;
+    
+    return {
+      current: currentXp,
+      next: rangeSize,
+      percentage: Math.min(percentage, 100) // Cap at 100%
+    };
+  };
+  
+  const levelData = calculateLevel(gamificationScore);
+  const xpProgress = calculateXpProgress(gamificationScore, levelData);
+  const xpToNextLevel = levelData.max_xp - gamificationScore;
   
   const getIconForBadge = (iconName: string) => {
     switch(iconName) {
@@ -203,7 +253,7 @@ const BadgesGrid: React.FC = () => {
         ) : (
           <>
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">Nível {level}</h2>
+              <h2 className="text-lg font-semibold">Nível {levelData.level}</h2>
               <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                 {Math.round(xpProgress.percentage)}%
               </div>
@@ -218,7 +268,7 @@ const BadgesGrid: React.FC = () => {
             
             <div className="flex justify-between mt-1 text-xs text-muted-foreground">
               <span>{xpProgress.current} XP</span>
-              <span>{xpProgress.next} XP para o próximo nível</span>
+              <span>{xpToNextLevel} XP para o próximo nível</span>
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2">

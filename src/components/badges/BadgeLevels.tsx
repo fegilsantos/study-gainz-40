@@ -16,9 +16,16 @@ interface BadgeType {
   description: string;
 }
 
+interface GamificationLevel {
+  id: number;
+  name: string;
+  max_xp: number;
+}
+
 const BadgeLevels: React.FC = () => {
   const [levels, setLevels] = useState<Level[]>([]);
   const [badgeTypes, setBadgeTypes] = useState<BadgeType[]>([]);
+  const [gamificationLevels, setGamificationLevels] = useState<GamificationLevel[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,8 +48,25 @@ const BadgeLevels: React.FC = () => {
           
         if (typesError) throw typesError;
         
+        // Fetch gamification levels
+        const { data: gamificationData, error: gamificationError } = await supabase
+          .from('Gamification level')
+          .select('id, Name, Max xp')
+          .order('Max xp', { ascending: true });
+          
+        if (gamificationError) throw gamificationError;
+        
         if (levelsData) setLevels(levelsData);
         if (typesData) setBadgeTypes(typesData);
+        
+        if (gamificationData) {
+          const formattedLevels = gamificationData.map(level => ({
+            id: level.id,
+            name: level.Name,
+            max_xp: level['Max xp']
+          }));
+          setGamificationLevels(formattedLevels);
+        }
       } catch (error) {
         console.error('Error fetching badge data:', error);
       } finally {
@@ -104,31 +128,33 @@ const BadgeLevels: React.FC = () => {
           </p>
           
           <div className="space-y-4">
-            {Array.from({ length: 10 }).map((_, i) => {
-              const level = i + 1;
-              const xpRequired = (level - 1) * 100;
-              const xpForNextLevel = level * 100;
+            {gamificationLevels.map((level, i) => {
+              const previousMaxXp = i > 0 ? gamificationLevels[i-1].max_xp : 0;
+              const levelXpRange = level.max_xp - previousMaxXp;
               
               return (
                 <div key={i} className="flex items-center">
                   <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${
-                    level <= 3 ? 'from-emerald-400 to-teal-500' :
-                    level <= 6 ? 'from-blue-400 to-indigo-500' :
+                    i < 3 ? 'from-emerald-400 to-teal-500' :
+                    i < 6 ? 'from-blue-400 to-indigo-500' :
                     'from-purple-400 to-purple-600'
                   } flex items-center justify-center text-white font-bold mr-3`}>
-                    {level}
+                    {i + 1}
                   </div>
                   <div className="flex-1">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium">{level.name || `Nível ${i + 1}`}</span>
+                    </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div className={`h-2 rounded-full bg-gradient-to-r ${
-                        level <= 3 ? 'from-emerald-400 to-teal-500' :
-                        level <= 6 ? 'from-blue-400 to-indigo-500' :
+                        i < 3 ? 'from-emerald-400 to-teal-500' :
+                        i < 6 ? 'from-blue-400 to-indigo-500' :
                         'from-purple-400 to-purple-600'
                       }`} style={{width: '100%'}}></div>
                     </div>
                     <div className="flex justify-between mt-1">
-                      <span className="text-xs text-muted-foreground">{xpRequired} XP</span>
-                      <span className="text-xs text-muted-foreground">{xpForNextLevel} XP</span>
+                      <span className="text-xs text-muted-foreground">{previousMaxXp} XP</span>
+                      <span className="text-xs text-muted-foreground">{level.max_xp} XP</span>
                     </div>
                   </div>
                 </div>

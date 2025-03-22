@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { TrendingDown, TrendingUp, BookOpen, AlertTriangle } from 'lucide-react';
+import { TrendingDown, TrendingUp, BookOpen, AlertTriangle, Target } from 'lucide-react';
 import { useSubjectPerformance } from '@/hooks/useSubjectPerformance';
 import { userProfile } from '@/utils/mockData';
 import InsightsCard from './InsightsCard';
@@ -14,8 +13,9 @@ const Dashboard: React.FC = () => {
   const { weakestSubject, strongestSubject, loading } = useSubjectPerformance();
   const { user } = useAuth();
   const [gamificationScore, setGamificationScore] = useState<number>(0);
-  const [studyPlanProgress, setStudyPlanProgress] = useState<number>(0);
+  const [overallPerformance, setOverallPerformance] = useState<number>(0);
   const [loadingUserData, setLoadingUserData] = useState<boolean>(true);
+  const [gamificationLevels, setGamificationLevels] = useState<Array<{id: number, name: string, max_xp: number}>>([]);
   
   useEffect(() => {
     const fetchUserData = async () => {
@@ -23,9 +23,28 @@ const Dashboard: React.FC = () => {
       
       try {
         setLoadingUserData(true);
+        
+        // Fetch gamification levels
+        const { data: levelsData, error: levelsError } = await supabase
+          .from('Gamification level')
+          .select('id, Name, Max xp')
+          .order('Max xp', { ascending: true });
+          
+        if (levelsError) {
+          console.error('Error fetching gamification levels:', levelsError);
+        } else if (levelsData) {
+          const formattedLevels = levelsData.map(level => ({
+            id: level.id,
+            name: level.Name,
+            max_xp: level['Max xp']
+          }));
+          setGamificationLevels(formattedLevels);
+        }
+        
+        // Fetch user data
         const { data: personData, error } = await supabase
           .from('Person')
-          .select('id, "Gamification score", "Overall Plan Study Progress"')
+          .select('id, "Gamification score", "Overall Performance"')
           .eq('ProfileId', user.id)
           .single();
         
@@ -36,7 +55,7 @@ const Dashboard: React.FC = () => {
         
         if (personData) {
           setGamificationScore(personData["Gamification score"] || 0);
-          setStudyPlanProgress(personData["Overall Plan Study Progress"] || 0);
+          setOverallPerformance(personData["Overall Performance"] || 0);
         }
       } catch (error) {
         console.error('Error in fetchUserData:', error);
@@ -48,29 +67,51 @@ const Dashboard: React.FC = () => {
     fetchUserData();
   }, [user]);
   
-  // Calculate level based on gamification score
-  // This is a simple formula, you might want to adjust based on your requirements
-  const calculateLevel = (score: number): number => {
-    return Math.floor(score / 100) + 1;
-  };
-  
-  // Calculate XP progress to next level
-  const calculateXpProgress = (score: number): { current: number, next: number, percentage: number } => {
-    const level = calculateLevel(score);
-    const xpForCurrentLevel = (level - 1) * 100;
-    const xpForNextLevel = level * 100;
-    const currentXp = score - xpForCurrentLevel;
-    const percentage = (currentXp / 100) * 100;
+  // Calculate level based on gamification score and levels from database
+  const calculateLevel = (score: number): {level: number, name: string, max_xp: number, min_xp: number} => {
+    if (!gamificationLevels.length) {
+      return { level: 1, name: 'Iniciante', max_xp: 100, min_xp: 0 };
+    }
     
+    for (let i = 0; i < gamificationLevels.length; i++) {
+      if (score < gamificationLevels[i].max_xp) {
+        const min_xp = i > 0 ? gamificationLevels[i-1].max_xp : 0;
+        return {
+          level: i + 1,
+          name: gamificationLevels[i].name,
+          max_xp: gamificationLevels[i].max_xp,
+          min_xp
+        };
+      }
+    }
+    
+    // If score is higher than all levels, return the highest level
+    const highestLevel = gamificationLevels.length;
+    const highestLevelData = gamificationLevels[highestLevel - 1];
     return {
-      current: currentXp,
-      next: 100,
-      percentage
+      level: highestLevel,
+      name: highestLevelData.name,
+      max_xp: highestLevelData.max_xp,
+      min_xp: highestLevel > 1 ? gamificationLevels[highestLevel - 2].max_xp : 0
     };
   };
   
-  const level = calculateLevel(gamificationScore);
-  const xpProgress = calculateXpProgress(gamificationScore);
+  // Calculate XP progress to next level
+  const calculateXpProgress = (score: number, levelData: {max_xp: number, min_xp: number}): { current: number, next: number, percentage: number } => {
+    const rangeSize = levelData.max_xp - levelData.min_xp;
+    const currentXp = score - levelData.min_xp;
+    const percentage = (currentXp / rangeSize) * 100;
+    
+    return {
+      current: currentXp,
+      next: rangeSize,
+      percentage: Math.min(percentage, 100) // Cap at 100%
+    };
+  };
+  
+  const levelData = calculateLevel(gamificationScore);
+  const xpProgress = calculateXpProgress(gamificationScore, levelData);
+  const xpToNextLevel = levelData.max_xp - gamificationScore;
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -84,7 +125,7 @@ const Dashboard: React.FC = () => {
                 <div className="animate-pulse h-6 w-16 bg-muted rounded"></div>
               ) : (
                 <>
-                  <span className="text-3xl font-bold">{level}</span>
+                  <span className="text-3xl font-bold">{levelData.level}</span>
                   <div className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                     {Math.round(xpProgress.percentage)}%
                   </div>
@@ -106,12 +147,16 @@ const Dashboard: React.FC = () => {
         
         <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-purple-500">
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">Plano de Estudos</span>
+            <span className="text-xs text-muted-foreground">Performance Geral</span>
             <div className="flex items-center mt-1">
               {loadingUserData ? (
                 <div className="animate-pulse h-6 w-16 bg-muted rounded"></div>
               ) : (
-                <span className="text-3xl font-bold">{Math.round(studyPlanProgress)}%</span>
+                <div className="flex items-center">
+                  <span className="text-3xl font-bold">{Math.round(overallPerformance)}%</span>
+                  <Target className="ml-2 h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground ml-1">(Meta)</span>
+                </div>
               )}
             </div>
             <div className="w-full mt-2 bg-muted rounded-full h-1.5">
@@ -120,7 +165,7 @@ const Dashboard: React.FC = () => {
               ) : (
                 <div 
                   className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
-                  style={{width: `${studyPlanProgress}%`}}
+                  style={{width: `${overallPerformance}%`}}
                 />
               )}
             </div>
@@ -193,12 +238,11 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
       
-
-      
       {/* Insights & Recommendations */}
       <div className="w-full glass rounded-2xl shadow-sm overflow-hidden border-l-4 border-l-amber-400">
         <InsightsCard />
       </div>
+      
       {/* Goals Component */}
       <GoalsCard />
       
