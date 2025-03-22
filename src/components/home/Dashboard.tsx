@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { TrendingDown, TrendingUp, BookOpen, AlertTriangle, Target } from 'lucide-react';
 import { useSubjectPerformance } from '@/hooks/useSubjectPerformance';
@@ -27,8 +28,8 @@ const Dashboard: React.FC = () => {
         // Fetch gamification levels
         const { data: levelsData, error: levelsError } = await supabase
           .from('Gamification level')
-          .select('id, Name, Max xp')
-          .order('Max xp', { ascending: true });
+          .select('id, Name, "Max xp"')
+          .order('"Max xp"', { ascending: true });
           
         if (levelsError) {
           console.error('Error fetching gamification levels:', levelsError);
@@ -36,7 +37,7 @@ const Dashboard: React.FC = () => {
           const formattedLevels = levelsData.map(level => ({
             id: level.id,
             name: level.Name,
-            max_xp: level['Max xp']
+            max_xp: level["Max xp"]
           }));
           setGamificationLevels(formattedLevels);
         }
@@ -73,6 +74,7 @@ const Dashboard: React.FC = () => {
       return { level: 1, name: 'Iniciante', max_xp: 100, min_xp: 0 };
     }
     
+    // Find the level where the score is less than the max_xp
     for (let i = 0; i < gamificationLevels.length; i++) {
       if (score < gamificationLevels[i].max_xp) {
         const min_xp = i > 0 ? gamificationLevels[i-1].max_xp : 0;
@@ -107,6 +109,13 @@ const Dashboard: React.FC = () => {
       next: rangeSize,
       percentage: Math.min(percentage, 100) // Cap at 100%
     };
+  };
+  
+  // Get performance color based on value
+  const getPerformanceColor = (performance: number): string => {
+    if (performance >= 85) return 'text-emerald-500';
+    if (performance >= 65) return 'text-amber-500';
+    return 'text-rose-500';
   };
   
   const levelData = calculateLevel(gamificationScore);
@@ -153,7 +162,9 @@ const Dashboard: React.FC = () => {
                 <div className="animate-pulse h-6 w-16 bg-muted rounded"></div>
               ) : (
                 <div className="flex items-center">
-                  <span className="text-3xl font-bold">{Math.round(overallPerformance)}%</span>
+                  <span className={`text-3xl font-bold ${getPerformanceColor(overallPerformance)}`}>
+                    {Math.round(overallPerformance)}%
+                  </span>
                   <Target className="ml-2 h-4 w-4 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground ml-1">(Meta)</span>
                 </div>
@@ -164,7 +175,11 @@ const Dashboard: React.FC = () => {
                 <div className="animate-pulse h-1.5 w-1/2 bg-primary rounded-full"></div>
               ) : (
                 <div 
-                  className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
+                  className={`h-1.5 rounded-full transition-all duration-1000 ease-out ${
+                    overallPerformance >= 85 ? 'bg-emerald-500' : 
+                    overallPerformance >= 65 ? 'bg-amber-500' : 
+                    'bg-rose-500'
+                  }`}
                   style={{width: `${overallPerformance}%`}}
                 />
               )}

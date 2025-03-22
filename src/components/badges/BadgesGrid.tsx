@@ -70,8 +70,8 @@ const BadgesGrid: React.FC = () => {
         // Fetch gamification levels
         const { data: levelsData, error: levelsError } = await supabase
           .from('Gamification level')
-          .select('id, Name, Max xp')
-          .order('Max xp', { ascending: true });
+          .select('id, Name, "Max xp"')
+          .order('"Max xp"', { ascending: true });
           
         if (levelsError) {
           console.error('Error fetching gamification levels:', levelsError);
@@ -79,7 +79,7 @@ const BadgesGrid: React.FC = () => {
           const formattedLevels = levelsData.map(level => ({
             id: level.id,
             name: level.Name,
-            max_xp: level['Max xp']
+            max_xp: level["Max xp"]
           }));
           setGamificationLevels(formattedLevels);
         }
@@ -164,6 +164,7 @@ const BadgesGrid: React.FC = () => {
       return { level: 1, name: 'Iniciante', max_xp: 100, min_xp: 0 };
     }
     
+    // Find the level where the score is less than the max_xp
     for (let i = 0; i < gamificationLevels.length; i++) {
       if (score < gamificationLevels[i].max_xp) {
         const min_xp = i > 0 ? gamificationLevels[i-1].max_xp : 0;

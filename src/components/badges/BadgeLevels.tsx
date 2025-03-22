@@ -51,8 +51,7 @@ const BadgeLevels: React.FC = () => {
         // Fetch gamification levels
         const { data: gamificationData, error: gamificationError } = await supabase
           .from('Gamification level')
-          .select('id, Name, Max xp')
-          .order('Max xp', { ascending: true });
+          .select('id, Name, "Max xp"');
           
         if (gamificationError) throw gamificationError;
         
@@ -63,7 +62,7 @@ const BadgeLevels: React.FC = () => {
           const formattedLevels = gamificationData.map(level => ({
             id: level.id,
             name: level.Name,
-            max_xp: level['Max xp']
+            max_xp: level["Max xp"]
           }));
           setGamificationLevels(formattedLevels);
         }
