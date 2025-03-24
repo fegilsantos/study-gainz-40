@@ -297,7 +297,11 @@ const BadgesGrid: React.FC = () => {
         )}
       </div>
     
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+
+
+      <div className="mt-10 glass p-6 rounded-2xl">
+        <h3 className="text-lg font-medium mb-4">Próximas Medalhas</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {loading ? (
           Array(6).fill(0).map((_, index) => (
             <div key={index} className="p-5 glass rounded-2xl shadow-sm animate-pulse">
@@ -356,6 +360,7 @@ const BadgesGrid: React.FC = () => {
             </div>
           ))
         )}
+        </div>
       </div>
       
       <div className="mt-10 glass p-6 rounded-2xl">
