@@ -300,7 +300,7 @@ const BadgesGrid: React.FC = () => {
 
 
       <div className="mt-10 glass p-6 rounded-2xl">
-        <h3 className="text-lg font-medium mb-4">Próximas Medalhas</h3>
+        <h3 className="text-lg font-medium mb-4">Minhas Medalhas</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {loading ? (
           Array(6).fill(0).map((_, index) => (
