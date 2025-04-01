@@ -22,7 +22,7 @@ interface TopicSelectorProps {
 const TopicSelector: React.FC<TopicSelectorProps> = ({ 
   label, 
   placeholder, 
-  items = [], // Provide default empty array
+  items = [], // Default to empty array
   value, 
   onChange, 
   disabled = false,
@@ -30,8 +30,12 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({
 }) => {
   const [open, setOpen] = React.useState(false);
   
-  // Ensure items is always an array, even if undefined is passed
+  // Ensure items is always an array, even if undefined or null is passed
   const safeItems = Array.isArray(items) ? items : [];
+  
+  // Find the selected item, with safe checking
+  const selectedItem = value ? safeItems.find(item => item.id === value) : undefined;
+  const displayText = selectedItem?.name || placeholder;
   
   return (
     <div>
@@ -47,7 +51,7 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({
             className="w-full flex justify-between items-center px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
             disabled={disabled}
           >
-            {value ? safeItems.find(item => item.id === value)?.name || placeholder : placeholder}
+            {displayText}
             <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </button>
         </PopoverTrigger>

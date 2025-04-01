@@ -33,10 +33,13 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        setAvailableTopics(topics?.map(topic => ({
+        // Ensure we always set an array
+        const formattedTopics = topics?.map(topic => ({
           id: topic.id.toString(),
           name: topic.Name || 'Unnamed Topic'
-        })) || []);
+        })) || [];
+        
+        setAvailableTopics(formattedTopics);
       } catch (error) {
         console.error('Error in fetchTopics:', error);
         setAvailableTopics([]);
@@ -69,10 +72,13 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        setAvailableSubtopics(subtopics?.map(subtopic => ({
+        // Ensure we always set an array
+        const formattedSubtopics = subtopics?.map(subtopic => ({
           id: subtopic.id.toString(),
           name: subtopic.Name || 'Unnamed Subtopic'
-        })) || []);
+        })) || [];
+        
+        setAvailableSubtopics(formattedSubtopics);
       } catch (error) {
         console.error('Error in fetchSubtopics:', error);
         setAvailableSubtopics([]);

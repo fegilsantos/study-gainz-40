@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Brain, FileText, Send, Sparkles, Check, RotateCcw } from 'lucide-react';
 import { subjects } from '@/utils/mockData';
@@ -25,8 +26,8 @@ const ExercisesContent: React.FC = () => {
   const { availableTopics, availableSubtopics, loading } = useTopicData(selectedSubject, selectedTopic);
   
   // Make sure we always have arrays, even if the hook returns undefined
-  const topics = Array.isArray(availableTopics) ? availableTopics : [];
-  const subtopics = Array.isArray(availableSubtopics) ? availableSubtopics : [];
+  const topics: TopicItem[] = availableTopics || [];
+  const subtopics: TopicItem[] = availableSubtopics || [];
   
   // Mock exam types
   const examTypes = [
@@ -38,7 +39,7 @@ const ExercisesContent: React.FC = () => {
   
   // Update topicQuery when a subtopic is selected
   useEffect(() => {
-    if (selectedSubtopic) {
+    if (selectedSubtopic && subtopics.length > 0) {
       const subtopicName = subtopics.find(item => item.id === selectedSubtopic)?.name || '';
       const topicName = topics.find(item => item.id === selectedTopic)?.name || '';
       const subjectName = subjects.find(item => item.id === selectedSubject)?.name || '';
@@ -147,7 +148,7 @@ const ExercisesContent: React.FC = () => {
                     items={topics}
                     value={selectedTopic}
                     onChange={setSelectedTopic}
-                    disabled={loading || topics.length === 0}
+                    disabled={loading}
                   />
                 )}
                 
@@ -158,7 +159,7 @@ const ExercisesContent: React.FC = () => {
                     items={subtopics}
                     value={selectedSubtopic}
                     onChange={setSelectedSubtopic}
-                    disabled={loading || subtopics.length === 0}
+                    disabled={loading}
                   />
                 )}
                 
