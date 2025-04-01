@@ -122,11 +122,14 @@ const InsightsCard: React.FC = () => {
                 className={`p-3 rounded-xl ${
                   activeTab === 'insights' 
                     ? `border ${getBorderColorForInsight(item.type || 'info')} bg-card` 
-                    : 'border border-l-4'
+                    : 'border border-l-4 border-green-200'
                 }`}
                 style={
                   activeTab === 'recommendations' && item.subject_name
-                    ? { borderLeftColor: getColorForSubject(item.subject_name) } 
+                    ? { 
+                        borderLeftColor: '#10b981', // emerald-500 color 
+                        borderColor: '#d1fae5' // emerald-100 color
+                      } 
                     : {}
                 }
               >
@@ -139,8 +142,7 @@ const InsightsCard: React.FC = () => {
                   {activeTab === 'recommendations' && (
                     <div className="mt-0.5 mr-3">
                       <LightbulbIcon 
-                        className="w-4 h-4" 
-                        style={{ color: getColorForSubject(item.subject_name) }}
+                        className="w-4 h-4 text-emerald-500" 
                       />
                     </div>
                   )}
@@ -148,7 +150,7 @@ const InsightsCard: React.FC = () => {
                     <h3 className="text-sm font-medium">{item.title}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                     {activeTab === 'recommendations' && item.subject_name && (
-                      <p className="text-xs font-medium mt-1" style={{ color: getColorForSubject(item.subject_name) }}>
+                      <p className="text-xs font-medium mt-1 text-emerald-600">
                         {item.subject_name}
                       </p>
                     )}

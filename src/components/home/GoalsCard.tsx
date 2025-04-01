@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -57,6 +58,13 @@ interface Exam {
 interface Course {
   id: number;
   Name: string;
+}
+
+interface ExamYear {
+  id: number;
+  ExamenId: number;
+  Year: number;
+  Date_first_phase: string;
 }
 
 const GoalsCard: React.FC = () => {
@@ -180,6 +188,43 @@ const GoalsCard: React.FC = () => {
   
   const handleCloseDialog = () => {
     setIsOpen(false);
+  };
+
+  // New function to fetch exam date when exam is selected
+  const fetchExamDateForCurrentYear = async (examenId: number) => {
+    if (!examenId) return;
+
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      const { data, error } = await supabase
+        .from('Examen Year')
+        .select('id, Year, "Date first phase"')
+        .eq('ExamenId', examenId)
+        .eq('Year', currentYear)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching exam date:', error);
+        return;
+      }
+      
+      if (data && data["Date first phase"]) {
+        setFormDate(new Date(data["Date first phase"]));
+      }
+    } catch (error) {
+      console.error('Error in fetchExamDateForCurrentYear:', error);
+    }
+  };
+
+  // Update handleExamChange to fetch the date when an exam is selected
+  const handleExamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const examId = e.target.value ? parseInt(e.target.value) : null;
+    setFormExam(examId);
+    
+    if (examId) {
+      fetchExamDateForCurrentYear(examId);
+    }
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -387,7 +432,7 @@ const GoalsCard: React.FC = () => {
                 id="goalExam"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={formExam || ''}
-                onChange={(e) => setFormExam(e.target.value ? parseInt(e.target.value) : null)}
+                onChange={handleExamChange}
               >
                 <option value="">Selecione</option>
                 {exams.map(exam => (
@@ -433,6 +478,7 @@ const GoalsCard: React.FC = () => {
                     selected={formDate}
                     onSelect={setFormDate}
                     initialFocus
+                    className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
