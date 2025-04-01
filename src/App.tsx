@@ -13,6 +13,9 @@ import Exercises from "./pages/Exercises";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
+import Account from "./pages/Account";
+import Help from "./pages/Help";
+import Terms from "./pages/Terms";
 import { AuthProvider } from "./context/AuthContext";
 import { TasksProvider } from "./context/TasksContext";
 
@@ -36,6 +39,9 @@ const App = () => (
               <Route path="/badges" element={<Badges />} />
               <Route path="/badges/levels" element={<Badges />} />
               <Route path="/badges/all" element={<AllBadges />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

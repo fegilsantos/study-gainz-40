@@ -376,6 +376,30 @@ export type Database = {
           },
         ]
       }
+      configurations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          key: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          key: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          key?: string
+          value?: string
+        }
+        Relationships: []
+      }
       Courses: {
         Row: {
           created_at: string
@@ -539,6 +563,36 @@ export type Database = {
           },
         ]
       }
+      help_requests: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          status: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          status?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          status?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       "Overall Performance": {
         Row: {
           created_at: string
@@ -612,6 +666,7 @@ export type Database = {
       }
       Person: {
         Row: {
+          Birthdate: string | null
           created_at: string
           Email: string | null
           "Gamification score": number | null
@@ -627,6 +682,7 @@ export type Database = {
           School: number | null
         }
         Insert: {
+          Birthdate?: string | null
           created_at?: string
           Email?: string | null
           "Gamification score"?: number | null
@@ -642,6 +698,7 @@ export type Database = {
           School?: number | null
         }
         Update: {
+          Birthdate?: string | null
           created_at?: string
           Email?: string | null
           "Gamification score"?: number | null
@@ -769,29 +826,41 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          birthdate: string | null
           created_at: string | null
           email: string | null
+          gender: string | null
           id: string
           name: string | null
+          Phone: string | null
           role: string | null
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          birthdate?: string | null
           created_at?: string | null
           email?: string | null
+          gender?: string | null
           id: string
           name?: string | null
+          Phone?: string | null
           role?: string | null
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          birthdate?: string | null
           created_at?: string | null
           email?: string | null
+          gender?: string | null
           id?: string
           name?: string | null
+          Phone?: string | null
           role?: string | null
           updated_at?: string | null
         }

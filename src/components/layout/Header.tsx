@@ -24,11 +24,22 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
   const { signOut, user } = useAuth();
   
   const handleMenuItemClick = (option: string) => {
-    // Aqui você pode implementar navegação ou mostrar modais para cada opção
-    toast({
-      title: `${option} selecionado`,
-      description: `Você clicou na opção ${option}`,
-    });
+    switch (option) {
+      case "Minha Conta":
+        navigate("/account");
+        break;
+      case "Ajuda":
+        navigate("/help");
+        break;
+      case "Termos e Condições":
+        navigate("/terms");
+        break;
+      default:
+        toast({
+          title: `${option} selecionado`,
+          description: `Você clicou na opção ${option}`,
+        });
+    }
   };
   
   const handleSignOut = async () => {
