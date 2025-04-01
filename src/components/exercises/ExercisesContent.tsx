@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Brain, FileText, Send, Sparkles, Check, RotateCcw } from 'lucide-react';
 import { subjects } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
@@ -9,23 +9,21 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import TopicSelector from '@/components/studyplan/task-modal/TopicSelector';
+import { useTopicData, TopicItem } from '@/components/studyplan/task-modal/useTopicData';
 
 const ExercisesContent: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [selectedSubtopic, setSelectedSubtopic] = useState<string>('');
+  const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [topicQuery, setTopicQuery] = useState<string>('');
   const [aiMode, setAiMode] = useState<'topic' | 'auto'>('topic');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   
-  // Mock topics for demonstration
-  const topics = [
-    { id: 'topic1', name: 'Mecânica' },
-    { id: 'topic2', name: 'Termodinâmica' },
-    { id: 'topic3', name: 'Eletromagnetismo' },
-    { id: 'topic4', name: 'Óptica' },
-    { id: 'topic5', name: 'Ondas' },
-  ];
+  // Use the useTopicData hook to fetch related topic data
+  const { availableTopics, availableSubtopics, loading } = useTopicData(selectedSubject, selectedTopic);
   
   // Mock exam types
   const examTypes = [
@@ -34,6 +32,19 @@ const ExercisesContent: React.FC = () => {
     { id: 'enem', name: 'ENEM' },
     { id: 'unesp', name: 'UNESP' },
   ];
+  
+  // Update topicQuery when a subtopic is selected
+  useEffect(() => {
+    if (selectedSubtopic) {
+      const subtopicName = availableSubtopics.find(item => item.id === selectedSubtopic)?.name || '';
+      const topicName = availableTopics.find(item => item.id === selectedTopic)?.name || '';
+      const subjectName = subjects.find(item => item.id === selectedSubject)?.name || '';
+      
+      if (subtopicName) {
+        setTopicQuery(`${subtopicName} (${topicName} - ${subjectName})`);
+      }
+    }
+  }, [selectedSubtopic, selectedTopic, selectedSubject, availableSubtopics, availableTopics]);
   
   const handleGenerateExercises = () => {
     setIsGenerating(true);
@@ -46,6 +57,13 @@ const ExercisesContent: React.FC = () => {
         description: `Foram geradas 5 questões ${mode}.`,
       });
     }, 2000);
+  };
+
+  const handleClearSelections = () => {
+    setSelectedSubject('');
+    setSelectedTopic('');
+    setSelectedSubtopic('');
+    setTopicQuery('');
   };
   
   return (
@@ -78,7 +96,7 @@ const ExercisesContent: React.FC = () => {
                   <SelectValue placeholder="Selecione um tópico" />
                 </SelectTrigger>
                 <SelectContent>
-                  {topics.map(topic => (
+                  {availableTopics.map(topic => (
                     <SelectItem key={topic.id} value={topic.id}>
                       {topic.name}
                     </SelectItem>
@@ -107,39 +125,90 @@ const ExercisesContent: React.FC = () => {
           <TabsContent value="topic">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Digite um tópico ou conceito específico para gerar questões personalizadas.
+                Selecione uma matéria, tópico e subtópico ou digite manualmente um tópico para gerar questões personalizadas.
               </p>
               
-              <div className="relative">
-                <input 
-                  type="text"
-                  value={topicQuery}
-                  onChange={(e) => setTopicQuery(e.target.value)}
-                  placeholder="Ex: Leis de Newton, Análise Sintática..."
-                  className="w-full p-3 pr-10 rounded-lg border border-input"
+              <div className="space-y-3">
+                <TopicSelector
+                  label="Matéria"
+                  placeholder="Selecione uma matéria"
+                  items={subjects.map(s => ({ id: s.id, name: s.name }))}
+                  value={selectedSubject}
+                  onChange={setSelectedSubject}
                 />
-                <Button size="icon" className="absolute right-1 top-1" variant="ghost">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <Button 
-                className="w-full" 
-                onClick={handleGenerateExercises}
-                disabled={topicQuery.trim().length < 3 || isGenerating}
-              >
-                {isGenerating ? (
-                  <>
-                    <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-                    Gerando...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="mr-2" />
-                    Gerar Questões sobre este Tópico
-                  </>
+                
+                {selectedSubject && (
+                  <TopicSelector
+                    label="Tópico"
+                    placeholder="Selecione um tópico"
+                    items={availableTopics}
+                    value={selectedTopic}
+                    onChange={setSelectedTopic}
+                    disabled={loading || availableTopics.length === 0}
+                  />
                 )}
-              </Button>
+                
+                {selectedTopic && (
+                  <TopicSelector
+                    label="Subtópico"
+                    placeholder="Selecione um subtópico"
+                    items={availableSubtopics}
+                    value={selectedSubtopic}
+                    onChange={setSelectedSubtopic}
+                    disabled={loading || availableSubtopics.length === 0}
+                  />
+                )}
+                
+                <div className="relative mt-3">
+                  <label className="block text-sm font-medium mb-1">Descrição do tópico</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text"
+                      value={topicQuery}
+                      onChange={(e) => setTopicQuery(e.target.value)}
+                      placeholder="Ex: Leis de Newton, Análise Sintática..."
+                      className="w-full p-3 pr-10 rounded-lg border border-input"
+                    />
+                    {topicQuery && (
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        onClick={() => setTopicQuery('')}
+                        className="h-10 w-10 shrink-0"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-3">
+                  <Button 
+                    className="flex-1" 
+                    onClick={handleGenerateExercises}
+                    disabled={topicQuery.trim().length < 3 || isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                        Gerando...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="mr-2" />
+                        Gerar Questões
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={handleClearSelections}
+                  >
+                    Limpar
+                  </Button>
+                </div>
+              </div>
             </div>
           </TabsContent>
           

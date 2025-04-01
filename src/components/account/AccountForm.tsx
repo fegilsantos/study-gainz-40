@@ -58,13 +58,16 @@ const AccountForm = () => {
         if (error) throw error;
 
         if (data) {
+          // Use the exact date without formatting/parsing conversion issues
+          const birthdateValue = data.birthdate || '';
+          
           form.reset({
             name: data.name || '',
             email: data.email || '',
             phone: data.Phone || '',
             address: data.address || '',
             gender: data.gender || '',
-            birthdate: data.birthdate ? format(new Date(data.birthdate), 'yyyy-MM-dd') : '',
+            birthdate: birthdateValue ? birthdateValue : '',
           });
         }
       } catch (error) {
