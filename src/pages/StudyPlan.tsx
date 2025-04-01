@@ -18,10 +18,10 @@ const StudyPlan: React.FC = () => {
     refreshTasks();
   };
   
-  // Add effect to refresh tasks when component mounts
+  // Add effect to refresh tasks when component mounts or when refreshData changes
   useEffect(() => {
     refreshTasks();
-  }, [refreshTasks]);
+  }, [refreshTasks, refreshData]);
   
   return (
     <div className="min-h-screen pb-20">

@@ -5,7 +5,11 @@ import TopicSelector from './TopicSelector';
 import TaskTypeSelector from './TaskTypeSelector';
 import { useTopicData } from './useTopicData';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 interface Subject {
   id: string;
@@ -30,6 +34,7 @@ interface TaskFormProps {
   setDuration: (value: string) => void;
   type: 'study' | 'review' | 'class' | 'exercise';
   setType: (type: 'study' | 'review' | 'class' | 'exercise') => void;
+  setTaskDate: (date: Date) => void;
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -50,10 +55,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
   setDuration,
   type,
   setType,
+  setTaskDate,
 }) => {
   const { availableTopics, availableSubtopics, loading: topicsLoading } = useTopicData(subject, topic);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
+  const [date, setDate] = useState<Date>(currentDate);
   
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -93,6 +100,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
   useEffect(() => {
     setSubtopic('');
   }, [topic, setSubtopic]);
+
+  // Update parent component's date when local date changes
+  useEffect(() => {
+    setTaskDate(date);
+  }, [date, setTaskDate]);
   
   return (
     <div className="space-y-4">
@@ -100,13 +112,28 @@ const TaskForm: React.FC<TaskFormProps> = ({
         <label htmlFor="date" className="block text-sm font-medium mb-1">
           Data
         </label>
-        <input
-          type="text"
-          id="date"
-          value={format(currentDate, 'dd/MM/yyyy')}
-          disabled
-          className="w-full px-3 py-2 bg-muted border border-input rounded-lg text-sm"
-        />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !date && "text-muted-foreground"
+              )}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              {date ? format(date, 'dd/MM/yyyy') : <span>Selecione uma data</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarComponent
+              mode="single"
+              selected={date}
+              onSelect={(newDate) => newDate && setDate(newDate)}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       </div>
       
       <div>

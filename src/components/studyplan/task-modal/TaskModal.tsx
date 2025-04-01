@@ -25,10 +25,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
   const [duration, setDuration] = useState('');
   const [type, setType] = useState<'study' | 'review' | 'class' | 'exercise'>('study');
   const [completed, setCompleted] = useState(false);
+  const [taskDate, setTaskDate] = useState<Date>(currentDate);
   
   const { createTask, updateTask, deleteTask, refreshTasks } = useTasks();
   
   useEffect(() => {
+    // Reset taskDate when currentDate changes or when modal opens
+    setTaskDate(currentDate);
+    
     if (task) {
       setTitle(task.title);
       setDescription(task.description || '');
@@ -39,6 +43,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
       setDuration(task.duration.toString());
       setType(task.type);
       setCompleted(task.completed);
+      // If task has a date, use it
+      if (task.date) {
+        setTaskDate(new Date(task.date));
+      }
     } else {
       setTitle('');
       setDescription('');
@@ -50,7 +58,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
       setType('study');
       setCompleted(false);
     }
-  }, [task]);
+  }, [task, currentDate, isOpen]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +73,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
     }
     
     try {
+      // Format the taskDate to 'yyyy-MM-dd'
+      const formattedDate = format(taskDate, 'yyyy-MM-dd');
+      
       if (task) {
         // Update existing task
         const success = await updateTask(task.id, {
@@ -77,7 +88,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
           duration: parseInt(duration),
           type,
           completed,
-          date: format(currentDate, 'yyyy-MM-dd')
+          date: formattedDate
         });
         
         if (success) {
@@ -99,7 +110,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
           startTime,
           duration: parseInt(duration),
           type,
-          date: format(currentDate, 'yyyy-MM-dd')
+          date: formattedDate
         });
         
         if (taskId) {
@@ -192,7 +203,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
         
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <TaskForm
-            currentDate={currentDate}
+            currentDate={taskDate}
             title={title}
             setTitle={setTitle}
             description={description}
@@ -209,6 +220,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
             setDuration={setDuration}
             type={type}
             setType={setType}
+            setTaskDate={setTaskDate}
           />
           
           <TaskModalFooter 

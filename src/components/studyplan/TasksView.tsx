@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Check, AlertTriangle } from 'lucide-react';
 import { format, addDays, isPast, isToday, parseISO } from 'date-fns';
@@ -26,6 +25,11 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   const [upcomingTasks, setUpcomingTasks] = useState<TaskWithDisplayDate[]>([]);
   
   const { tasks, loading, updateTask, refreshTasks } = useTasks();
+  
+  // Refresh tasks when component mounts
+  useEffect(() => {
+    refreshTasks();
+  }, [refreshTasks]);
   
   useEffect(() => {
     if (loading) return;
@@ -69,6 +73,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
+    // Refresh tasks after modal closes
     refreshTasks();
     if (onTaskUpdate) onTaskUpdate();
   };

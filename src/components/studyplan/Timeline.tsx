@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { addDays, isSameDay, format as formatDate } from 'date-fns';
 import TaskModal from './task-modal/TaskModal';
@@ -22,7 +22,12 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState<boolean>(false);
   
-  const { getTasksByDate, loading } = useTasks();
+  const { getTasksByDate, loading, refreshTasks } = useTasks();
+  
+  // Refresh tasks when component mounts or when tasks are updated
+  useEffect(() => {
+    refreshTasks();
+  }, [refreshTasks]);
   
   const formatDateToString = (date: Date): string => {
     return formatDate(date, 'yyyy-MM-dd');
@@ -55,6 +60,8 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
+    // Refresh tasks after modal closes
+    refreshTasks();
     if (onTaskUpdate) onTaskUpdate();
   };
   
@@ -73,6 +80,7 @@ const Timeline: React.FC<TimelineProps> = ({ initialDate = new Date(), onTaskUpd
         title: 'Plano de estudos gerado com sucesso!',
         description: 'Seu plano de estudos personalizado foi criado com base no seu perfil.'
       });
+      refreshTasks(); // Refresh tasks after plan generation
     }, 2000);
   };
   
