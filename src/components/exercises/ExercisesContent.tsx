@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Brain, FileText, Send, Sparkles, Check, RotateCcw } from 'lucide-react';
+import { BookOpen, Brain, FileText, Sparkles, Check, RotateCcw } from 'lucide-react';
 import { subjects } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,25 +9,21 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import TopicSelector from '@/components/studyplan/task-modal/TopicSelector';
-import { useTopicData, TopicItem } from '@/components/studyplan/task-modal/useTopicData';
+import { useTopicData } from '@/hooks/useTopicData';
+import { useRouter } from 'react-router-dom';
 
 const ExercisesContent: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
   const [selectedSubtopic, setSelectedSubtopic] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('');
-  const [topicQuery, setTopicQuery] = useState<string>('');
   const [aiMode, setAiMode] = useState<'topic' | 'auto'>('topic');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   
+  const router = useRouter();
+  
   // Use the useTopicData hook to fetch related topic data
   const { availableTopics, availableSubtopics, loading } = useTopicData(selectedSubject, selectedTopic);
-  
-  // Make sure we always have arrays, even if the hook returns undefined
-  const topics: TopicItem[] = availableTopics || [];
-  const subtopics: TopicItem[] = availableSubtopics || [];
   
   // Mock exam types
   const examTypes = [
@@ -37,37 +33,27 @@ const ExercisesContent: React.FC = () => {
     { id: 'unesp', name: 'UNESP' },
   ];
   
-  // Update topicQuery when a subtopic is selected
-  useEffect(() => {
-    if (selectedSubtopic && subtopics.length > 0) {
-      const subtopicName = subtopics.find(item => item.id === selectedSubtopic)?.name || '';
-      const topicName = topics.find(item => item.id === selectedTopic)?.name || '';
-      const subjectName = subjects.find(item => item.id === selectedSubject)?.name || '';
-      
-      if (subtopicName) {
-        setTopicQuery(`${subtopicName} (${topicName} - ${subjectName})`);
-      }
-    }
-  }, [selectedSubtopic, selectedTopic, selectedSubject, subtopics, topics]);
-  
   const handleGenerateExercises = () => {
     setIsGenerating(true);
     
-    // Simulate API call delay
+    // Navigate to exercise session page with query params
     setTimeout(() => {
+      const params = new URLSearchParams();
+      
+      if (selectedSubject) params.append('subject', selectedSubject);
+      if (selectedTopic) params.append('topic', selectedTopic);
+      if (selectedSubtopic) params.append('subtopic', selectedSubtopic);
+      params.append('mode', aiMode);
+      
+      router.push(`/exercises/session?${params.toString()}`);
       setIsGenerating(false);
-      const mode = aiMode === 'topic' ? `sobre ${topicQuery}` : 'personalizadas para seu perfil';
-      toast.success(`Questões geradas!`, {
-        description: `Foram geradas 5 questões ${mode}.`,
-      });
-    }, 2000);
+    }, 500);
   };
 
   const handleClearSelections = () => {
     setSelectedSubject('');
     setSelectedTopic('');
     setSelectedSubtopic('');
-    setTopicQuery('');
   };
   
   return (
@@ -100,7 +86,7 @@ const ExercisesContent: React.FC = () => {
                   <SelectValue placeholder="Selecione um tópico" />
                 </SelectTrigger>
                 <SelectContent>
-                  {topics.map(topic => (
+                  {availableTopics && availableTopics.map(topic => (
                     <SelectItem key={topic.id} value={topic.id}>
                       {topic.name}
                     </SelectItem>
@@ -110,7 +96,29 @@ const ExercisesContent: React.FC = () => {
             </div>
           )}
           
-          <Button className="w-full mt-2" disabled={!selectedSubject}>
+          {selectedTopic && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Subtópico</label>
+              <Select onValueChange={setSelectedSubtopic} value={selectedSubtopic}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um subtópico" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubtopics && availableSubtopics.map(subtopic => (
+                    <SelectItem key={subtopic.id} value={subtopic.id}>
+                      {subtopic.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          <Button 
+            className="w-full mt-2" 
+            disabled={!selectedSubject} 
+            onClick={handleGenerateExercises}
+          >
             <BookOpen className="mr-2" />
             Iniciar Exercícios
           </Button>
@@ -129,68 +137,71 @@ const ExercisesContent: React.FC = () => {
           <TabsContent value="topic">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Selecione uma matéria, tópico e subtópico ou digite manualmente um tópico para gerar questões personalizadas.
+                Selecione uma matéria, tópico e subtópico para gerar questões personalizadas.
               </p>
               
               <div className="space-y-3">
-                <TopicSelector
-                  label="Matéria"
-                  placeholder="Selecione uma matéria"
-                  items={subjects.map(s => ({ id: s.id, name: s.name }))}
-                  value={selectedSubject}
-                  onChange={setSelectedSubject}
-                />
+                <div>
+                  <label className="block text-sm font-medium mb-2">Matéria</label>
+                  <Select onValueChange={setSelectedSubject} value={selectedSubject}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma matéria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map(subject => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 
                 {selectedSubject && (
-                  <TopicSelector
-                    label="Tópico"
-                    placeholder="Selecione um tópico"
-                    items={topics}
-                    value={selectedTopic}
-                    onChange={setSelectedTopic}
-                    disabled={loading}
-                  />
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Tópico {loading && <span className="inline-block animate-spin ml-1">⟳</span>}
+                    </label>
+                    <Select onValueChange={setSelectedTopic} value={selectedTopic} disabled={loading}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um tópico" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTopics && availableTopics.map(topic => (
+                          <SelectItem key={topic.id} value={topic.id}>
+                            {topic.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
                 
                 {selectedTopic && (
-                  <TopicSelector
-                    label="Subtópico"
-                    placeholder="Selecione um subtópico"
-                    items={subtopics}
-                    value={selectedSubtopic}
-                    onChange={setSelectedSubtopic}
-                    disabled={loading}
-                  />
-                )}
-                
-                <div className="relative mt-3">
-                  <label className="block text-sm font-medium mb-1">Descrição do tópico</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      value={topicQuery}
-                      onChange={(e) => setTopicQuery(e.target.value)}
-                      placeholder="Ex: Leis de Newton, Análise Sintática..."
-                      className="w-full p-3 pr-10 rounded-lg border border-input"
-                    />
-                    {topicQuery && (
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        onClick={() => setTopicQuery('')}
-                        className="h-10 w-10 shrink-0"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                    )}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Subtópico {loading && <span className="inline-block animate-spin ml-1">⟳</span>}
+                    </label>
+                    <Select onValueChange={setSelectedSubtopic} value={selectedSubtopic} disabled={loading}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um subtópico" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSubtopics && availableSubtopics.map(subtopic => (
+                          <SelectItem key={subtopic.id} value={subtopic.id}>
+                            {subtopic.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
+                )}
                 
                 <div className="flex gap-2 mt-3">
                   <Button 
                     className="flex-1" 
                     onClick={handleGenerateExercises}
-                    disabled={topicQuery.trim().length < 3 || isGenerating}
+                    disabled={!selectedSubject || isGenerating}
                   >
                     {isGenerating ? (
                       <>

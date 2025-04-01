@@ -232,6 +232,41 @@ export type Database = {
           },
         ]
       }
+      answers: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          option_letter: string
+          question_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          option_letter: string
+          question_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          option_letter?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       badge_levels: {
         Row: {
           created_at: string
@@ -470,6 +505,77 @@ export type Database = {
             columns: ["ExamenId"]
             isOneToOne: false
             referencedRelation: "Examen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercise_sessions: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          correct_answers: number
+          created_at: string
+          id: string
+          person_id: number
+          subject_id: number | null
+          subtopic_id: number | null
+          topic_id: number | null
+          total_questions: number
+          total_time_seconds: number | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          person_id: number
+          subject_id?: number | null
+          subtopic_id?: number | null
+          topic_id?: number | null
+          total_questions?: number
+          total_time_seconds?: number | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          person_id?: number
+          subject_id?: number | null
+          subtopic_id?: number | null
+          topic_id?: number | null
+          total_questions?: number
+          total_time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_sessions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "Subject"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_sessions_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "Subtopic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_sessions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "Topic"
             referencedColumns: ["id"]
           },
         ]
@@ -866,6 +972,116 @@ export type Database = {
         }
         Relationships: []
       }
+      question_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          is_correct: boolean | null
+          needs_review: boolean | null
+          person_id: number
+          question_id: string
+          selected_answer_id: string | null
+          time_spent_seconds: number | null
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          is_correct?: boolean | null
+          needs_review?: boolean | null
+          person_id: number
+          question_id: string
+          selected_answer_id?: string | null
+          time_spent_seconds?: number | null
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          is_correct?: boolean | null
+          needs_review?: boolean | null
+          person_id?: number
+          question_id?: string
+          selected_answer_id?: string | null
+          time_spent_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_attempts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "Person"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_attempts_selected_answer_id_fkey"
+            columns: ["selected_answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          content: string
+          created_at: string
+          difficulty: number
+          explanation: string
+          id: string
+          subject_id: number
+          subtopic_id: number | null
+          topic_id: number | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          difficulty?: number
+          explanation: string
+          id?: string
+          subject_id: number
+          subtopic_id?: number | null
+          topic_id?: number | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          difficulty?: number
+          explanation?: string
+          id?: string
+          subject_id?: number
+          subtopic_id?: number | null
+          topic_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "Subject"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "Subtopic"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "Topic"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       School: {
         Row: {
           "Active?": boolean | null
@@ -925,6 +1141,61 @@ export type Database = {
           Website?: string | null
         }
         Relationships: []
+      }
+      session_questions: {
+        Row: {
+          answer_id: string | null
+          created_at: string
+          id: string
+          is_correct: boolean | null
+          needs_review: boolean | null
+          question_id: string
+          session_id: string
+          time_spent_seconds: number | null
+        }
+        Insert: {
+          answer_id?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          needs_review?: boolean | null
+          question_id: string
+          session_id: string
+          time_spent_seconds?: number | null
+        }
+        Update: {
+          answer_id?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          needs_review?: boolean | null
+          question_id?: string
+          session_id?: string
+          time_spent_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_questions_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       "Student Subtopic percentage": {
         Row: {
