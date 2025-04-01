@@ -67,7 +67,7 @@ const AccountForm = () => {
             phone: data.Phone || '',
             address: data.address || '',
             gender: data.gender || '',
-            birthdate: birthdateValue ? birthdateValue : '',
+            birthdate: birthdateValue,
           });
         }
       } catch (error) {
@@ -90,6 +90,7 @@ const AccountForm = () => {
 
     setIsLoading(true);
     try {
+      // Send the exact date string to the database
       const { error } = await supabase
         .from('profiles')
         .update({

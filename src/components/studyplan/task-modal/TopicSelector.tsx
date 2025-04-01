@@ -22,13 +22,16 @@ interface TopicSelectorProps {
 const TopicSelector: React.FC<TopicSelectorProps> = ({ 
   label, 
   placeholder, 
-  items, 
+  items = [], // Provide default empty array
   value, 
   onChange, 
   disabled = false,
   required = false
 }) => {
   const [open, setOpen] = React.useState(false);
+  
+  // Ensure items is always an array, even if undefined is passed
+  const safeItems = Array.isArray(items) ? items : [];
   
   return (
     <div>
@@ -44,7 +47,7 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({
             className="w-full flex justify-between items-center px-3 py-2 bg-background border border-input rounded-lg text-sm focus:ring-1 focus:ring-ring transition-all"
             disabled={disabled}
           >
-            {value ? items.find(item => item.id === value)?.name : placeholder}
+            {value ? safeItems.find(item => item.id === value)?.name || placeholder : placeholder}
             <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </button>
         </PopoverTrigger>
@@ -53,7 +56,7 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({
             <CommandInput placeholder={`Pesquisar ${label.toLowerCase()}...`} />
             <CommandEmpty>Nenhum {label.toLowerCase()} encontrado.</CommandEmpty>
             <CommandGroup>
-              {items.map((item) => (
+              {safeItems.map((item) => (
                 <CommandItem
                   key={item.id}
                   value={item.id}

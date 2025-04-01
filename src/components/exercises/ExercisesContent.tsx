@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Brain, FileText, Send, Sparkles, Check, RotateCcw } from 'lucide-react';
 import { subjects } from '@/utils/mockData';
@@ -25,6 +24,10 @@ const ExercisesContent: React.FC = () => {
   // Use the useTopicData hook to fetch related topic data
   const { availableTopics, availableSubtopics, loading } = useTopicData(selectedSubject, selectedTopic);
   
+  // Make sure we always have arrays, even if the hook returns undefined
+  const topics = Array.isArray(availableTopics) ? availableTopics : [];
+  const subtopics = Array.isArray(availableSubtopics) ? availableSubtopics : [];
+  
   // Mock exam types
   const examTypes = [
     { id: 'fuvest', name: 'FUVEST' },
@@ -36,15 +39,15 @@ const ExercisesContent: React.FC = () => {
   // Update topicQuery when a subtopic is selected
   useEffect(() => {
     if (selectedSubtopic) {
-      const subtopicName = availableSubtopics.find(item => item.id === selectedSubtopic)?.name || '';
-      const topicName = availableTopics.find(item => item.id === selectedTopic)?.name || '';
+      const subtopicName = subtopics.find(item => item.id === selectedSubtopic)?.name || '';
+      const topicName = topics.find(item => item.id === selectedTopic)?.name || '';
       const subjectName = subjects.find(item => item.id === selectedSubject)?.name || '';
       
       if (subtopicName) {
         setTopicQuery(`${subtopicName} (${topicName} - ${subjectName})`);
       }
     }
-  }, [selectedSubtopic, selectedTopic, selectedSubject, availableSubtopics, availableTopics]);
+  }, [selectedSubtopic, selectedTopic, selectedSubject, subtopics, topics]);
   
   const handleGenerateExercises = () => {
     setIsGenerating(true);
@@ -96,7 +99,7 @@ const ExercisesContent: React.FC = () => {
                   <SelectValue placeholder="Selecione um tópico" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTopics.map(topic => (
+                  {topics.map(topic => (
                     <SelectItem key={topic.id} value={topic.id}>
                       {topic.name}
                     </SelectItem>
@@ -141,10 +144,10 @@ const ExercisesContent: React.FC = () => {
                   <TopicSelector
                     label="Tópico"
                     placeholder="Selecione um tópico"
-                    items={availableTopics}
+                    items={topics}
                     value={selectedTopic}
                     onChange={setSelectedTopic}
-                    disabled={loading || availableTopics.length === 0}
+                    disabled={loading || topics.length === 0}
                   />
                 )}
                 
@@ -152,10 +155,10 @@ const ExercisesContent: React.FC = () => {
                   <TopicSelector
                     label="Subtópico"
                     placeholder="Selecione um subtópico"
-                    items={availableSubtopics}
+                    items={subtopics}
                     value={selectedSubtopic}
                     onChange={setSelectedSubtopic}
-                    disabled={loading || availableSubtopics.length === 0}
+                    disabled={loading || subtopics.length === 0}
                   />
                 )}
                 

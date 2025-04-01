@@ -29,6 +29,7 @@ export const useTopicData = (subject: string, topic: string) => {
           
         if (error) {
           console.error('Error fetching topics:', error);
+          setAvailableTopics([]);
           return;
         }
         
@@ -38,6 +39,7 @@ export const useTopicData = (subject: string, topic: string) => {
         })) || []);
       } catch (error) {
         console.error('Error in fetchTopics:', error);
+        setAvailableTopics([]);
       } finally {
         setLoading(false);
       }
@@ -63,6 +65,7 @@ export const useTopicData = (subject: string, topic: string) => {
           
         if (error) {
           console.error('Error fetching subtopics:', error);
+          setAvailableSubtopics([]);
           return;
         }
         
@@ -72,6 +75,7 @@ export const useTopicData = (subject: string, topic: string) => {
         })) || []);
       } catch (error) {
         console.error('Error in fetchSubtopics:', error);
+        setAvailableSubtopics([]);
       } finally {
         setLoading(false);
       }
