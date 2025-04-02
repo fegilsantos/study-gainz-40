@@ -14,7 +14,7 @@ export const useTopicData = (subject: string, topic: string) => {
   
   useEffect(() => {
     const fetchTopics = async () => {
-      if (!subject) {
+      if (!subject || isNaN(parseInt(subject))) {
         setAvailableTopics([]);
         return;
       }
@@ -53,7 +53,7 @@ export const useTopicData = (subject: string, topic: string) => {
   
   useEffect(() => {
     const fetchSubtopics = async () => {
-      if (!topic) {
+      if (!topic || isNaN(parseInt(topic))) {
         setAvailableSubtopics([]);
         return;
       }
