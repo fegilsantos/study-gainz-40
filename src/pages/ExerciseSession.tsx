@@ -6,6 +6,7 @@ import { useExerciseSession } from '@/hooks/useExerciseSession';
 import ExerciseSessionContent from '@/components/exercises/ExerciseSessionContent';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const ExerciseSession: React.FC = () => {
   const location = useLocation();
@@ -28,8 +29,9 @@ const ExerciseSession: React.FC = () => {
     const initSession = async () => {
       if (initialized || authLoading) return;
       
-      // If not authenticated, redirect to login
+      // If not authenticated, redirect to login with a toast message
       if (!user || !user.personId) {
+        toast.error("Você precisa estar logado para acessar esta página.");
         navigate('/auth', { state: { from: location.pathname + location.search } });
         return;
       }
@@ -40,14 +42,22 @@ const ExerciseSession: React.FC = () => {
       const subtopicId = queryParams.get('subtopic') || undefined;
       
       try {
+        console.log("Creating session with:", { 
+          subjectId, 
+          topicId, 
+          subtopicId, 
+          personId: user.personId 
+        });
+        
         const sessionResult = await createSession(subjectId, topicId, subtopicId);
         
         if (!sessionResult) {
-          // If no session was created, navigate back to exercises page
+          toast.error("Não foi possível criar uma sessão de exercícios.");
           setTimeout(() => navigate('/exercises'), 2000);
         }
       } catch (err) {
         console.error("Failed to create session:", err);
+        toast.error("Erro ao criar sessão de exercícios.");
         setTimeout(() => navigate('/exercises'), 2000);
       } finally {
         setInitialized(true);
@@ -117,7 +127,7 @@ const ExerciseSession: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20">
-      <Header title="Exercícios" showBack />
+      <Header title="Exercícios" showBack backTo="/exercises" />
       <main className="px-4 py-6 max-w-4xl mx-auto">
         {session && (
           <ExerciseSessionContent 

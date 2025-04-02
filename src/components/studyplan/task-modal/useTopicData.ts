@@ -33,11 +33,11 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        // Ensure we always set an array
-        const formattedTopics = topics?.map(topic => ({
+        // Always ensure topics is an array
+        const formattedTopics = Array.isArray(topics) ? topics.map(topic => ({
           id: topic.id.toString(),
           name: topic.Name || 'Unnamed Topic'
-        })) || [];
+        })) : [];
         
         setAvailableTopics(formattedTopics);
       } catch (error) {
@@ -72,11 +72,11 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        // Ensure we always set an array
-        const formattedSubtopics = subtopics?.map(subtopic => ({
+        // Always ensure subtopics is an array
+        const formattedSubtopics = Array.isArray(subtopics) ? subtopics.map(subtopic => ({
           id: subtopic.id.toString(),
           name: subtopic.Name || 'Unnamed Subtopic'
-        })) || [];
+        })) : [];
         
         setAvailableSubtopics(formattedSubtopics);
       } catch (error) {

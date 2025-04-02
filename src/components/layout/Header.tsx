@@ -16,7 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 interface HeaderProps {
   title: string;
   showBack?: boolean;
-  backTo?: string;  // Add the backTo prop for direct navigation
+  backTo?: string;  // Direct navigation path
 }
 
 const Header: React.FC<HeaderProps> = ({ 

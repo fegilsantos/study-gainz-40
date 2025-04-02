@@ -33,7 +33,7 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        // Ensure we always set an array
+        // Always return an array, even if topics is null or undefined
         const formattedTopics = Array.isArray(topics) ? topics.map(topic => ({
           id: topic.id.toString(),
           name: topic.Name || 'Unnamed Topic'
@@ -72,7 +72,7 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        // Ensure we always set an array
+        // Always return an array, even if subtopics is null or undefined
         const formattedSubtopics = Array.isArray(subtopics) ? subtopics.map(subtopic => ({
           id: subtopic.id.toString(),
           name: subtopic.Name || 'Unnamed Subtopic'

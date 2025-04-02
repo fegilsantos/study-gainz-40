@@ -42,17 +42,20 @@ const ExercisesContent: React.FC = () => {
         if (error) {
           console.error('Error fetching subjects:', error);
           toast.error('Erro ao carregar matérias');
+          setSubjects([]);
           return;
         }
         
-        const formattedSubjects = subjectsData?.map(subject => ({
+        // Ensure we always set an array
+        const formattedSubjects = Array.isArray(subjectsData) ? subjectsData.map(subject => ({
           id: subject.id.toString(),
           name: subject.Name || 'Unnamed Subject'
-        })) || [];
+        })) : [];
         
         setSubjects(formattedSubjects);
       } catch (error) {
         console.error('Error in fetchSubjects:', error);
+        setSubjects([]);
       } finally {
         setSubjectsLoading(false);
       }
