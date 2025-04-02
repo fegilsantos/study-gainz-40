@@ -78,7 +78,7 @@ const ExercisesContent: React.FC = () => {
   const handleGenerateExercises = () => {
     setIsGenerating(true);
     
-    // Navigate to exercise session page with query params
+    // Navigate to solve exercise page with query params
     setTimeout(() => {
       const params = new URLSearchParams();
       
@@ -87,7 +87,7 @@ const ExercisesContent: React.FC = () => {
       if (selectedSubtopic) params.append('subtopic', selectedSubtopic);
       params.append('mode', aiMode);
       
-      navigate(`/exercises/session?${params.toString()}`);
+      navigate(`/solveExercise?${params.toString()}`);
       setIsGenerating(false);
     }, 500);
   };
