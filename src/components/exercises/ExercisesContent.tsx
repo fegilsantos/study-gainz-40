@@ -30,7 +30,18 @@ const ExercisesContent: React.FC = () => {
   const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
   
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
+  
+  // Registramos o status de autenticação no console para depuração
+  useEffect(() => {
+    if (!authLoading) {
+      console.log("Auth status in ExercisesContent:", {
+        isAuthenticated: !!session,
+        userId: user?.id || null,
+        personId: user?.personId || null,
+      });
+    }
+  }, [user, session, authLoading]);
   
   // Fetch subjects from Supabase
   useEffect(() => {
@@ -54,6 +65,7 @@ const ExercisesContent: React.FC = () => {
           name: subject.Name || 'Unnamed Subject'
         })) : [];
         
+        console.log("Fetched subjects:", formattedSubjects);
         setSubjects(formattedSubjects);
       } catch (error) {
         console.error('Error in fetchSubjects:', error);
@@ -78,8 +90,21 @@ const ExercisesContent: React.FC = () => {
   ];
   
   const handleGenerateExercises = () => {
-    if (!user || !user.personId) {
+    console.log("Generate exercises clicked. User:", user);
+    
+    if (authLoading) {
+      toast.error("Verificando seu login...");
+      return;
+    }
+    
+    if (!session || !user) {
       toast.error("Você precisa estar logado para gerar exercícios");
+      return;
+    }
+    
+    if (!user.personId) {
+      toast.error("Perfil de usuário não encontrado");
+      console.error("User authenticated but no personId found:", user);
       return;
     }
     
@@ -105,6 +130,7 @@ const ExercisesContent: React.FC = () => {
     setSelectedSubtopic('');
   };
   
+  // Resto do componente permanece o mesmo
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="glass rounded-2xl p-6 shadow-sm">

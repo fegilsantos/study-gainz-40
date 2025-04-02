@@ -11,11 +11,11 @@ import { toast } from 'sonner';
 const ExerciseSession: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [initialized, setInitialized] = useState(false);
   
   const {
-    session,
+    session: exerciseSession,
     loading,
     error,
     createSession,
@@ -26,13 +26,30 @@ const ExerciseSession: React.FC = () => {
   } = useExerciseSession();
 
   useEffect(() => {
+    // Registrar status de autenticação para depuração
+    if (!authLoading) {
+      console.log("Auth status in ExerciseSession:", {
+        isAuthenticated: !!session,
+        userId: user?.id || null,
+        personId: user?.personId || null,
+      });
+    }
+  }, [user, session, authLoading]);
+
+  useEffect(() => {
     const initSession = async () => {
       if (initialized || authLoading) return;
       
-      // If not authenticated, redirect to login with a toast message
-      if (!user || !user.personId) {
+      // Se não autenticado, redirecionar para login com uma mensagem toast
+      if (!session || !user) {
         toast.error("Você precisa estar logado para acessar esta página.");
         navigate('/auth', { state: { from: location.pathname + location.search } });
+        return;
+      }
+      
+      if (!user.personId) {
+        toast.error("Seu perfil de usuário não está completo.");
+        setTimeout(() => navigate('/exercises'), 2000);
         return;
       }
       
@@ -49,13 +66,7 @@ const ExerciseSession: React.FC = () => {
           personId: user.personId 
         });
         
-        // Make sure we have a valid personId before creating session
-        if (!user.personId) {
-          toast.error("Usuário não identificado completamente.");
-          setTimeout(() => navigate('/exercises'), 2000);
-          return;
-        }
-        
+        // Iniciar a criação da sessão
         const sessionResult = await createSession(subjectId, topicId, subtopicId);
         
         if (!sessionResult) {
@@ -72,7 +83,7 @@ const ExerciseSession: React.FC = () => {
     };
 
     initSession();
-  }, [location.search, createSession, initialized, navigate, user, authLoading]);
+  }, [location.search, createSession, initialized, navigate, user, authLoading, session]);
 
   if (authLoading) {
     return (
@@ -88,7 +99,7 @@ const ExerciseSession: React.FC = () => {
     );
   }
 
-  if (!user?.personId) {
+  if (!session || !user?.personId) {
     return (
       <div className="min-h-screen pb-20">
         <Header title="Acesso Restrito" showBack backTo="/exercises" />
@@ -103,7 +114,7 @@ const ExerciseSession: React.FC = () => {
     );
   }
 
-  if (loading && !session) {
+  if (loading && !exerciseSession) {
     return (
       <div className="min-h-screen pb-20">
         <Header title="Carregando..." showBack backTo="/exercises" />
@@ -117,7 +128,7 @@ const ExerciseSession: React.FC = () => {
     );
   }
 
-  if (error && !session) {
+  if (error && !exerciseSession) {
     return (
       <div className="min-h-screen pb-20">
         <Header title="Erro" showBack backTo="/exercises" />
@@ -136,9 +147,9 @@ const ExerciseSession: React.FC = () => {
     <div className="min-h-screen pb-20">
       <Header title="Exercícios" showBack backTo="/exercises" />
       <main className="px-4 py-6 max-w-4xl mx-auto">
-        {session && (
+        {exerciseSession && (
           <ExerciseSessionContent 
-            session={session}
+            session={exerciseSession}
             onAnswer={answerQuestion}
             onMarkForReview={markForReview}
             onNavigate={navigateToQuestion}

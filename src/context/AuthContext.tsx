@@ -4,11 +4,17 @@ import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+type User = {
+  id: string;
+  email?: string;
+  personId?: string;
+};
+
 type AuthContextType = {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  user: any | null;
+  user: User | null;
   refreshSession: () => Promise<void>;
 };
 
@@ -16,15 +22,54 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Função para buscar dados do perfil do usuário (Person)
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: personData, error } = await supabase
+        .from('Person')
+        .select('*')
+        .eq('ProfileId', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+
+      return personData;
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+      return null;
+    }
+  };
+
   const refreshSession = async () => {
     try {
+      setLoading(true);
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
-      setUser(data.session?.user || null);
+      
+      if (data.session?.user) {
+        const userId = data.session.user.id;
+        const personData = await fetchUserProfile(userId);
+        
+        setUser({
+          id: userId,
+          email: data.session.user.email,
+          personId: personData?.id || undefined
+        });
+        
+        console.log("User profile loaded:", {
+          userId,
+          personId: personData?.id || undefined
+        });
+      } else {
+        setUser(null);
+      }
     } catch (error) {
       console.error('Error refreshing session:', error);
     } finally {
@@ -36,9 +81,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     refreshSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
-        setUser(session?.user || null);
+        
+        if (session?.user) {
+          const userId = session.user.id;
+          const personData = await fetchUserProfile(userId);
+          
+          setUser({
+            id: userId,
+            email: session.user.email,
+            personId: personData?.id || undefined
+          });
+          
+          console.log("Auth state changed, user profile:", {
+            userId,
+            personId: personData?.id || undefined
+          });
+        } else {
+          setUser(null);
+        }
+        
         setLoading(false);
       }
     );
@@ -50,7 +113,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      setLoading(true);
       await supabase.auth.signOut();
+      setUser(null);
       toast({
         title: "Saiu com sucesso",
         description: "Você foi desconectado da sua conta.",
@@ -61,6 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
