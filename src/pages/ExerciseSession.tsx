@@ -49,6 +49,13 @@ const ExerciseSession: React.FC = () => {
           personId: user.personId 
         });
         
+        // Make sure we have a valid personId before creating session
+        if (!user.personId) {
+          toast.error("Usuário não identificado completamente.");
+          setTimeout(() => navigate('/exercises'), 2000);
+          return;
+        }
+        
         const sessionResult = await createSession(subjectId, topicId, subtopicId);
         
         if (!sessionResult) {
@@ -70,7 +77,7 @@ const ExerciseSession: React.FC = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen pb-20">
-        <Header title="Carregando..." showBack />
+        <Header title="Carregando..." showBack backTo="/exercises" />
         <main className="flex items-center justify-center h-[80vh]">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -84,7 +91,7 @@ const ExerciseSession: React.FC = () => {
   if (!user?.personId) {
     return (
       <div className="min-h-screen pb-20">
-        <Header title="Acesso Restrito" showBack />
+        <Header title="Acesso Restrito" showBack backTo="/exercises" />
         <main className="px-4 py-6 max-w-3xl mx-auto">
           <div className="text-center">
             <h2 className="text-xl font-bold text-destructive">Acesso não autorizado</h2>
@@ -99,7 +106,7 @@ const ExerciseSession: React.FC = () => {
   if (loading && !session) {
     return (
       <div className="min-h-screen pb-20">
-        <Header title="Carregando..." showBack />
+        <Header title="Carregando..." showBack backTo="/exercises" />
         <main className="flex items-center justify-center h-[80vh]">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -113,7 +120,7 @@ const ExerciseSession: React.FC = () => {
   if (error && !session) {
     return (
       <div className="min-h-screen pb-20">
-        <Header title="Erro" showBack />
+        <Header title="Erro" showBack backTo="/exercises" />
         <main className="px-4 py-6 max-w-3xl mx-auto">
           <div className="text-center">
             <h2 className="text-xl font-bold text-destructive">Houve um problema</h2>

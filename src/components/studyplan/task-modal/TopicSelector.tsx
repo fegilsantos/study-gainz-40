@@ -31,7 +31,7 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({
   const [open, setOpen] = React.useState(false);
   
   // Ensure items is always a valid array
-  const safeItems: Item[] = Array.isArray(items) ? items : [];
+  const safeItems: Item[] = items ? (Array.isArray(items) ? items : []) : [];
   
   // Find the selected item, with safe checking
   const selectedItem = value ? safeItems.find(item => item.id === value) : undefined;

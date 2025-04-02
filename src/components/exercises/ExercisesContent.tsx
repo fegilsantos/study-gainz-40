@@ -12,6 +12,7 @@ import { useTopicData } from '@/hooks/useTopicData';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import TopicSelector from '@/components/studyplan/task-modal/TopicSelector';
+import { useAuth } from '@/context/AuthContext';
 
 interface Subject {
   id: string;
@@ -29,6 +30,7 @@ const ExercisesContent: React.FC = () => {
   const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
   
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Fetch subjects from Supabase
   useEffect(() => {
@@ -76,6 +78,11 @@ const ExercisesContent: React.FC = () => {
   ];
   
   const handleGenerateExercises = () => {
+    if (!user || !user.personId) {
+      toast.error("Você precisa estar logado para gerar exercícios");
+      return;
+    }
+    
     setIsGenerating(true);
     
     // Navigate to exercise session page with query params
