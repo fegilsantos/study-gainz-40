@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Brain, FileText, Sparkles, Check, RotateCcw } from 'lucide-react';
-import { subjects } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +10,12 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTopicData } from '@/hooks/useTopicData';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Subject {
+  id: string;
+  name: string;
+}
 
 const ExercisesContent: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -19,11 +24,48 @@ const ExercisesContent: React.FC = () => {
   const [selectedExamType, setSelectedExamType] = useState<string>('');
   const [aiMode, setAiMode] = useState<'topic' | 'auto'>('topic');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState<boolean>(true);
   
   const navigate = useNavigate();
   
   // Use the useTopicData hook to fetch related topic data
   const { availableTopics, availableSubtopics, loading } = useTopicData(selectedSubject, selectedTopic);
+
+  // Fetch subjects from Supabase
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      setIsLoadingSubjects(true);
+      try {
+        const { data, error } = await supabase
+          .from('Subject')
+          .select('id, Name');
+          
+        if (error) {
+          console.error('Error fetching subjects:', error);
+          toast.error('Erro ao carregar matérias');
+          return;
+        }
+        
+        console.log('Subjects fetched:', data);
+        
+        if (data && data.length > 0) {
+          const formattedSubjects = data.map(subject => ({
+            id: subject.id.toString(),
+            name: subject.Name || 'Unnamed Subject'
+          }));
+          setSubjects(formattedSubjects);
+        }
+      } catch (error) {
+        console.error('Error in fetchSubjects:', error);
+        toast.error('Erro ao carregar matérias');
+      } finally {
+        setIsLoadingSubjects(false);
+      }
+    };
+    
+    fetchSubjects();
+  }, []);
   
   // Mock exam types
   const examTypes = [
@@ -66,7 +108,7 @@ const ExercisesContent: React.FC = () => {
             <label className="block text-sm font-medium mb-2">Matéria</label>
             <Select onValueChange={setSelectedSubject} value={selectedSubject}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione uma matéria" />
+                <SelectValue placeholder={isLoadingSubjects ? "Carregando matérias..." : "Selecione uma matéria"} />
               </SelectTrigger>
               <SelectContent>
                 {subjects.map(subject => (
@@ -81,16 +123,22 @@ const ExercisesContent: React.FC = () => {
           {selectedSubject && (
             <div>
               <label className="block text-sm font-medium mb-2">Tópico</label>
-              <Select onValueChange={setSelectedTopic} value={selectedTopic}>
+              <Select onValueChange={setSelectedTopic} value={selectedTopic} disabled={loading}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um tópico" />
+                  <SelectValue placeholder={loading ? "Carregando tópicos..." : "Selecione um tópico"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTopics && availableTopics.map(topic => (
-                    <SelectItem key={topic.id} value={topic.id}>
-                      {topic.name}
+                  {availableTopics.length > 0 ? (
+                    availableTopics.map(topic => (
+                      <SelectItem key={topic.id} value={topic.id}>
+                        {topic.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-topics" disabled>
+                      Nenhum tópico encontrado
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -99,16 +147,22 @@ const ExercisesContent: React.FC = () => {
           {selectedTopic && (
             <div>
               <label className="block text-sm font-medium mb-2">Subtópico</label>
-              <Select onValueChange={setSelectedSubtopic} value={selectedSubtopic}>
+              <Select onValueChange={setSelectedSubtopic} value={selectedSubtopic} disabled={loading}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um subtópico" />
+                  <SelectValue placeholder={loading ? "Carregando subtópicos..." : "Selecione um subtópico"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSubtopics && availableSubtopics.map(subtopic => (
-                    <SelectItem key={subtopic.id} value={subtopic.id}>
-                      {subtopic.name}
+                  {availableSubtopics.length > 0 ? (
+                    availableSubtopics.map(subtopic => (
+                      <SelectItem key={subtopic.id} value={subtopic.id}>
+                        {subtopic.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-subtopics" disabled>
+                      Nenhum subtópico encontrado
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -116,11 +170,20 @@ const ExercisesContent: React.FC = () => {
           
           <Button 
             className="w-full mt-2" 
-            disabled={!selectedSubject} 
+            disabled={!selectedSubject || isGenerating} 
             onClick={handleGenerateExercises}
           >
-            <BookOpen className="mr-2" />
-            Iniciar Exercícios
+            {isGenerating ? (
+              <>
+                <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <BookOpen className="mr-2" />
+                Iniciar Exercícios
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -145,7 +208,7 @@ const ExercisesContent: React.FC = () => {
                   <label className="block text-sm font-medium mb-2">Matéria</label>
                   <Select onValueChange={setSelectedSubject} value={selectedSubject}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma matéria" />
+                      <SelectValue placeholder={isLoadingSubjects ? "Carregando matérias..." : "Selecione uma matéria"} />
                     </SelectTrigger>
                     <SelectContent>
                       {subjects.map(subject => (
@@ -164,14 +227,20 @@ const ExercisesContent: React.FC = () => {
                     </label>
                     <Select onValueChange={setSelectedTopic} value={selectedTopic} disabled={loading}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um tópico" />
+                        <SelectValue placeholder={loading ? "Carregando tópicos..." : "Selecione um tópico"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableTopics && availableTopics.map(topic => (
-                          <SelectItem key={topic.id} value={topic.id}>
-                            {topic.name}
+                        {availableTopics.length > 0 ? (
+                          availableTopics.map(topic => (
+                            <SelectItem key={topic.id} value={topic.id}>
+                              {topic.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-topics" disabled>
+                            Nenhum tópico encontrado
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -184,14 +253,20 @@ const ExercisesContent: React.FC = () => {
                     </label>
                     <Select onValueChange={setSelectedSubtopic} value={selectedSubtopic} disabled={loading}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um subtópico" />
+                        <SelectValue placeholder={loading ? "Carregando subtópicos..." : "Selecione um subtópico"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableSubtopics && availableSubtopics.map(subtopic => (
-                          <SelectItem key={subtopic.id} value={subtopic.id}>
-                            {subtopic.name}
+                        {availableSubtopics.length > 0 ? (
+                          availableSubtopics.map(subtopic => (
+                            <SelectItem key={subtopic.id} value={subtopic.id}>
+                              {subtopic.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-subtopics" disabled>
+                            Nenhum subtópico encontrado
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

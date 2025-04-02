@@ -12,6 +12,7 @@ export const useTopicData = (subject: string, topic: string) => {
   const [availableSubtopics, setAvailableSubtopics] = useState<TopicItem[]>([]);
   const [loading, setLoading] = useState(false);
   
+  // Fetch topics when the subject changes
   useEffect(() => {
     const fetchTopics = async () => {
       if (!subject) {
@@ -21,6 +22,7 @@ export const useTopicData = (subject: string, topic: string) => {
       
       setLoading(true);
       try {
+        console.log('Fetching topics for subject ID:', subject);
         // Fetch topics for the selected subject
         const { data: topics, error } = await supabase
           .from('Topic')
@@ -32,6 +34,8 @@ export const useTopicData = (subject: string, topic: string) => {
           setAvailableTopics([]);
           return;
         }
+        
+        console.log('Topics fetched:', topics);
         
         // Ensure we always set an array
         const formattedTopics = Array.isArray(topics) ? topics.map(topic => ({
@@ -51,6 +55,7 @@ export const useTopicData = (subject: string, topic: string) => {
     fetchTopics();
   }, [subject]);
   
+  // Fetch subtopics when the topic changes
   useEffect(() => {
     const fetchSubtopics = async () => {
       if (!topic) {
@@ -60,6 +65,7 @@ export const useTopicData = (subject: string, topic: string) => {
       
       setLoading(true);
       try {
+        console.log('Fetching subtopics for topic ID:', topic);
         // Fetch subtopics for the selected topic
         const { data: subtopics, error } = await supabase
           .from('Subtopic')
@@ -71,6 +77,8 @@ export const useTopicData = (subject: string, topic: string) => {
           setAvailableSubtopics([]);
           return;
         }
+        
+        console.log('Subtopics fetched:', subtopics);
         
         // Ensure we always set an array
         const formattedSubtopics = Array.isArray(subtopics) ? subtopics.map(subtopic => ({

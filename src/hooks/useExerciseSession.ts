@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -90,7 +89,7 @@ export const useExerciseSession = () => {
       const { data: sessionData, error: sessionError } = await supabase
         .from('exercise_sessions')
         .insert({
-          person_id: user.personId,
+          person_id: Number(user.personId),
           subject_id: subjectId ? parseInt(subjectId) : null,
           topic_id: topicId ? parseInt(topicId) : null,
           subtopic_id: subtopicId ? parseInt(subtopicId) : null,

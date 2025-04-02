@@ -60,19 +60,23 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({
             <CommandInput placeholder={`Pesquisar ${label.toLowerCase()}...`} />
             <CommandEmpty>Nenhum {label.toLowerCase()} encontrado.</CommandEmpty>
             <CommandGroup>
-              {safeItems.map((item) => (
-                <CommandItem
-                  key={item.id}
-                  value={item.id}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue);
-                    setOpen(false);
-                  }}
-                >
-                  {item.name}
-                  {value === item.id && <Check className="ml-auto h-4 w-4" />}
-                </CommandItem>
-              ))}
+              {safeItems.length > 0 ? (
+                safeItems.map((item) => (
+                  <CommandItem
+                    key={item.id}
+                    value={item.id}
+                    onSelect={(currentValue) => {
+                      onChange(currentValue);
+                      setOpen(false);
+                    }}
+                  >
+                    {item.name}
+                    {value === item.id && <Check className="ml-auto h-4 w-4" />}
+                  </CommandItem>
+                ))
+              ) : (
+                <CommandItem disabled>Nenhum item disponível</CommandItem>
+              )}
             </CommandGroup>
           </Command>
         </PopoverContent>
