@@ -5,7 +5,6 @@ import { useTaskOperations } from '@/hooks/tasks/useTaskOperations';
 import { useAuth } from '@/context/AuthContext';
 import { Task } from '@/types/task';
 import { useToast } from '@/hooks/use-toast';
-import { User } from '@/types/auth';
 
 interface TasksContextType {
   tasks: Task[];

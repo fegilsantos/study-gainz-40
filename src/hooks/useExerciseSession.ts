@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -62,15 +63,15 @@ export const useExerciseSession = () => {
         answers (id, content, option_letter, is_correct)
       `).limit(5);
 
-      if (subjectId && !isNaN(parseInt(subjectId))) {
+      if (subjectId) {
         query = query.eq('subject_id', parseInt(subjectId));
       }
       
-      if (topicId && !isNaN(parseInt(topicId))) {
+      if (topicId) {
         query = query.eq('topic_id', parseInt(topicId));
       }
       
-      if (subtopicId && !isNaN(parseInt(subtopicId))) {
+      if (subtopicId) {
         query = query.eq('subtopic_id', parseInt(subtopicId));
       }
 
@@ -86,16 +87,13 @@ export const useExerciseSession = () => {
       }
 
       // Create an exercise session in the database
-      // Ensure personId is treated as a number
-      const personId = typeof user.personId === 'string' ? parseInt(user.personId) : user.personId;
-      
       const { data: sessionData, error: sessionError } = await supabase
         .from('exercise_sessions')
         .insert({
-          person_id: personId,
-          subject_id: subjectId && !isNaN(parseInt(subjectId)) ? parseInt(subjectId) : null,
-          topic_id: topicId && !isNaN(parseInt(topicId)) ? parseInt(topicId) : null,
-          subtopic_id: subtopicId && !isNaN(parseInt(subtopicId)) ? parseInt(subtopicId) : null,
+          person_id: user.personId,
+          subject_id: subjectId ? parseInt(subjectId) : null,
+          topic_id: topicId ? parseInt(topicId) : null,
+          subtopic_id: subtopicId ? parseInt(subtopicId) : null,
           total_questions: questions.length,
           completed: false
         })
@@ -153,14 +151,13 @@ export const useExerciseSession = () => {
   };
 
   const answerQuestion = async (questionId: string, answerId: string) => {
-    if (!user?.personId) {
-      setError("Usuário não autenticado");
-      toast.error("Você precisa estar logado para responder questões.");
+    if (!session) {
+      setError("Nenhuma sessão ativa");
       return false;
     }
 
     try {
-      const currentQuestion = session?.questions[session.currentQuestionIndex];
+      const currentQuestion = session.questions[session.currentQuestionIndex];
       if (currentQuestion.id !== questionId) {
         setError("ID da questão não corresponde à questão atual");
         return false;
@@ -220,8 +217,8 @@ export const useExerciseSession = () => {
   };
 
   const markForReview = (questionId: string, needsReview: boolean) => {
-    if (!user?.personId) {
-      setError("Usuário não autenticado");
+    if (!session) {
+      setError("Nenhuma sessão ativa");
       return;
     }
 
@@ -255,12 +252,12 @@ export const useExerciseSession = () => {
   };
 
   const navigateToQuestion = (index: number) => {
-    if (!user?.personId) {
-      setError("Usuário não autenticado");
+    if (!session) {
+      setError("Nenhuma sessão ativa");
       return;
     }
 
-    if (index < 0 || index >= session?.questions.length) {
+    if (index < 0 || index >= session.questions.length) {
       setError("Índice de questão fora dos limites");
       return;
     }
@@ -273,15 +270,14 @@ export const useExerciseSession = () => {
   };
 
   const completeSession = async () => {
-    if (!user?.personId) {
-      setError("Usuário não autenticado");
-      toast.error("Você precisa estar logado para completar a sessão.");
+    if (!session) {
+      setError("Nenhuma sessão ativa");
       return false;
     }
 
     try {
-      const correctAnswers = session?.questions.filter(q => q.isCorrect).length;
-      const totalTimeSpent = session?.questions.reduce((acc, q) => acc + (q.timeSpent || 0), 0);
+      const correctAnswers = session.questions.filter(q => q.isCorrect).length;
+      const totalTimeSpent = session.questions.reduce((acc, q) => acc + (q.timeSpent || 0), 0);
 
       try {
         // Update session in database

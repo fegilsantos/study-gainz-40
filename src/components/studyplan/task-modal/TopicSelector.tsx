@@ -12,7 +12,7 @@ interface Item {
 interface TopicSelectorProps {
   label: string;
   placeholder: string;
-  items: Item[] | undefined | null;
+  items: Item[];
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
@@ -22,7 +22,7 @@ interface TopicSelectorProps {
 const TopicSelector: React.FC<TopicSelectorProps> = ({ 
   label, 
   placeholder, 
-  items = [], 
+  items = [], // Default to empty array
   value, 
   onChange, 
   disabled = false,
@@ -30,8 +30,8 @@ const TopicSelector: React.FC<TopicSelectorProps> = ({
 }) => {
   const [open, setOpen] = React.useState(false);
   
-  // Ensure items is always a valid array
-  const safeItems: Item[] = items ? (Array.isArray(items) ? items : []) : [];
+  // Ensure items is always an array, even if undefined or null is passed
+  const safeItems = Array.isArray(items) ? items : [];
   
   // Find the selected item, with safe checking
   const selectedItem = value ? safeItems.find(item => item.id === value) : undefined;

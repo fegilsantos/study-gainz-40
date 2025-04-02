@@ -14,7 +14,7 @@ export const useTopicData = (subject: string, topic: string) => {
   
   useEffect(() => {
     const fetchTopics = async () => {
-      if (!subject || isNaN(parseInt(subject))) {
+      if (!subject) {
         setAvailableTopics([]);
         return;
       }
@@ -33,7 +33,7 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        // Always return an array, even if topics is null or undefined
+        // Ensure we always set an array
         const formattedTopics = Array.isArray(topics) ? topics.map(topic => ({
           id: topic.id.toString(),
           name: topic.Name || 'Unnamed Topic'
@@ -53,7 +53,7 @@ export const useTopicData = (subject: string, topic: string) => {
   
   useEffect(() => {
     const fetchSubtopics = async () => {
-      if (!topic || isNaN(parseInt(topic))) {
+      if (!topic) {
         setAvailableSubtopics([]);
         return;
       }
@@ -72,7 +72,7 @@ export const useTopicData = (subject: string, topic: string) => {
           return;
         }
         
-        // Always return an array, even if subtopics is null or undefined
+        // Ensure we always set an array
         const formattedSubtopics = Array.isArray(subtopics) ? subtopics.map(subtopic => ({
           id: subtopic.id.toString(),
           name: subtopic.Name || 'Unnamed Subtopic'

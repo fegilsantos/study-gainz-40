@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { mapActivityTypeToTaskType } from './taskTypeMappers';
-import { User } from '@/types/auth';
+import { User } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
 
 export const useFetchTasks = () => {
