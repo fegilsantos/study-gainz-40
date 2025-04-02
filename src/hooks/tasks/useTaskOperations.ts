@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { mapTaskTypeToActivityType } from './taskTypeMappers';
-import { User } from '@supabase/supabase-js';
+import { User } from '@/types/auth';
 
 export const useTaskOperations = (user: User | null, toast: any) => {
   

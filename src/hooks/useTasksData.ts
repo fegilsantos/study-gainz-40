@@ -6,6 +6,7 @@ import { useFetchTasks } from './tasks/useFetchTasks';
 import { useTaskOperations } from './tasks/useTaskOperations';
 import { Task } from '@/types/task';
 import { format, startOfDay } from 'date-fns';
+import { User } from '@/types/auth';
 
 export type { Task } from '@/types/task';
 

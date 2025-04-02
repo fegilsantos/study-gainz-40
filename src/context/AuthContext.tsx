@@ -3,12 +3,7 @@ import { createContext, useState, useEffect, useContext, ReactNode } from 'react
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-type User = {
-  id: string;
-  email?: string;
-  personId?: string;
-};
+import { User } from '@/types/auth';
 
 type AuthContextType = {
   session: Session | null;
@@ -60,7 +55,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser({
           id: userId,
           email: data.session.user.email,
-          personId: personData?.id || undefined
+          personId: personData?.id || undefined,
+          // Add required Supabase user properties
+          app_metadata: data.session.user.app_metadata,
+          user_metadata: data.session.user.user_metadata,
+          aud: data.session.user.aud,
+          created_at: data.session.user.created_at
         });
         
         console.log("User profile loaded:", {
@@ -91,7 +91,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser({
             id: userId,
             email: session.user.email,
-            personId: personData?.id || undefined
+            personId: personData?.id || undefined,
+            // Add required Supabase user properties
+            app_metadata: session.user.app_metadata,
+            user_metadata: session.user.user_metadata,
+            aud: session.user.aud,
+            created_at: session.user.created_at
           });
           
           console.log("Auth state changed, user profile:", {

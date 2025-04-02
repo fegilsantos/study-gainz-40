@@ -86,10 +86,13 @@ export const useExerciseSession = () => {
       }
 
       // Create an exercise session in the database
+      // Ensure personId is treated as a number
+      const personId = typeof user.personId === 'string' ? parseInt(user.personId) : user.personId;
+      
       const { data: sessionData, error: sessionError } = await supabase
         .from('exercise_sessions')
         .insert({
-          person_id: user.personId,
+          person_id: personId,
           subject_id: subjectId && !isNaN(parseInt(subjectId)) ? parseInt(subjectId) : null,
           topic_id: topicId && !isNaN(parseInt(topicId)) ? parseInt(topicId) : null,
           subtopic_id: subtopicId && !isNaN(parseInt(subtopicId)) ? parseInt(subtopicId) : null,
