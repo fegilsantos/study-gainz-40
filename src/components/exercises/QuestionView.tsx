@@ -22,8 +22,11 @@ const QuestionView: React.FC<QuestionViewProps> = ({
     }
   };
   
+  // Ensure answers is always an array, even if undefined
+  const answers = question.question.answers || [];
+  
   // Sort answers by option letter
-  const sortedAnswers = [...question.question.answers]
+  const sortedAnswers = [...answers]
     .sort((a, b) => a.option_letter.localeCompare(b.option_letter));
   
   return (

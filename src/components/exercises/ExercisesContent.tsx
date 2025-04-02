@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTopicData } from '@/hooks/useTopicData';
-import { useRouter } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const ExercisesContent: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -20,7 +20,7 @@ const ExercisesContent: React.FC = () => {
   const [aiMode, setAiMode] = useState<'topic' | 'auto'>('topic');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   
-  const router = useRouter();
+  const navigate = useNavigate();
   
   // Use the useTopicData hook to fetch related topic data
   const { availableTopics, availableSubtopics, loading } = useTopicData(selectedSubject, selectedTopic);
@@ -45,7 +45,7 @@ const ExercisesContent: React.FC = () => {
       if (selectedSubtopic) params.append('subtopic', selectedSubtopic);
       params.append('mode', aiMode);
       
-      router.push(`/exercises/session?${params.toString()}`);
+      navigate(`/exercises/session?${params.toString()}`);
       setIsGenerating(false);
     }, 500);
   };

@@ -74,7 +74,7 @@ const ExerciseSession: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20">
-      <Header title="Exercícios" showBack backTo="/exercises" />
+      <Header title="Exercícios" showBack />
       <main className="px-4 py-6 max-w-4xl mx-auto">
         {session && (
           <ExerciseSessionContent 

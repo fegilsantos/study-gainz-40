@@ -4,18 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
-export interface Question {
-  id: string;
-  content: string;
-  explanation: string;
-  answers: Answer[];
-}
-
 export interface Answer {
   id: string;
   content: string;
   option_letter: string;
   is_correct: boolean;
+}
+
+export interface Question {
+  id: string;
+  content: string;
+  explanation: string;
+  answers: Answer[];
 }
 
 export interface SessionQuestion {
@@ -55,35 +55,28 @@ export const useExerciseSession = () => {
     setError(null);
 
     try {
-      // Fetch questions based on the filters
-      const query = supabase
-        .from('questions')
-        .select(`
-          id,
-          content,
-          explanation,
-          answers (
-            id,
-            content,
-            option_letter,
-            is_correct
-          )
-        `)
-        .limit(5);
+      console.log("Creating session with:", { subjectId, topicId, subtopicId, personId: user.personId });
+      
+      // Fetch 5 questions with their answers based on the filters
+      let query = supabase.from('questions').select(`
+        id, content, explanation, subject_id, topic_id, subtopic_id,
+        answers (id, content, option_letter, is_correct)
+      `).limit(5);
 
       if (subjectId) {
-        query.eq('subject_id', subjectId);
+        query = query.eq('subject_id', parseInt(subjectId));
       }
       
       if (topicId) {
-        query.eq('topic_id', topicId);
+        query = query.eq('topic_id', parseInt(topicId));
       }
       
       if (subtopicId) {
-        query.eq('subtopic_id', subtopicId);
+        query = query.eq('subtopic_id', parseInt(subtopicId));
       }
 
       const { data: questions, error: questionsError } = await query;
+      console.log("Fetched questions:", questions);
 
       if (questionsError) {
         throw new Error(`Erro ao buscar questões: ${questionsError.message}`);
@@ -111,20 +104,27 @@ export const useExerciseSession = () => {
         throw new Error(`Erro ao criar sessão: ${sessionError.message}`);
       }
 
+      console.log("Created session:", sessionData);
+
       // Format session questions
-      const sessionQuestions: SessionQuestion[] = questions.map(question => ({
-        id: question.id,
-        question: {
+      const sessionQuestions: SessionQuestion[] = questions.map(question => {
+        // Ensure answers is an array
+        const answers = Array.isArray(question.answers) ? question.answers : [];
+        
+        return {
           id: question.id,
-          content: question.content,
-          explanation: question.explanation,
-          answers: question.answers
-        },
-        selectedAnswer: null,
-        isCorrect: null,
-        timeSpent: 0,
-        needsReview: false
-      }));
+          question: {
+            id: question.id,
+            content: question.content,
+            explanation: question.explanation,
+            answers
+          },
+          selectedAnswer: null,
+          isCorrect: null,
+          timeSpent: 0,
+          needsReview: false
+        };
+      });
 
       // Create new session in memory
       const newSession: ExerciseSession = {
@@ -141,6 +141,7 @@ export const useExerciseSession = () => {
       setSession(newSession);
       return newSession;
     } catch (err: any) {
+      console.error("Error creating session:", err);
       setError(err.message);
       toast.error(err.message);
       return null;
@@ -182,16 +183,20 @@ export const useExerciseSession = () => {
         timeSpent
       };
 
-      // Update session in database
-      await supabase
-        .from('session_questions')
-        .insert({
-          session_id: session.id,
-          question_id: questionId,
-          answer_id: answerId,
-          is_correct: selectedAnswer.is_correct,
-          time_spent_seconds: timeSpent
-        });
+      try {
+        // Update session in database
+        await supabase
+          .from('session_questions')
+          .insert({
+            session_id: session.id,
+            question_id: questionId,
+            answer_id: answerId,
+            is_correct: selectedAnswer.is_correct,
+            time_spent_seconds: timeSpent
+          });
+      } catch (e) {
+        console.error("Failed to save question answer to database, but continuing:", e);
+      }
 
       // Update session state
       const correctAnswers = updatedQuestions.filter(q => q.isCorrect).length;
@@ -231,15 +236,18 @@ export const useExerciseSession = () => {
         questions: updatedQuestions
       });
 
-      // Update in database
-      supabase
-        .from('session_questions')
-        .update({ needs_review: needsReview })
-        .eq('session_id', session.id)
-        .eq('question_id', questionId)
-        .then(({ error }) => {
-          if (error) console.error("Error marking for review:", error);
-        });
+      try {
+        // Update in database if the question has been answered
+        if (updatedQuestions[index].selectedAnswer) {
+          supabase
+            .from('session_questions')
+            .update({ needs_review: needsReview })
+            .eq('session_id', session.id)
+            .eq('question_id', questionId);
+        }
+      } catch (e) {
+        console.error("Failed to update review status in database, but continuing:", e);
+      }
     }
   };
 
@@ -271,16 +279,20 @@ export const useExerciseSession = () => {
       const correctAnswers = session.questions.filter(q => q.isCorrect).length;
       const totalTimeSpent = session.questions.reduce((acc, q) => acc + (q.timeSpent || 0), 0);
 
-      // Update session in database
-      await supabase
-        .from('exercise_sessions')
-        .update({
-          correct_answers: correctAnswers,
-          total_time_seconds: totalTimeSpent,
-          completed: true,
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', session.id);
+      try {
+        // Update session in database
+        await supabase
+          .from('exercise_sessions')
+          .update({
+            correct_answers: correctAnswers,
+            total_time_seconds: totalTimeSpent,
+            completed: true,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', session.id);
+      } catch (e) {
+        console.error("Failed to update session completion status in database, but continuing:", e);
+      }
 
       setSession({
         ...session,

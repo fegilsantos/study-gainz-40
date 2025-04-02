@@ -16,9 +16,14 @@ import { useAuth } from '@/context/AuthContext';
 interface HeaderProps {
   title: string;
   showBack?: boolean;
+  backTo?: string;  // Add the backTo prop for direct navigation
 }
 
-const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  title, 
+  showBack = false,
+  backTo
+}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signOut, user } = useAuth();
@@ -47,6 +52,14 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
     navigate('/auth');
   };
   
+  const handleBack = () => {
+    if (backTo) {
+      navigate(backTo);
+    } else {
+      navigate(-1);
+    }
+  };
+  
   return (
     <header className="sticky top-0 z-10 w-full bg-background/80 backdrop-blur-md border-b">
       <div className="flex items-center justify-between h-14 px-4">
@@ -56,7 +69,7 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
               variant="ghost" 
               size="icon" 
               className="mr-2" 
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               aria-label="Voltar"
             >
               <ChevronLeft className="h-5 w-5" />
