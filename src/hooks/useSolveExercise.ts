@@ -181,10 +181,10 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
 
   // Toggle need for review
   const toggleReview = async (questionId: string) => {
-    if (!user ) {
-      toast.error("Você precisa estar logado para marcar questões para revisão.");
-      return false;
-    }
+    //if (!user ) {
+    //  toast.error("Você precisa estar logado para marcar questões para revisão.");
+    //  return false;
+    //}
 
     try {
       // Update local state
