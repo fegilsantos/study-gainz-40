@@ -27,10 +27,12 @@ const ReviewExercisesSection: React.FC = () => {
       setLoading(true);
       
       const { data, error } = await supabase
-        .rpc('get_review_questions_by_subject');
+        .rpc('get_review_questions_by_subject');{
+        user_id: user.id // Adicione o user_id como parâmetro
+      });
       
       if (error) {
-        console.error('Error fetching review questions:', error);
+        console.error('Error fetching review questions:', error.details);
         toast.error('Erro ao carregar questões para revisão');
         return;
       }
