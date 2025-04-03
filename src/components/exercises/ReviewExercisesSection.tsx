@@ -23,9 +23,10 @@ const ReviewExercisesSection: React.FC = () => {
     const fetchReviewExercises = async () => {
       setIsLoading(true);
       try {
-        // Fetch questions marked for review, grouped by subject
+        // Instead of using rpc, use a direct SQL query to the function
         const { data, error } = await supabase
-          .rpc('get_review_questions_by_subject');
+          .from('get_review_questions_by_subject')
+          .select('*');
         
         if (error) {
           console.error('Error fetching review exercises:', error);
