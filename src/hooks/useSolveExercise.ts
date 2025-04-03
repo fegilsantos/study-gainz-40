@@ -146,14 +146,14 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
       }));
       console.log(user.id)
 
-      // Get all subject performance data for this user
+     
       const { data: person, error: personError } = await supabase
         .from('Person')
         .select('id')
         .eq('ProfileId', user.id)
         .single();
 
-      console.log(person.Id)
+      console.log(person.id)
       console.log(questionId)
       console.log(answerId)
       console.log(isCorrect)
@@ -163,7 +163,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
       const { error: saveError } = await supabase
         .from('question_attempts')
         .insert({
-          person_id: person.Id,
+          person_id: person.id,
           question_id: questionId,
           selected_answer_id: answerId,
           is_correct: isCorrect,
@@ -206,7 +206,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         const { error: updateError } = await supabase
           .from('question_attempts')
           .update({ needs_review: needsReview })
-          .eq('person_id', person.Id)
+          .eq('person_id', person.id)
           .eq('question_id', questionId)
           .order('attempted_at', { ascending: false })
           .limit(1);
