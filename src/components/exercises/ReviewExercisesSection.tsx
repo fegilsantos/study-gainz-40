@@ -27,7 +27,7 @@ const ReviewExercisesSection: React.FC = () => {
       setLoading(true);
       
       const { data, error } = await supabase
-        .rpc('get_review_questions_by_subject'{
+        .rpc('get_review_questions_by_subject',{
         user_id: user.id // Adicione o user_id como parâmetro
       });
       
