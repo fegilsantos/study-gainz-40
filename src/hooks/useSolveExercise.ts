@@ -144,7 +144,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           isCorrect
         }
       }));
-      console.log(user)
+      console.log(user.id)
 
       // Get all subject performance data for this user
       const { data: person, error: personError } = await supabase
@@ -153,7 +153,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         .eq('ProfileId', user.id)
         .single();
 
-      console.log(person)
+      console.log(person.Id)
       console.log(questionId)
       console.log(answerId)
       console.log(isCorrect)
