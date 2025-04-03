@@ -285,15 +285,12 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   // Toggle need for review
   const toggleReview = async (questionId: string) => {
     try {
-      // Update local state
-      const needsReview = !attempts[questionId]?.needsReview;
-      setAttempts(prev => ({
-        ...prev,
-        [questionId]: {
-          ...prev[questionId],
-          needsReview
-        }
-      }));
+    // 1. Verificar usuário primeiro
+    if (!user) {
+      toast.error("Você precisa estar logado para revisar questões");
+      return false;
+    }
+      
 
     // Buscar a entidade Person dentro da função
     const { data: person, error: personError } = await supabase
@@ -307,6 +304,15 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
       toast.error("Erro ao identificar usuário");
       return false;
     }
+      // Update local state
+      const needsReview = !attempts[questionId]?.needsReview;
+      setAttempts(prev => ({
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          needsReview
+        }
+      }));
 
       // If the question has been answered, update in database
       if (attempts[questionId]?.selectedAnswerId) {
