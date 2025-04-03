@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -25,7 +24,7 @@ export interface ExerciseAttempt {
   needsReview: boolean;
 }
 
-export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId?: string) => {
+export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId?: string, isReview = false) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [attempts, setAttempts] = useState<Record<string, ExerciseAttempt>>({});
   const [loading, setLoading] = useState(true);
@@ -35,53 +34,143 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   // Fetch questions when component mounts
   useEffect(() => {
     const fetchQuestions = async () => {
-     // if (!user ) {
-       // setError("Você precisa estar logado para resolver exercícios.");
-       // toast.error("Você precisa estar logado para resolver exercícios.");
-        //setLoading(false);
-        //return;
-     // }
-
       try {
         setLoading(true);
-        
-        // Create query for questions based on the provided filters
-        let query = supabase
-          .from('questions')
-          .select(`
-            id, 
-            content, 
-            explanation,
-            answers (id, content, option_letter, is_correct)
-          `)
-          .limit(5);
-        
-        // Add filters based on available parameters
-        if (subtopicId) {
-          query = query.eq('subtopic_id', parseInt(subtopicId));
-        } else if (topicId) {
-          query = query.eq('topic_id', parseInt(topicId));
-        } else if (subjectId) {
-          query = query.eq('subject_id', parseInt(subjectId));
-        }
 
-        const { data, error: fetchError } = await query;
-
-        if (fetchError) {
-          console.error("Error fetching questions:", fetchError);
-          setError("Erro ao buscar questões. Por favor, tente novamente.");
-          toast.error("Erro ao buscar questões");
+        if (!user) {
+          setError("Você precisa estar logado para resolver exercícios.");
+          toast.error("Você precisa estar logado para resolver exercícios.");
+          setLoading(false);
           return;
         }
 
-        if (!data || data.length === 0) {
-          setError("Nenhuma questão encontrada para o subtópico selecionado.");
-          toast.error("Nenhuma questão encontrada");
+        const { data: person, error: personError } = await supabase
+          .from('Person')
+          .select('id')
+          .eq('ProfileId', user.id)
+          .single();
+
+        if (personError) {
+          console.error("Error fetching person:", personError);
+          setError("Erro ao buscar perfil de usuário.");
+          setLoading(false);
           return;
+        }
+        
+        let fetchedQuestions;
+
+        if (isReview) {
+          // Fetch questions marked for review
+          const { data: questionAttempts, error: attemptsError } = await supabase
+            .from('question_attempts')
+            .select(`
+              question_id,
+              selected_answer_id,
+              is_correct,
+              needs_review,
+              questions!inner(
+                id, 
+                content, 
+                explanation,
+                subject_id,
+                topic_id,
+                subtopic_id
+              )
+            `)
+            .eq('person_id', person.id)
+            .eq('needs_review', true)
+            .order('attempted_at', { ascending: false });
+
+          if (attemptsError) {
+            console.error("Error fetching review questions:", attemptsError);
+            setError("Erro ao buscar questões para revisão.");
+            setLoading(false);
+            return;
+          }
+
+          if (!questionAttempts || questionAttempts.length === 0) {
+            setError("Nenhuma questão marcada para revisão.");
+            setLoading(false);
+            return;
+          }
+
+          // Filter for questions matching the subject if specified
+          const filteredAttempts = subjectId 
+            ? questionAttempts.filter(qa => qa.questions.subject_id === parseInt(subjectId))
+            : questionAttempts;
+
+          if (filteredAttempts.length === 0) {
+            setError("Nenhuma questão para revisão nesta matéria.");
+            setLoading(false);
+            return;
+          }
+
+          // Get unique question IDs
+          const questionIds = [...new Set(filteredAttempts.map(qa => qa.question_id))];
+          
+          // Create query for detailed question info
+          const { data: questions, error: questionsError } = await supabase
+            .from('questions')
+            .select(`
+              id, 
+              content, 
+              explanation,
+              answers (id, content, option_letter, is_correct)
+            `)
+            .in('id', questionIds)
+            .limit(10);
+
+          if (questionsError) {
+            console.error("Error fetching detailed questions:", questionsError);
+            setError("Erro ao buscar detalhes das questões.");
+            setLoading(false);
+            return;
+          }
+          
+          fetchedQuestions = questions;
+
+        } else {
+          // Regular question fetching for practice
+          // Create query for questions based on the provided filters
+          let query = supabase
+            .from('questions')
+            .select(`
+              id, 
+              content, 
+              explanation,
+              answers (id, content, option_letter, is_correct)
+            `)
+            .limit(5);
+          
+          // Add filters based on available parameters
+          if (subtopicId) {
+            query = query.eq('subtopic_id', parseInt(subtopicId));
+          } else if (topicId) {
+            query = query.eq('topic_id', parseInt(topicId));
+          } else if (subjectId) {
+            query = query.eq('subject_id', parseInt(subjectId));
+          }
+
+          const { data, error: fetchError } = await query;
+          
+          if (fetchError) {
+            console.error("Error fetching questions:", fetchError);
+            setError("Erro ao buscar questões. Por favor, tente novamente.");
+            toast.error("Erro ao buscar questões");
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            setError("Nenhuma questão encontrada para o subtópico selecionado.");
+            toast.error("Nenhuma questão encontrada");
+            return;
+          }
+          
+          fetchedQuestions = data;
         }
 
         // Format questions and answers
-        const formattedQuestions: Question[] = data.map(question => ({
+        const formattedQuestions: Question[] = fetchedQuestions.map(question => ({
           id: question.id,
           content: question.content,
           explanation: question.explanation,
@@ -99,6 +188,29 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           };
         });
 
+        // If reviewing, load existing attempts
+        if (isReview) {
+          const { data: existingAttempts, error: existingAttemptsError } = await supabase
+            .from('question_attempts')
+            .select('question_id, selected_answer_id, is_correct, needs_review')
+            .eq('person_id', person.id)
+            .in('question_id', formattedQuestions.map(q => q.id))
+            .order('attempted_at', { ascending: false });
+
+          if (!existingAttemptsError && existingAttempts) {
+            existingAttempts.forEach(attempt => {
+              if (initialAttempts[attempt.question_id]) {
+                initialAttempts[attempt.question_id] = {
+                  questionId: attempt.question_id,
+                  selectedAnswerId: attempt.selected_answer_id,
+                  isCorrect: attempt.is_correct,
+                  needsReview: attempt.needs_review
+                };
+              }
+            });
+          }
+        }
+
         setQuestions(formattedQuestions);
         setAttempts(initialAttempts);
         setError(null);
@@ -111,15 +223,10 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
     };
 
     fetchQuestions();
-  }, [subtopicId, topicId, subjectId, user]);
+  }, [subtopicId, topicId, subjectId, isReview, user]);
 
   // Answer a question
   const answerQuestion = async (questionId: string, answerId: string) => {
-   // if (!user ) {
-    //  toast.error("Você precisa estar logado para responder questões.");
-     // return false;
-    //}
-
     try {
       // Find the question and selected answer
       const question = questions.find(q => q.id === questionId);
@@ -145,15 +252,11 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         }
       }));
 
-
-     
       const { data: person, error: personError } = await supabase
         .from('Person')
         .select('id')
         .eq('ProfileId', user.id)
         .single();
-
-
 
       // Save attempt to database
       const { error: saveError } = await supabase
@@ -181,11 +284,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
 
   // Toggle need for review
   const toggleReview = async (questionId: string) => {
-    //if (!user ) {
-    //  toast.error("Você precisa estar logado para marcar questões para revisão.");
-    //  return false;
-    //}
-
     try {
       // Update local state
       const needsReview = !attempts[questionId]?.needsReview;

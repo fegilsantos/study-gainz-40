@@ -11,12 +11,14 @@ interface SolveExerciseContentProps {
   subtopicId: string;
   topicId?: string;
   subjectId?: string;
+  isReview?: boolean;
 }
 
 const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   subtopicId,
   topicId,
-  subjectId
+  subjectId,
+  isReview = false
 }) => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -27,7 +29,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     error,
     answerQuestion,
     toggleReview
-  } = useSolveExercise(subtopicId, topicId, subjectId);
+  } = useSolveExercise(subtopicId, topicId, subjectId, isReview);
 
   // Calculate progress
   const totalQuestions = questions.length;
@@ -77,7 +79,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
-        <p className="text-lg">Carregando questões...</p>
+        <p className="text-lg">{isReview ? 'Carregando questões para revisão...' : 'Carregando questões...'}</p>
       </div>
     );
   }
@@ -96,7 +98,11 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-lg mb-4">Nenhuma questão encontrada para o subtópico selecionado.</p>
+        <p className="text-lg mb-4">
+          {isReview 
+            ? 'Nenhuma questão para revisão encontrada.' 
+            : 'Nenhuma questão encontrada para o conteúdo selecionado.'}
+        </p>
         <Button onClick={() => navigate('/exercises')}>Voltar para Exercícios</Button>
       </div>
     );

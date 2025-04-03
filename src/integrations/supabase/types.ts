@@ -1626,6 +1626,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_review_questions_by_subject: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          subject_id: string
+          subject_name: string
+          count: number
+        }[]
+      }
     }
     Enums: {
       "Activity status":
