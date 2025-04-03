@@ -11,12 +11,14 @@ interface SolveExerciseContentProps {
   subtopicId: string;
   topicId?: string;
   subjectId?: string;
+  reviewMode?: boolean;
 }
 
 const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   subtopicId,
   topicId,
-  subjectId
+  subjectId,
+  reviewMode = false
 }) => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -27,7 +29,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     error,
     answerQuestion,
     toggleReview
-  } = useSolveExercise(subtopicId, topicId, subjectId);
+  } = useSolveExercise(subtopicId, topicId, subjectId, reviewMode);
 
   // Calculate progress
   const totalQuestions = questions.length;
@@ -96,7 +98,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-lg mb-4">Nenhuma questão encontrada para o subtópico selecionado.</p>
+        <p className="text-lg mb-4">Nenhuma questão encontrada para os critérios selecionados.</p>
         <Button onClick={() => navigate('/exercises')}>Voltar para Exercícios</Button>
       </div>
     );
@@ -107,7 +109,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
       {/* Progress Information */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">
-          Questão {currentQuestionIndex + 1} de {totalQuestions}
+          {reviewMode ? "Revisão: " : ""} Questão {currentQuestionIndex + 1} de {totalQuestions}
         </h2>
         <div className="text-sm">
           {correctAnswers} / {completedQuestions} acertos
