@@ -35,7 +35,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   // Fetch questions when component mounts
   useEffect(() => {
     const fetchQuestions = async () => {
-      if (!user || !user.personId) {
+      if (!user ) {
         setError("Você precisa estar logado para resolver exercícios.");
         toast.error("Você precisa estar logado para resolver exercícios.");
         setLoading(false);
