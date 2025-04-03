@@ -298,12 +298,19 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
       .select('id')
       .eq('ProfileId', user.id)
       .single();
-
-    if (personError || !person) {
-      console.error("Error fetching person:", personError);
-      toast.error("Erro ao identificar usuário");
+    // Passo 3: Tratar erros de forma explícita
+    if (personError) {
+      console.error("Erro na busca da Person:", personError);
+      toast.error("Falha na identificação do usuário");
       return false;
     }
+    
+    if (!person) {
+      console.error("Person não encontrada para o usuário:", user.id);
+      toast.error("Perfil não configurado corretamente");
+      return false;
+    }
+
       // Update local state
       const needsReview = !attempts[questionId]?.needsReview;
       setAttempts(prev => ({
