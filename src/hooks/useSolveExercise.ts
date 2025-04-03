@@ -295,6 +295,19 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         }
       }));
 
+    // Buscar a entidade Person dentro da função
+    const { data: person, error: personError } = await supabase
+      .from('Person')
+      .select('id')
+      .eq('ProfileId', user.id)
+      .single();
+
+    if (personError || !person) {
+      console.error("Error fetching person:", personError);
+      toast.error("Erro ao identificar usuário");
+      return false;
+    }
+
       // If the question has been answered, update in database
       if (attempts[questionId]?.selectedAnswerId) {
         const { error: updateError } = await supabase
