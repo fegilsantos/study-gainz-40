@@ -156,7 +156,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
       const { error: saveError } = await supabase
         .from('question_attempts')
         .insert({
-          person_id: Number(person.Id),
+          person_id: person.Id,
           question_id: questionId,
           selected_answer_id: answerId,
           is_correct: isCorrect,
@@ -199,7 +199,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         const { error: updateError } = await supabase
           .from('question_attempts')
           .update({ needs_review: needsReview })
-          .eq('person_id', Number(person.Id))
+          .eq('person_id', person.Id)
           .eq('question_id', questionId)
           .order('attempted_at', { ascending: false })
           .limit(1);
