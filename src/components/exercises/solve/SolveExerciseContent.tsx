@@ -1,27 +1,32 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { useSolveExercise } from '@/hooks/useSolveExercise';
-import QuestionCard from '@/components/exercises/solve/QuestionCard';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Loader2, ArrowLeft, ArrowRight, Home } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, XCircle, Loader2, BookmarkPlus, BookmarkMinus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface SolveExerciseContentProps {
+  subjectId: string;
+  topicId: string;
   subtopicId: string;
-  topicId?: string;
-  subjectId?: string;
-  reviewMode?: boolean;
+  reviewMode: boolean;
 }
 
 const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
-  subtopicId,
-  topicId,
   subjectId,
-  reviewMode = false
+  topicId,
+  subtopicId,
+  reviewMode
 }) => {
-  const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const navigate = useNavigate();
+  
   const {
     questions,
     attempts,
@@ -31,38 +36,79 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     toggleReview
   } = useSolveExercise(subtopicId, topicId, subjectId, reviewMode);
 
-  // Calculate progress
-  const totalQuestions = questions.length;
-  const completedQuestions = Object.values(attempts).filter(a => a.selectedAnswerId !== null).length;
-  const progressPercentage = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
-  
-  // Count correct answers
-  const correctAnswers = Object.values(attempts).filter(a => a.isCorrect === true).length;
+  // Reset explanation visibility when changing questions
+  useEffect(() => {
+    setShowExplanation(false);
+  }, [currentQuestionIndex]);
 
-  // Handle navigation between questions
-  const navigateToQuestion = (index: number) => {
-    if (index >= 0 && index < questions.length) {
-      setCurrentQuestionIndex(index);
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-lg">Carregando questões...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-bold mb-2">Não foi possível carregar as questões</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button onClick={() => navigate('/exercises')}>Voltar para Exercícios</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-bold mb-2">Nenhuma questão encontrada</h2>
+          <p className="text-muted-foreground mb-6">
+            {reviewMode 
+              ? "Não há questões marcadas para revisão neste tópico." 
+              : "Não há questões disponíveis para os critérios selecionados."}
+          </p>
+          <Button onClick={() => navigate('/exercises')}>Voltar para Exercícios</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const currentAttempt = attempts[currentQuestion.id];
+  const hasAnswered = currentAttempt?.selectedAnswerId !== null;
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const isFirstQuestion = currentQuestionIndex === 0;
+
+  const handleSelectAnswer = async (answerId: string) => {
+    if (hasAnswered) return;
+    
+    const success = await answerQuestion(currentQuestion.id, answerId);
+    if (success) {
+      setShowExplanation(true);
     }
   };
 
-  const handleNavigationClick = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      navigateToQuestion(currentQuestionIndex - 1);
-    } else {
-      navigateToQuestion(currentQuestionIndex + 1);
+  const handleToggleReview = async () => {
+    await toggleReview(currentQuestion.id);
+    
+    const action = currentAttempt?.needsReview ? 'removida da' : 'adicionada à';
+    toast.success(`Questão ${action} lista de revisão`);
+  };
+
+  const handleNextQuestion = () => {
+    if (!isLastQuestion) {
+      setCurrentQuestionIndex(prev => prev + 1);
     }
   };
 
-  const handleAnswerSelect = async (answerId: string) => {
-    if (currentQuestion) {
-      await answerQuestion(currentQuestion.id, answerId);
-    }
-  };
-
-  const handleReviewToggle = async () => {
-    if (currentQuestion) {
-      await toggleReview(currentQuestion.id);
+  const handlePreviousQuestion = () => {
+    if (!isFirstQuestion) {
+      setCurrentQuestionIndex(prev => prev - 1);
     }
   };
 
@@ -70,127 +116,213 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     navigate('/exercises');
   };
 
-  // Get current question
-  const currentQuestion = questions[currentQuestionIndex];
-  const currentAttempt = currentQuestion ? attempts[currentQuestion.id] : null;
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
-        <p className="text-lg">Carregando questões...</p>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-lg text-destructive mb-4">{error}</p>
-        <Button onClick={() => navigate('/exercises')}>Voltar para Exercícios</Button>
-      </div>
-    );
-  }
-
-  // No questions found
-  if (questions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-lg mb-4">Nenhuma questão encontrada para os critérios selecionados.</p>
-        <Button onClick={() => navigate('/exercises')}>Voltar para Exercícios</Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Progress Information */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">
-          {reviewMode ? "Revisão: " : ""} Questão {currentQuestionIndex + 1} de {totalQuestions}
-        </h2>
-        <div className="text-sm">
-          {correctAnswers} / {completedQuestions} acertos
+    <div className="space-y-6">
+      {/* Progress indicator */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm font-medium">
+          Questão {currentQuestionIndex + 1} de {questions.length}
+        </div>
+        <div className="flex gap-1">
+          {questions.map((_, index) => (
+            <div 
+              key={index}
+              className={cn(
+                "h-2 w-8 rounded-full",
+                index === currentQuestionIndex 
+                  ? "bg-primary" 
+                  : index < currentQuestionIndex 
+                    ? "bg-primary/40" 
+                    : "bg-muted"
+              )}
+            />
+          ))}
         </div>
       </div>
-      
-      {/* Progress Bar */}
-      <Progress value={progressPercentage} />
-      
-      {/* Question Card */}
-      {currentQuestion && (
-        <QuestionCard 
-          question={currentQuestion}
-          attempt={currentAttempt}
-          onAnswerSelect={handleAnswerSelect}
-          onToggleReview={handleReviewToggle}
-        />
-      )}
-      
-      {/* Navigation Buttons */}
-      <div className="flex justify-between pt-4">
-        <Button 
-          variant="outline"
-          onClick={() => handleNavigationClick('prev')}
-          disabled={currentQuestionIndex === 0}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> 
-          Anterior
-        </Button>
+
+      {/* Question card */}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-muted/50">
+          <CardTitle className="text-lg">
+            {reviewMode && <Badge variant="outline" className="mr-2">Revisão</Badge>}
+            Questão {currentQuestionIndex + 1}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div 
+            className="prose prose-sm max-w-none dark:prose-invert"
+            dangerouslySetInnerHTML={{ __html: currentQuestion.content }}
+          />
+          
+          <div className="mt-6 space-y-2">
+            {currentQuestion.answers.map((answer) => {
+              const isSelected = currentAttempt?.selectedAnswerId === answer.id;
+              const showResult = hasAnswered;
+              const isCorrect = answer.is_correct;
+              
+              return (
+                <Button
+                  key={answer.id}
+                  variant={isSelected ? "default" : "outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal h-auto py-3 px-4",
+                    showResult && isSelected && isCorrect && "bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-600",
+                    showResult && isSelected && !isCorrect && "bg-red-500/10 text-red-600 hover:bg-red-500/20 hover:text-red-600",
+                    showResult && !isSelected && isCorrect && "border-green-500/50"
+                  )}
+                  onClick={() => handleSelectAnswer(answer.id)}
+                  disabled={hasAnswered}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="font-medium min-w-5">{answer.option_letter}.</div>
+                    <div dangerouslySetInnerHTML={{ __html: answer.content }} />
+                  </div>
+                  
+                  {showResult && isSelected && (
+                    <div className="ml-auto pl-2">
+                      {isCorrect ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      )}
+                    </div>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
         
-        <div className="flex gap-2">
-          <Button 
-            variant="default" 
-            onClick={handleFinish}
-          >
-            <Home className="mr-2 h-4 w-4" />
-            Finalizar
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => handleNavigationClick('next')}
-            disabled={currentQuestionIndex === questions.length - 1}
-          >
-            Próxima
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      
-      {/* Question Navigation Pills */}
-      <div className="flex flex-wrap gap-2 justify-center mt-6">
-        {questions.map((q, idx) => {
-          const questionAttempt = attempts[q.id];
-          let className = "rounded-full w-10 h-10 p-0";
-          
-          if (idx === currentQuestionIndex) {
-            className += " bg-primary text-primary-foreground";
-          } else if (questionAttempt?.isCorrect === true) {
-            className += " bg-green-100 border-green-500 border-2";
-          } else if (questionAttempt?.isCorrect === false) {
-            className += " bg-red-100 border-red-500 border-2";
-          } else if (questionAttempt?.needsReview) {
-            className += " border-amber-400 border-2";
-          } else {
-            className += " bg-secondary";
-          }
-          
-          return (
+        {showExplanation && currentQuestion.explanation && (
+          <div className="px-6 pb-6">
+            <Separator className="my-4" />
+            <div className="rounded-lg bg-muted/50 p-4">
+              <h4 className="font-medium mb-2">Explicação</h4>
+              <div 
+                className="prose prose-sm max-w-none dark:prose-invert"
+                dangerouslySetInnerHTML={{ __html: currentQuestion.explanation }}
+              />
+            </div>
+          </div>
+        )}
+        
+        <CardFooter className="flex justify-between border-t bg-muted/20 p-4">
+          <div className="flex gap-2">
             <Button
-              key={q.id}
               variant="outline"
               size="sm"
-              className={className}
-              onClick={() => navigateToQuestion(idx)}
+              onClick={handleToggleReview}
             >
-              {idx + 1}
+              {currentAttempt?.needsReview ? (
+                <>
+                  <BookmarkMinus className="mr-1 h-4 w-4" />
+                  Remover da revisão
+                </>
+              ) : (
+                <>
+                  <BookmarkPlus className="mr-1 h-4 w-4" />
+                  Marcar para revisão
+                </>
+              )}
             </Button>
-          );
-        })}
-      </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousQuestion}
+              disabled={isFirstQuestion}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Anterior
+            </Button>
+            
+            {isLastQuestion ? (
+              <Button 
+                size="sm"
+                onClick={handleFinish}
+              >
+                Finalizar
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={handleNextQuestion}
+                disabled={!hasAnswered}
+              >
+                Próxima
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
+      
+      {/* Question navigation tabs */}
+      <Tabs defaultValue="questions" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="questions">Questões</TabsTrigger>
+          <TabsTrigger value="stats">Estatísticas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="questions" className="space-y-4 pt-2">
+          <div className="grid grid-cols-5 gap-2">
+            {questions.map((question, index) => {
+              const attempt = attempts[question.id];
+              const hasAnswered = attempt?.selectedAnswerId !== null;
+              const isCorrect = attempt?.isCorrect;
+              
+              return (
+                <Button
+                  key={question.id}
+                  variant={index === currentQuestionIndex ? "default" : "outline"}
+                  className={cn(
+                    "h-10 w-10 p-0",
+                    hasAnswered && isCorrect && "bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-600",
+                    hasAnswered && !isCorrect && "bg-red-500/10 text-red-600 hover:bg-red-500/20 hover:text-red-600"
+                  )}
+                  onClick={() => setCurrentQuestionIndex(index)}
+                >
+                  {index + 1}
+                </Button>
+              );
+            })}
+          </div>
+        </TabsContent>
+        <TabsContent value="stats">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm">Questões respondidas:</span>
+                  <span className="font-medium">
+                    {Object.values(attempts).filter(a => a.selectedAnswerId !== null).length} de {questions.length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Taxa de acerto:</span>
+                  <span className="font-medium">
+                    {(() => {
+                      const answered = Object.values(attempts).filter(a => a.selectedAnswerId !== null);
+                      const correct = answered.filter(a => a.isCorrect).length;
+                      const percentage = answered.length > 0 
+                        ? Math.round((correct / answered.length) * 100) 
+                        : 0;
+                      return `${percentage}%`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Marcadas para revisão:</span>
+                  <span className="font-medium">
+                    {Object.values(attempts).filter(a => a.needsReview).length}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

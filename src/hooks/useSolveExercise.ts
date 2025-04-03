@@ -31,13 +31,11 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // Fetch questions when component mounts
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
         
-        // If we're in review mode, fetch questions that need review
         if (reviewMode && subjectId) {
           const { data: personData, error: personError } = await supabase
             .from('Person')
@@ -54,7 +52,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
 
           const personId = personData.id;
           
-          // Get questions marked for review for this subject
           const { data: reviewData, error: reviewError } = await supabase
             .from('question_attempts')
             .select(`
@@ -87,7 +84,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
             return;
           }
           
-          // Format questions and remove duplicates (keep only the latest attempt for each question)
           const questionsMap = new Map();
           reviewData.forEach(item => {
             if (!questionsMap.has(item.question_id) && item.questions) {
@@ -110,7 +106,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           
           setQuestions(formattedQuestions.slice(0, 5)); // Limit to 5 questions
         } else {
-          // Original logic for fetching questions based on subtopic/topic/subject
           let query = supabase
             .from('questions')
             .select(`
@@ -121,7 +116,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
             `)
             .limit(5);
           
-          // Add filters based on available parameters
           if (subtopicId) {
             query = query.eq('subtopic_id', parseInt(subtopicId));
           } else if (topicId) {
@@ -145,7 +139,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
             return;
           }
 
-          // Format questions and answers
           const formattedQuestions: Question[] = data.map(question => ({
             id: question.id,
             content: question.content,
@@ -156,7 +149,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           setQuestions(formattedQuestions);
         }
         
-        // Initialize attempts object
         const initialAttempts: Record<string, ExerciseAttempt> = {};
         questions.forEach(q => {
           initialAttempts[q.id] = {
@@ -180,10 +172,8 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
     fetchQuestions();
   }, [subtopicId, topicId, subjectId, reviewMode, user]);
 
-  // Answer a question
   const answerQuestion = async (questionId: string, answerId: string) => {
     try {
-      // Find the question and selected answer
       const question = questions.find(q => q.id === questionId);
       if (!question) {
         toast.error("Questão não encontrada.");
@@ -196,7 +186,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         return false;
       }
 
-      // Update local state
       const isCorrect = answer.is_correct;
       setAttempts(prev => ({
         ...prev,
@@ -207,7 +196,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         }
       }));
 
-      // Get person ID
       const { data: person, error: personError } = await supabase
         .from('Person')
         .select('id')
@@ -220,7 +208,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         return true;
       }
 
-      // Save attempt to database
       const { error: saveError } = await supabase
         .from('question_attempts')
         .insert({
@@ -244,10 +231,8 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
     }
   };
 
-  // Toggle need for review
   const toggleReview = async (questionId: string) => {
     try {
-      // Get person ID
       const { data: person, error: personError } = await supabase
         .from('Person')
         .select('id')
@@ -260,7 +245,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         return false;
       }
 
-      // Update local state
       const needsReview = !attempts[questionId]?.needsReview;
       setAttempts(prev => ({
         ...prev,
@@ -270,7 +254,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         }
       }));
 
-      // If the question has been answered, update in database
       if (attempts[questionId]?.selectedAnswerId) {
         const { error: updateError } = await supabase
           .from('question_attempts')

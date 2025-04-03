@@ -5,7 +5,6 @@ import { RefreshCw, BookCheck, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -34,8 +33,14 @@ const ReviewExercisesSection: React.FC = () => {
           return;
         }
         
-        if (data && data.length > 0) {
-          setReviewSubjects(data);
+        if (data && Array.isArray(data) && data.length > 0) {
+          // Transform to ReviewSubject type with correct number type
+          const formattedData: ReviewSubject[] = data.map(item => ({
+            subject_id: item.subject_id,
+            subject_name: item.subject_name,
+            count: Number(item.count)
+          }));
+          setReviewSubjects(formattedData);
         } else {
           setReviewSubjects([]);
         }
@@ -57,13 +62,6 @@ const ReviewExercisesSection: React.FC = () => {
     navigate(`/solveExercise?${params.toString()}`);
   };
   
-  // If there's no RPC function yet, we'll show a placeholder
-  const mockReviewSubjects: ReviewSubject[] = [
-    { subject_id: '1', subject_name: 'Matemática', count: 7 },
-    { subject_id: '2', subject_name: 'Física', count: 3 },
-    { subject_id: '3', subject_name: 'Química', count: 5 },
-  ];
-
   return (
     <Card>
       <CardHeader>
@@ -78,9 +76,9 @@ const ReviewExercisesSection: React.FC = () => {
           <div className="flex justify-center py-4">
             <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
-        ) : reviewSubjects.length > 0 || mockReviewSubjects.length > 0 ? (
+        ) : reviewSubjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {(reviewSubjects.length > 0 ? reviewSubjects : mockReviewSubjects).map((subject) => (
+            {reviewSubjects.map((subject) => (
               <Button 
                 key={subject.subject_id} 
                 variant="outline" 
@@ -101,7 +99,7 @@ const ReviewExercisesSection: React.FC = () => {
           </p>
         )}
       </CardContent>
-      {(reviewSubjects.length > 0 || mockReviewSubjects.length > 0) && (
+      {reviewSubjects.length > 0 && (
         <CardFooter>
           <Button variant="ghost" size="sm" className="mx-auto">
             Ver todos os exercícios para revisão
