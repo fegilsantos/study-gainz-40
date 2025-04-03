@@ -144,7 +144,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           isCorrect
         }
       }));
-      console.log(user.id)
+
 
      
       const { data: person, error: personError } = await supabase
@@ -153,11 +153,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         .eq('ProfileId', user.id)
         .single();
 
-      console.log(person.id)
-      console.log(questionId)
-      console.log(answerId)
-      console.log(isCorrect)
-      console.log(attempts)
+
 
       // Save attempt to database
       const { error: saveError } = await supabase
