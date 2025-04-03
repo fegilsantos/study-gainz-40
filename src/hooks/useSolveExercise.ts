@@ -35,12 +35,12 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   // Fetch questions when component mounts
   useEffect(() => {
     const fetchQuestions = async () => {
-      if (!user ) {
-        setError("Você precisa estar logado para resolver exercícios.");
-        toast.error("Você precisa estar logado para resolver exercícios.");
-        setLoading(false);
-        return;
-      }
+     // if (!user ) {
+       // setError("Você precisa estar logado para resolver exercícios.");
+       // toast.error("Você precisa estar logado para resolver exercícios.");
+        //setLoading(false);
+        //return;
+     // }
 
       try {
         setLoading(true);
@@ -115,10 +115,10 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
 
   // Answer a question
   const answerQuestion = async (questionId: string, answerId: string) => {
-    if (!user ) {
-      toast.error("Você precisa estar logado para responder questões.");
-      return false;
-    }
+   // if (!user ) {
+    //  toast.error("Você precisa estar logado para responder questões.");
+     // return false;
+    //}
 
     try {
       // Find the question and selected answer
