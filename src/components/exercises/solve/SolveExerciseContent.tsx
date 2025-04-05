@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Loader2, ArrowLeft, ArrowRight, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface SolveExerciseContentProps {
   subtopicId: string;
@@ -25,6 +26,8 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  
   const {
     questions,
     attempts,
@@ -38,6 +41,9 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   const totalQuestions = questions.length;
   const completedQuestions = Object.values(attempts).filter(a => a.selectedAnswerId !== null).length;
   const progressPercentage = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
+  
+  // Check if all questions are answered
+  const allQuestionsAnswered = completedQuestions === totalQuestions && totalQuestions > 0;
   
   // Count correct answers
   const correctAnswers = Object.values(attempts).filter(a => a.isCorrect === true).length;
@@ -72,7 +78,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
 
   const triggerConfetti = () => {
     // Play confetti animation
-    const duration = 2000;
+    const duration = 3000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
@@ -106,20 +112,22 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
 
   const handleFinish = () => {
     if (allCorrect) {
-      setIsRedirecting(true);
-      // Show celebration message
-      toast.success("Parabéns! Você acertou todas as questões! 🎉");
+      // Show celebration message in a prominent dialog
+      setShowSuccessDialog(true);
       
       // Trigger confetti animation
       triggerConfetti();
       
-      // Redirect after a delay to show the celebration
-      setTimeout(() => {
-        navigate('/exercises');
-      }, 2500);
+      // Prepare for redirection after dialog is closed
+      setIsRedirecting(true);
     } else {
       navigate('/exercises');
     }
+  };
+
+  const handleSuccessDialogClose = () => {
+    setShowSuccessDialog(false);
+    navigate('/exercises');
   };
 
   // Get current question
@@ -198,7 +206,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
         
         <div className="flex gap-2">
           <Button 
-            variant="default" 
+            variant={allQuestionsAnswered ? "default" : "outline"}
             onClick={handleFinish}
             disabled={isRedirecting}
           >
@@ -248,6 +256,26 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
           );
         })}
       </div>
+      
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={(open) => {
+        if (!open) handleSuccessDialogClose();
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">🎉 Parabéns! 🎉</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-lg font-semibold mb-2">Você acertou todas as questões!</p>
+            <p className="text-muted-foreground">Excelente trabalho, continue assim!</p>
+          </div>
+          <div className="flex justify-center mt-4">
+            <Button onClick={handleSuccessDialogClose}>
+              Voltar para Exercícios
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import SessionResultView from './SessionResultView';
 import { Clock, Flag, AlertCircle, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ExerciseSessionContentProps {
   session: ExerciseSession;
@@ -33,6 +34,7 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   
   // Track if confetti has been shown for perfect score
   const [confettiShown, setConfettiShown] = useState(false);
@@ -41,6 +43,9 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
   const isLastQuestion = session.currentQuestionIndex === session.questions.length - 1;
   const isFirstQuestion = session.currentQuestionIndex === 0;
   const recommendedTimePerQuestion = 180; // 3 minutes in seconds
+  
+  // Check if all questions are answered
+  const allQuestionsAnswered = session.questions.every(q => q.selectedAnswer !== null);
   
   // Timer effect
   useEffect(() => {
@@ -67,48 +72,51 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
     }
   }, [timePerQuestion]);
 
-  // Show confetti effect for perfect score
+  // Show success dialog and confetti effect for perfect score
   useEffect(() => {
     if (session.isComplete && !confettiShown) {
       const percentCorrect = Math.round((session.correctAnswers / session.totalQuestions) * 100);
       
       if (percentCorrect === 100) {
         setConfettiShown(true);
-        const duration = 3000;
-        const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-        const randomInRange = (min: number, max: number) => {
-          return Math.random() * (max - min) + min;
-        };
-
-        const interval = setInterval(() => {
-          const timeLeft = animationEnd - Date.now();
-
-          if (timeLeft <= 0) {
-            return clearInterval(interval);
-          }
-
-          const particleCount = 50 * (timeLeft / duration);
-          
-          // Create confetti burst from multiple directions
-          confetti({
-            ...defaults,
-            particleCount,
-            origin: { x: randomInRange(0.1, 0.3), y: randomInRange(0.3, 0.7) }
-          });
-
-          confetti({
-            ...defaults,
-            particleCount,
-            origin: { x: randomInRange(0.7, 0.9), y: randomInRange(0.3, 0.7) }
-          });
-        }, 250);
-
-        toast.success("Parabéns! Você acertou todas as questões! 🎉");
+        setShowSuccessDialog(true);
+        triggerConfetti();
       }
     }
   }, [session.isComplete, session.correctAnswers, session.totalQuestions, confettiShown]);
+
+  const triggerConfetti = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      // Create confetti burst from multiple directions
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: randomInRange(0.3, 0.7) }
+      });
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: randomInRange(0.3, 0.7) }
+      });
+    }, 250);
+  };
 
   const handleAnswer = async (answerId: string) => {
     if (isSubmitting) return;
@@ -152,6 +160,10 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
     setIsSubmitting(true);
     await onComplete();
     setIsSubmitting(false);
+  };
+
+  const handleSuccessDialogClose = () => {
+    setShowSuccessDialog(false);
   };
 
   const formatTime = (seconds: number): string => {
@@ -240,6 +252,7 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
               </Button>
             ) : (
               <Button 
+                variant={allQuestionsAnswered ? "default" : "outline"}
                 onClick={handleFinishSession}
                 disabled={isSubmitting || !currentQuestion.selectedAnswer || isFinishing}
               >
@@ -271,6 +284,26 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
           </Button>
         ))}
       </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={(open) => {
+        if (!open) handleSuccessDialogClose();
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">🎉 Parabéns! 🎉</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-lg font-semibold mb-2">Você acertou todas as questões!</p>
+            <p className="text-muted-foreground">Excelente trabalho, continue assim!</p>
+          </div>
+          <div className="flex justify-center mt-4">
+            <Button onClick={handleSuccessDialogClose}>
+              Continuar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
