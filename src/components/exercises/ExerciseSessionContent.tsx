@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import QuestionView from './QuestionView';
 import SessionResultView from './SessionResultView';
 import { Clock, Flag, AlertCircle, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 interface ExerciseSessionContentProps {
   session: ExerciseSession;
@@ -31,6 +33,9 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  
+  // Track if confetti has been shown for perfect score
+  const [confettiShown, setConfettiShown] = useState(false);
 
   const currentQuestion = session.questions[session.currentQuestionIndex];
   const isLastQuestion = session.currentQuestionIndex === session.questions.length - 1;
@@ -61,6 +66,49 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
       setTimeout(() => setShowAlert(false), 5000);
     }
   }, [timePerQuestion]);
+
+  // Show confetti effect for perfect score
+  useEffect(() => {
+    if (session.isComplete && !confettiShown) {
+      const percentCorrect = Math.round((session.correctAnswers / session.totalQuestions) * 100);
+      
+      if (percentCorrect === 100) {
+        setConfettiShown(true);
+        const duration = 3000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        const randomInRange = (min: number, max: number) => {
+          return Math.random() * (max - min) + min;
+        };
+
+        const interval = setInterval(() => {
+          const timeLeft = animationEnd - Date.now();
+
+          if (timeLeft <= 0) {
+            return clearInterval(interval);
+          }
+
+          const particleCount = 50 * (timeLeft / duration);
+          
+          // Create confetti burst from multiple directions
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: randomInRange(0.3, 0.7) }
+          });
+
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: randomInRange(0.3, 0.7) }
+          });
+        }, 250);
+
+        toast.success("Parabéns! Você acertou todas as questões! 🎉");
+      }
+    }
+  }, [session.isComplete, session.correctAnswers, session.totalQuestions, confettiShown]);
 
   const handleAnswer = async (answerId: string) => {
     if (isSubmitting) return;

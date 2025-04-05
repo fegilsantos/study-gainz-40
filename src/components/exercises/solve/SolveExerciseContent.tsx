@@ -6,6 +6,8 @@ import QuestionCard from '@/components/exercises/solve/QuestionCard';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, ArrowLeft, ArrowRight, Home } from 'lucide-react';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 interface SolveExerciseContentProps {
   subtopicId: string;
@@ -22,6 +24,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
 }) => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const {
     questions,
     attempts,
@@ -38,6 +41,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   
   // Count correct answers
   const correctAnswers = Object.values(attempts).filter(a => a.isCorrect === true).length;
+  const allCorrect = completedQuestions > 0 && correctAnswers === totalQuestions;
 
   // Handle navigation between questions
   const navigateToQuestion = (index: number) => {
@@ -66,8 +70,56 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     }
   };
 
+  const triggerConfetti = () => {
+    // Play confetti animation
+    const duration = 2000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      // Create confetti burst from multiple directions
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: randomInRange(0.3, 0.7) }
+      });
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: randomInRange(0.3, 0.7) }
+      });
+    }, 250);
+  };
+
   const handleFinish = () => {
-    navigate('/exercises');
+    if (allCorrect) {
+      setIsRedirecting(true);
+      // Show celebration message
+      toast.success("Parabéns! Você acertou todas as questões! 🎉");
+      
+      // Trigger confetti animation
+      triggerConfetti();
+      
+      // Redirect after a delay to show the celebration
+      setTimeout(() => {
+        navigate('/exercises');
+      }, 2500);
+    } else {
+      navigate('/exercises');
+    }
   };
 
   // Get current question
@@ -148,9 +200,10 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
           <Button 
             variant="default" 
             onClick={handleFinish}
+            disabled={isRedirecting}
           >
             <Home className="mr-2 h-4 w-4" />
-            Finalizar
+            {isRedirecting ? "Finalizando..." : "Finalizar"}
           </Button>
           
           <Button 
