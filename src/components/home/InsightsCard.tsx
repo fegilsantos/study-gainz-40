@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon } from 'lucide-react';
+import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon, Calendar } from 'lucide-react';
 import { useSuggestions } from '@/hooks/useSuggestions';
-import { subjects } from '@/utils/mockData'; // We'll keep this for color mapping until we have real subject data
+import { subjects } from '@/utils/mockData';
+import TasksView from '@/components/studyplan/TasksView';
 
 const InsightsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'insights' | 'recommendations'>('insights');
+  const [activeTab, setActiveTab] = useState<'recommendations' | 'tasks'>('recommendations');
   const [expanded, setExpanded] = useState(false);
   const { insights, recommendations, loading } = useSuggestions();
   
@@ -44,23 +45,14 @@ const InsightsCard: React.FC = () => {
     }
   };
   
-  const activeItems = activeTab === 'insights' ? insights : recommendations;
-  const displayItems = expanded ? activeItems : activeItems.slice(0, 2);
+  // Combine insights and recommendations for the recommendations tab
+  const combinedItems = [...insights, ...recommendations];
+  const displayItems = expanded ? combinedItems : combinedItems.slice(0, 4);
   
-  if (loading) {
+  if (loading && activeTab === 'recommendations') {
     return (
       <div>
         <div className="flex p-4 border-b border-border">
-          <button
-            onClick={() => setActiveTab('insights')}
-            className={`flex-1 pb-2 text-sm font-medium transition-all ${
-              activeTab === 'insights'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-          >
-            Insights
-          </button>
           <button
             onClick={() => setActiveTab('recommendations')}
             className={`flex-1 pb-2 text-sm font-medium transition-all ${
@@ -70,6 +62,16 @@ const InsightsCard: React.FC = () => {
             }`}
           >
             Recomendações
+          </button>
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`flex-1 pb-2 text-sm font-medium transition-all ${
+              activeTab === 'tasks'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Tarefas
           </button>
         </div>
         <div className="p-4 flex justify-center items-center h-40">
@@ -83,16 +85,6 @@ const InsightsCard: React.FC = () => {
     <div>
       <div className="flex p-4 border-b border-border">
         <button
-          onClick={() => setActiveTab('insights')}
-          className={`flex-1 pb-2 text-sm font-medium transition-all ${
-            activeTab === 'insights'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-muted-foreground'
-          }`}
-        >
-          Insights
-        </button>
-        <button
           onClick={() => setActiveTab('recommendations')}
           className={`flex-1 pb-2 text-sm font-medium transition-all ${
             activeTab === 'recommendations'
@@ -102,75 +94,88 @@ const InsightsCard: React.FC = () => {
         >
           Recomendações
         </button>
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`flex-1 pb-2 text-sm font-medium transition-all ${
+            activeTab === 'tasks'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+        >
+          Tarefas
+        </button>
       </div>
 
-      <div className="p-4 space-y-3">
-        {activeItems.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">
-              Nenhum {activeTab === 'insights' ? 'insight' : 'recomendação'} disponível ainda.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Resolver exercícios gerará {activeTab === 'insights' ? 'insights' : 'recomendações'} personalizados.
-            </p>
-          </div>
-        ) : (
-          <>
-            {displayItems.map((item) => (
-              <div 
-                key={item.id}
-                className={`p-3 rounded-xl ${
-                  activeTab === 'insights' 
-                    ? `border ${getBorderColorForInsight(item.type || 'info')} bg-card` 
-                    : 'border border-l-4 border-green-200'
-                }`}
-                style={
-                  activeTab === 'recommendations' && item.subject_name
-                    ? { 
-                        borderLeftColor: '#10b981', // emerald-500 color 
-                        borderColor: '#d1fae5' // emerald-100 color
-                      } 
-                    : {}
-                }
-              >
-                <div className="flex items-start">
-                  {activeTab === 'insights' && (
-                    <div className="mt-0.5 mr-3">
-                      {getIconForType(item.type || 'info')}
+      {activeTab === 'recommendations' ? (
+        <div className="p-4 space-y-3">
+          {combinedItems.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                Nenhuma recomendação disponível ainda.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Resolver exercícios gerará recomendações personalizadas.
+              </p>
+            </div>
+          ) : (
+            <>
+              {displayItems.map((item) => {
+                const isInsight = insights.some(insight => insight.id === item.id);
+                
+                return (
+                  <div 
+                    key={item.id}
+                    className={`p-3 rounded-xl ${
+                      isInsight 
+                        ? `border ${getBorderColorForInsight(item.type || 'info')} bg-card` 
+                        : 'border border-l-4 border-green-200'
+                    }`}
+                    style={
+                      !isInsight && item.subject_name
+                        ? { 
+                            borderLeftColor: '#10b981', // emerald-500 color 
+                            borderColor: '#d1fae5' // emerald-100 color
+                          } 
+                        : {}
+                    }
+                  >
+                    <div className="flex items-start">
+                      <div className="mt-0.5 mr-3">
+                        {isInsight ? (
+                          getIconForType(item.type || 'info')
+                        ) : (
+                          <LightbulbIcon className="w-4 h-4 text-emerald-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium">{item.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                        {!isInsight && item.subject_name && (
+                          <p className="text-xs font-medium mt-1 text-emerald-600">
+                            {item.subject_name}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {activeTab === 'recommendations' && (
-                    <div className="mt-0.5 mr-3">
-                      <LightbulbIcon 
-                        className="w-4 h-4 text-emerald-500" 
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium">{item.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                    {activeTab === 'recommendations' && item.subject_name && (
-                      <p className="text-xs font-medium mt-1 text-emerald-600">
-                        {item.subject_name}
-                      </p>
-                    )}
                   </div>
-                </div>
-              </div>
-            ))}
-            
-            {activeItems.length > 2 && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="w-full flex items-center justify-center py-2 text-xs text-muted-foreground hover:text-primary transition-all"
-              >
-                {expanded ? 'Ver menos' : 'Ver mais'}
-                <ChevronDown className={`ml-1 w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-              </button>
-            )}
-          </>
-        )}
-      </div>
+                );
+              })}
+              
+              {combinedItems.length > 4 && (
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="w-full flex items-center justify-center py-2 text-xs text-muted-foreground hover:text-primary transition-all"
+                >
+                  {expanded ? 'Ver menos' : 'Ver mais'}
+                  <ChevronDown className={`ml-1 w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        <TasksView />
+      )}
     </div>
   );
 };

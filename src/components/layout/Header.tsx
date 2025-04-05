@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MenuIcon, User, HelpCircle, FileText, ChevronLeft, LogOut } from 'lucide-react';
+import { MenuIcon, User, HelpCircle, FileText, ChevronLeft, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
@@ -32,6 +32,9 @@ const Header: React.FC<HeaderProps> = ({
     switch (option) {
       case "Minha Conta":
         navigate("/account");
+        break;
+      case "Configurações":
+        navigate("/settings");
         break;
       case "Ajuda":
         navigate("/help");
@@ -89,6 +92,10 @@ const Header: React.FC<HeaderProps> = ({
               <DropdownMenuItem onClick={() => handleMenuItemClick("Minha Conta")}>
                 <User className="mr-2 h-4 w-4" />
                 Minha Conta
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleMenuItemClick("Configurações")}>
+                <Settings className="mr-2 h-4 w-4" />
+                Configurações
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleMenuItemClick("Ajuda")}>
                 <HelpCircle className="mr-2 h-4 w-4" />
