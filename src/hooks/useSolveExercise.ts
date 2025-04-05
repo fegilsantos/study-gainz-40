@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -177,39 +178,16 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           answers: Array.isArray(question.answers) ? question.answers : []
         }));
 
-        // Initialize attempts object
+        // Initialize attempts object - always start fresh for review mode too
         const initialAttempts: Record<string, ExerciseAttempt> = {};
         formattedQuestions.forEach(q => {
           initialAttempts[q.id] = {
             questionId: q.id,
             selectedAnswerId: null,
             isCorrect: null,
-            needsReview: false
+            needsReview: true // Set to true by default for review questions
           };
         });
-
-        // If reviewing, load existing attempts
-        if (isReview) {
-          const { data: existingAttempts, error: existingAttemptsError } = await supabase
-            .from('question_attempts')
-            .select('question_id, selected_answer_id, is_correct, needs_review')
-            .eq('person_id', person.id)
-            .in('question_id', formattedQuestions.map(q => q.id))
-            .order('attempted_at', { ascending: false });
-
-          if (!existingAttemptsError && existingAttempts) {
-            existingAttempts.forEach(attempt => {
-              if (initialAttempts[attempt.question_id]) {
-                initialAttempts[attempt.question_id] = {
-                  questionId: attempt.question_id,
-                  selectedAnswerId: attempt.selected_answer_id,
-                  isCorrect: attempt.is_correct,
-                  needsReview: attempt.needs_review
-                };
-              }
-            });
-          }
-        }
 
         setQuestions(formattedQuestions);
         setAttempts(initialAttempts);
@@ -241,32 +219,51 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         return false;
       }
 
-      // Update local state
-      const isCorrect = answer.is_correct;
-      setAttempts(prev => ({
-        ...prev,
-        [questionId]: {
-          ...prev[questionId],
-          selectedAnswerId: answerId,
-          isCorrect
-        }
-      }));
+      if (!user) {
+        toast.error("Você precisa estar logado para responder questões");
+        return false;
+      }
 
-      const { data: person, error: personError } = await supabase
+      // Fetch the person entity first
+      const { data: personData, error: personError } = await supabase
         .from('Person')
         .select('id')
         .eq('ProfileId', user.id)
         .single();
 
+      if (personError) {
+        console.error("Error fetching person:", personError);
+        toast.error("Erro ao identificar usuário");
+        return false;
+      }
+
+      const personId = personData.id;
+
+      // Update local state
+      const isCorrect = answer.is_correct;
+      
+      // For review questions that are answered correctly, update needsReview to false
+      const needsReview = isReview && isCorrect ? false : attempts[questionId]?.needsReview || false;
+      
+      setAttempts(prev => ({
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          selectedAnswerId: answerId,
+          isCorrect,
+          needsReview
+        }
+      }));
+
       // Save attempt to database
       const { error: saveError } = await supabase
         .from('question_attempts')
         .insert({
-          person_id: person.id,
+          person_id: personId,
           question_id: questionId,
           selected_answer_id: answerId,
           is_correct: isCorrect,
-          needs_review: attempts[questionId]?.needsReview || false
+          needs_review: needsReview
         });
 
       if (saveError) {
@@ -291,13 +288,13 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
       return false;
     }
       
-
     // Buscar a entidade Person dentro da função
-    const { data: person, error: personError } = await supabase
+    const { data: personData, error: personError } = await supabase
       .from('Person')
       .select('id')
       .eq('ProfileId', user.id)
       .single();
+    
     // Passo 3: Tratar erros de forma explícita
     if (personError) {
       console.error("Erro na busca da Person:", personError);
@@ -305,7 +302,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
       return false;
     }
     
-    if (!person) {
+    if (!personData) {
       console.error("Person não encontrada para o usuário:", user.id);
       toast.error("Perfil não configurado corretamente");
       return false;
@@ -326,7 +323,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         const { error: updateError } = await supabase
           .from('question_attempts')
           .update({ needs_review: needsReview })
-          .eq('person_id', person.id)
+          .eq('person_id', personData.id)
           .eq('question_id', questionId)
           .order('attempted_at', { ascending: false })
           .limit(1);
