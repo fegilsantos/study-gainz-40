@@ -26,22 +26,17 @@ const ReviewExercisesSection: React.FC = () => {
     try {
       setLoading(true);
       
-      // Use from() instead of rpc() to fix the TypeScript error
-    const { data, error } = await supabase
-      .rpc('get_review_questions_by_subject');
+      // Call the RPC function correctly
+      const { data, error } = await supabase.rpc('get_review_questions_by_subject');
       
       if (error) {
-        console.error('Error fetching review questions:', error.details);
+        console.error('Error fetching review questions:', error.message);
         toast.error('Erro ao carregar questões para revisão');
         return;
       }
       
       if (data && Array.isArray(data)) {
-        setReviewSubjects(data.map(item => ({
-          subject_id: item.subject_id,
-          subject_name: item.subject_name,
-          count: parseInt(item.count)
-        })));
+        setReviewSubjects(data as ReviewSubject[]);
       }
     } catch (error) {
       console.error('Error in fetchReviewQuestions:', error);

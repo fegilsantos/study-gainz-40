@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ExerciseSession } from '@/hooks/useExerciseSession';
-import { CheckCircle, XCircle, Clock, Flag, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Flag, ArrowLeft, PartyPopper } from 'lucide-react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import { toast } from 'sonner';
 import 'react-circular-progressbar/dist/styles.css';
+import confetti from 'canvas-confetti';
 
 interface SessionResultViewProps {
   session: ExerciseSession;
@@ -15,6 +17,44 @@ interface SessionResultViewProps {
 const SessionResultView: React.FC<SessionResultViewProps> = ({ session, onReturn }) => {
   const percentCorrect = Math.round((session.correctAnswers / session.totalQuestions) * 100);
   const questionsForReview = session.questions.filter(q => q.needsReview).length;
+  
+  // Effect to trigger confetti animation when perfect score is achieved
+  useEffect(() => {
+    if (percentCorrect === 100) {
+      const duration = 3000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const randomInRange = (min: number, max: number) => {
+        return Math.random() * (max - min) + min;
+      };
+
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        
+        // Create confetti burst from multiple directions
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: randomInRange(0.3, 0.7) }
+        });
+
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: randomInRange(0.3, 0.7) }
+        });
+      }, 250);
+
+      toast.success("Parabéns! Você acertou todas as questões! 🎉");
+    }
+  }, [percentCorrect]);
   
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -35,6 +75,18 @@ const SessionResultView: React.FC<SessionResultViewProps> = ({ session, onReturn
         <h2 className="text-2xl font-bold">Resultado da Sessão</h2>
         <p className="text-muted-foreground mt-1">Confira seu desempenho nesta sequência de exercícios</p>
       </div>
+      
+      {/* Perfect Score Banner */}
+      {percentCorrect === 100 && (
+        <div className="relative bg-green-50 text-green-800 p-4 rounded-lg border border-green-200 flex items-center justify-center space-x-2 mb-4 animate-fade-in">
+          <PartyPopper className="h-6 w-6 text-green-600" />
+          <div className="text-center">
+            <p className="font-semibold">Excelente trabalho!</p>
+            <p className="text-sm">Você acertou todas as questões!</p>
+          </div>
+          <PartyPopper className="h-6 w-6 text-green-600" />
+        </div>
+      )}
       
       {/* Main Score */}
       <div className="flex flex-col md:flex-row gap-6 items-center justify-center">

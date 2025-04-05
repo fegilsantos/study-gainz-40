@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -178,14 +177,14 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           answers: Array.isArray(question.answers) ? question.answers : []
         }));
 
-        // Initialize attempts object - always start fresh for review mode too
+        // Initialize attempts object
         const initialAttempts: Record<string, ExerciseAttempt> = {};
         formattedQuestions.forEach(q => {
           initialAttempts[q.id] = {
             questionId: q.id,
             selectedAnswerId: null,
             isCorrect: null,
-            needsReview: true // Set to true by default for review questions
+            needsReview: false 
           };
         });
 
@@ -271,6 +270,21 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         toast.error("Erro ao salvar resposta, mas você pode continuar.");
       }
 
+      // If this is a review question and it was answered correctly,
+      // update previous attempts to set needs_review to false
+      if (isReview && isCorrect) {
+        const { error: updateError } = await supabase
+          .from('question_attempts')
+          .update({ needs_review: false })
+          .eq('person_id', personId)
+          .eq('question_id', questionId);
+
+        if (updateError) {
+          console.error("Error updating review status:", updateError);
+          toast.error("Erro ao atualizar status de revisão");
+        }
+      }
+
       return true;
     } catch (err: any) {
       console.error("Error answering question:", err);
@@ -282,31 +296,31 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   // Toggle need for review
   const toggleReview = async (questionId: string) => {
     try {
-    // 1. Verificar usuário primeiro
-    if (!user) {
-      toast.error("Você precisa estar logado para revisar questões");
-      return false;
-    }
+      // 1. Verificar usuário primeiro
+      if (!user) {
+        toast.error("Você precisa estar logado para revisar questões");
+        return false;
+      }
+        
+      // Buscar a entidade Person dentro da função
+      const { data: personData, error: personError } = await supabase
+        .from('Person')
+        .select('id')
+        .eq('ProfileId', user.id)
+        .single();
       
-    // Buscar a entidade Person dentro da função
-    const { data: personData, error: personError } = await supabase
-      .from('Person')
-      .select('id')
-      .eq('ProfileId', user.id)
-      .single();
-    
-    // Passo 3: Tratar erros de forma explícita
-    if (personError) {
-      console.error("Erro na busca da Person:", personError);
-      toast.error("Falha na identificação do usuário");
-      return false;
-    }
-    
-    if (!personData) {
-      console.error("Person não encontrada para o usuário:", user.id);
-      toast.error("Perfil não configurado corretamente");
-      return false;
-    }
+      // Passo 3: Tratar erros de forma explícita
+      if (personError) {
+        console.error("Erro na busca da Person:", personError);
+        toast.error("Falha na identificação do usuário");
+        return false;
+      }
+      
+      if (!personData) {
+        console.error("Person não encontrada para o usuário:", user.id);
+        toast.error("Perfil não configurado corretamente");
+        return false;
+      }
 
       // Update local state
       const needsReview = !attempts[questionId]?.needsReview;
