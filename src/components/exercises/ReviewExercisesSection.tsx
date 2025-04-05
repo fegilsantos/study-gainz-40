@@ -27,9 +27,8 @@ const ReviewExercisesSection: React.FC = () => {
       setLoading(true);
       
       // Use from() instead of rpc() to fix the TypeScript error
-      const { data, error } = await supabase
-        .from('get_review_questions_by_subject')
-        .select('*');
+    const { data, error } = await supabase
+      .rpc('get_review_questions_by_subject');
       
       if (error) {
         console.error('Error fetching review questions:', error.details);
