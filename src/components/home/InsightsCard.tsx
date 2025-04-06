@@ -6,6 +6,9 @@ import { subjects } from '@/utils/mockData';
 import TasksView from '@/components/studyplan/TasksView';
 import TaskModal from '@/components/studyplan/task-modal/TaskModal';
 import { Task } from '@/types/task';
+import { Badge } from '@/components/ui/badge';
+import { useTasks } from '@/context/TasksContext';
+import { isPast, isToday, parseISO } from 'date-fns';
 
 const InsightsCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'recommendations' | 'tasks'>('recommendations');
@@ -14,6 +17,16 @@ const InsightsCard: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [modalDate, setModalDate] = useState<Date>(new Date());
   const { insights, recommendations, loading } = useSuggestions();
+  const { tasks } = useTasks();
+  
+  // Count overdue tasks
+  const overdueTasksCount = tasks.filter(task => {
+    const taskDate = parseISO(task.date);
+    return !task.completed && (isPast(taskDate) && !isToday(taskDate));
+  }).length;
+  
+  // Format the count for display (limit to 9+)
+  const formattedOverdueCount = overdueTasksCount > 9 ? '9+' : overdueTasksCount.toString();
   
   const getIconForType = (type: string) => {
     switch(type) {
@@ -112,16 +125,26 @@ const InsightsCard: React.FC = () => {
         >
           Recomendações
         </button>
-        <button
-          onClick={() => setActiveTab('tasks')}
-          className={`flex-1 pb-2 text-sm font-medium transition-all ${
-            activeTab === 'tasks'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-muted-foreground'
-          }`}
-        >
-          Tarefas
-        </button>
+        <div className="relative flex-1">
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`w-full pb-2 text-sm font-medium transition-all ${
+              activeTab === 'tasks'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Tarefas
+          </button>
+          {overdueTasksCount > 0 && (
+            <Badge 
+              className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center text-xs font-semibold bg-red-500 text-white border-none" 
+              variant="destructive"
+            >
+              {formattedOverdueCount}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {activeTab === 'recommendations' ? (

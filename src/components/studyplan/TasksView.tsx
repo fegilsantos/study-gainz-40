@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTasks } from '@/context/TasksContext';
 import { Task } from '@/types/task';
 import { toast } from '@/hooks/use-toast';
+import TaskModal from '@/components/studyplan/task-modal/TaskModal';
 
 interface TasksViewProps {
   onTaskUpdate?: () => void;
