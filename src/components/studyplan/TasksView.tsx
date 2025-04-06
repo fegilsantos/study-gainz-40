@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Check, AlertTriangle } from 'lucide-react';
 import { format, addDays, isPast, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import TaskModal from './task-modal/TaskModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTasks } from '@/context/TasksContext';
@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface TasksViewProps {
   onTaskUpdate?: () => void;
+  onTaskEdit?: (task: Task, date: Date) => void;
 }
 
 // Create a new interface that extends Task with a displayDate field
@@ -18,7 +19,7 @@ interface TaskWithDisplayDate extends Task {
   displayDate: Date;
 }
 
-const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
+const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<TaskWithDisplayDate | null>(null);
   const [overdueTasks, setOverdueTasks] = useState<TaskWithDisplayDate[]>([]);
@@ -66,8 +67,14 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
   }, [tasks, loading]);
   
   const openEditTaskModal = (task: TaskWithDisplayDate) => {
-    setSelectedTask(task);
-    setIsModalOpen(true);
+    if (onTaskEdit) {
+      // Use the external edit handler if provided
+      onTaskEdit(task, task.displayDate);
+    } else {
+      // Use internal modal if no external handler
+      setSelectedTask(task);
+      setIsModalOpen(true);
+    }
   };
   
   const closeModal = () => {
@@ -229,13 +236,15 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate }) => {
         </TabsContent>
       </Tabs>
       
-      {/* Modal */}
-      <TaskModal 
-        isOpen={isModalOpen} 
-        onClose={closeModal} 
-        task={selectedTask ? { ...selectedTask, date: selectedTask.date } : null}
-        currentDate={selectedTask?.displayDate || new Date()}
-      />
+      {/* Modal - Only used if onTaskEdit prop is not provided */}
+      {!onTaskEdit && isModalOpen && selectedTask && (
+        <TaskModal 
+          isOpen={isModalOpen} 
+          onClose={closeModal} 
+          task={selectedTask} 
+          currentDate={selectedTask.displayDate}
+        />
+      )}
     </div>
   );
 };

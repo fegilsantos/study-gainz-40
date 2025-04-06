@@ -1,13 +1,18 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon, Calendar } from 'lucide-react';
+import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon } from 'lucide-react';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { subjects } from '@/utils/mockData';
 import TasksView from '@/components/studyplan/TasksView';
+import TaskModal from '@/components/studyplan/task-modal/TaskModal';
+import { Task } from '@/types/task';
 
 const InsightsCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'recommendations' | 'tasks'>('recommendations');
   const [expanded, setExpanded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [modalDate, setModalDate] = useState<Date>(new Date());
   const { insights, recommendations, loading } = useSuggestions();
   
   const getIconForType = (type: string) => {
@@ -43,6 +48,19 @@ const InsightsCard: React.FC = () => {
       default:
         return 'border-l-4 border-l-gray-400';
     }
+  };
+  
+  // Handle task selection for editing
+  const handleTaskEdit = (task: Task, date: Date) => {
+    setSelectedTask(task);
+    setModalDate(date);
+    setIsModalOpen(true);
+  };
+  
+  // Close the modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
   };
   
   // Combine insights and recommendations for the recommendations tab
@@ -174,7 +192,17 @@ const InsightsCard: React.FC = () => {
           )}
         </div>
       ) : (
-        <TasksView />
+        <TasksView onTaskEdit={handleTaskEdit} />
+      )}
+
+      {/* Task Modal - Now outside the component hierarchy for better visibility */}
+      {isModalOpen && (
+        <TaskModal 
+          isOpen={isModalOpen} 
+          onClose={closeModal} 
+          task={selectedTask} 
+          currentDate={modalDate}
+        />
       )}
     </div>
   );
