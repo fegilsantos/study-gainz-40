@@ -22,7 +22,7 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { tasks, loading, error, getTasksByDate, refreshTasks, fetchTasks } = useFetchTasks();
+  const { tasks, loading, error, getTasksByDate, refreshTasks, fetchTasks } = useFetchTasks(user);
   const { createTask, updateTask, deleteTask } = useTaskOperations(user, toast);
   const [isInitialized, setIsInitialized] = useState(false);
 
