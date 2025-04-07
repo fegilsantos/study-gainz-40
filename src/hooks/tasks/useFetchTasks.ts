@@ -28,6 +28,7 @@ export const useFetchTasks = (user: User | null) => {
   }, [tasks]);
 
   const fetchTasks = useCallback(async (user: User) => {
+    console.log('Iniciando fetchTasks para:', user?.id);
     if (!user || !user.id || isFetching) {
       setLoading(false);
       return;
