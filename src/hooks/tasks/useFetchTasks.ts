@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
@@ -13,12 +12,12 @@ export const useFetchTasks = (user: User | null) => {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isFetching, setIsFetching] = useState(false);
 
-  // Add a function to manually refresh tasks
+  // Função para forçar a atualização dos dados
   const refreshTasks = useCallback(() => {
     setRefreshCounter(prev => prev + 1);
   }, []);
 
-  // Get tasks by date
+  // Função auxiliar para filtrar tarefas por data
   const getTasksByDate = useCallback((date: string) => {
     const targetDate = new Date(date).toISOString().split('T')[0];
     return tasks.filter(task => {
@@ -28,8 +27,7 @@ export const useFetchTasks = (user: User | null) => {
   }, [tasks]);
 
   const fetchTasks = useCallback(async (user: User) => {
-    console.log('Iniciando fetchTasks para:', user?.id);
-    if (!user || !user.id || isFetching) {
+    if (!user || !user.id) {
       setLoading(false);
       return;
     }
@@ -37,8 +35,7 @@ export const useFetchTasks = (user: User | null) => {
     try {
       setIsFetching(true);
       setLoading(true);
-      console.log("Fetching tasks for user:", user.id);
-
+      
       // Get person ID
       const { data: person, error: personError } = await supabase
         .from('Person')
@@ -161,16 +158,17 @@ export const useFetchTasks = (user: User | null) => {
       setLoading(false);
       setIsFetching(false);
     }
-  }, [isFetching]);
+  }, []);
 
-  // Add effect to trigger fetching tasks when refreshCounter changes
-useEffect(() => {
-
-  if (user) {
-    fetchTasks(user);
-  }
-}, [refreshCounter, fetchTasks,user]);
-
+  // Efeito para buscar as tarefas sempre que o contador de atualização mudar ou o usuário mudar
+  useEffect(() => {
+    if (user) {
+      fetchTasks(user);
+    } else {
+      setTasks([]);
+      setLoading(false);
+    }
+  }, [refreshCounter, fetchTasks, user]);
 
   return {
     tasks,
