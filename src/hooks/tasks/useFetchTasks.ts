@@ -6,7 +6,7 @@ import { mapActivityTypeToTaskType } from './taskTypeMappers';
 import { User } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
 
-export const useFetchTasks = () => {
+export const useFetchTasks = (user: User | null) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
