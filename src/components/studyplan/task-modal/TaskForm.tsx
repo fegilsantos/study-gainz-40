@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import TopicSelector from './TopicSelector';
 import TaskTypeSelector from './TaskTypeSelector';
-import { useTopicData } from './useTopicData';
+import { useTopicData } from '@/hooks/useTopicData';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -92,13 +92,17 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   // Reset topic and subtopic when subject changes
   useEffect(() => {
-    setTopic('');
-    setSubtopic('');
+    if (!subject) {
+      setTopic('');
+      setSubtopic('');
+    }
   }, [subject, setTopic, setSubtopic]);
 
   // Reset subtopic when topic changes
   useEffect(() => {
-    setSubtopic('');
+    if (!topic) {
+      setSubtopic('');
+    }
   }, [topic, setSubtopic]);
 
   // Update parent component's date when local date changes

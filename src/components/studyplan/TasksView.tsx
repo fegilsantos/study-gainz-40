@@ -9,6 +9,7 @@ import { useTasks } from '@/context/TasksContext';
 import { Task } from '@/types/task';
 import { toast } from '@/hooks/use-toast';
 import TaskModal from '@/components/studyplan/task-modal/TaskModal';
+import { Badge } from '@/components/ui/badge';
 
 interface TasksViewProps {
   onTaskUpdate?: () => void;
@@ -68,6 +69,9 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
     setOverdueTasks(allOverdue);
     setUpcomingTasks(upcomingTasksList);
   }, [tasks, loading]);
+  
+  // Format the count for display (limit to 9+)
+  const formattedOverdueCount = overdueTasks.length > 9 ? '9+' : overdueTasks.length.toString();
   
   const openEditTaskModal = (task: TaskWithDisplayDate) => {
     if (onTaskEdit) {
@@ -187,7 +191,19 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
       <Tabs defaultValue="upcoming" className="w-full">
         <TabsList className="w-full mb-4">
           <TabsTrigger value="upcoming" className="flex-1">Próximas Atividades</TabsTrigger>
-          <TabsTrigger value="overdue" className="flex-1">Atividades Atrasadas</TabsTrigger>
+          <div className="relative flex-1">
+            <TabsTrigger value="overdue" className="w-full">
+              Atividades Atrasadas
+              {overdueTasks.length > 0 && (
+                <Badge 
+                  className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center text-xs font-semibold bg-red-500 text-white border-none ml-2" 
+                  variant="destructive"
+                >
+                  {formattedOverdueCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </div>
         </TabsList>
         
         <TabsContent value="upcoming" className="space-y-4">
