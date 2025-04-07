@@ -99,12 +99,13 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 // Adicionar um novo estado para rastrear a última operação
 const [lastOperation, setLastOperation] = useState<{ type: string, id?: string, timestamp: number } | null>(null);
 
-// Modificar as funções handleCreateTask, handleUpdateTask e handleDeleteTask para atualizar este estado
-const handleCreateTask = async (...) => {
-  const taskId = await createTask(...);
+// TasksContext.tsx
+const handleCreateTask = async (taskData: Omit<Task, 'id' | 'completed' | 'subjectName' | 'topicName' | 'subtopicName'>) => {
+  const taskId = await createTask(taskData);
   if (taskId) {
-    setLastOperation({ type: 'create', id: taskId, timestamp: Date.now() });
-    await refreshTasks();
+    // Atualização otimista
+    setTasks(prev => [...prev, { ...taskData, id: taskId, completed: false }]);
+    await refreshTasks(); // Força atualização do servidor
   }
   return taskId;
 };
