@@ -54,7 +54,9 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const taskId = await createTask(taskData);
     if (taskId) {
       // Immediately refresh tasks after creation
-      await refreshTasks();
+          // Atualização otimista
+    setTasks(prev => [...prev, { ...taskData, id: taskId, completed: false }]);
+    await refreshTasks(); // Força atualização do servidor
     }
     return taskId;
   };
