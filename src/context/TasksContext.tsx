@@ -49,17 +49,30 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user, isInitialized, refreshTasks]);
 
-  // Create a wrapped createTask function that immediately refreshes tasks
-  const handleCreateTask = async (taskData: Omit<Task, 'id' | 'completed' | 'subjectName' | 'topicName' | 'subtopicName'>) => {
-    const taskId = await createTask(taskData);
-    if (taskId) {
-      // Immediately refresh tasks after creation
-          // Atualização otimista
-    setTasks(prev => [...prev, { ...taskData, id: taskId, completed: false }]);
-    await refreshTasks(); // Força atualização do servidor
-    }
-    return taskId;
-  };
+// TasksContext.tsx
+const handleCreateTask = async (taskData) => {
+  // Atualização otimista
+  const tempId = Date.now().toString();
+  setTasks(prev => [...prev, {
+    ...taskData,
+    id: tempId,
+    completed: false,
+    subjectName: '',
+    topicName: '',
+    subtopicName: ''
+  }]);
+  
+  try {
+    const realId = await createTask(taskData);
+    // Atualização real após sucesso
+    setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: realId } : t));
+    return realId;
+  } catch (error) {
+    // Rollback em caso de erro
+    setTasks(prev => prev.filter(t => t.id !== tempId));
+    throw error;
+  }
+};
 
   // Create a wrapped updateTask function that immediately refreshes tasks
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
