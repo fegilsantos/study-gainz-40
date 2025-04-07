@@ -164,8 +164,7 @@ export const useFetchTasks = () => {
 
   // Add effect to trigger fetching tasks when refreshCounter changes
 useEffect(() => {
-  // Obter o usuário atual do contexto de autenticação
-  const { user } = supabase.auth.getSession();
+
   if (user && refreshCounter > 0) {
     fetchTasks(user);
   }
