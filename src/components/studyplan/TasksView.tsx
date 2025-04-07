@@ -228,7 +228,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
                 </span>
               </div>
               
-              {overdueTasks.slice(0, 9).map(task => renderTaskItem(task))}
+              {overdueTasks.map(task => renderTaskItem(task))}
               
               <Button className="w-full mt-2" variant="outline" onClick={markAllAsCompleted}>
                 <Check className="mr-2 h-4 w-4" />
