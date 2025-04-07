@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Check, Clock, CalendarIcon } from 'lucide-react';
 import { Task } from '@/hooks/useTasksData';
 
@@ -80,4 +80,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onClick }) => {
   );
 };
 
-export default TaskItem;
+// Modifique a exportação para usar memo
+export default memo(TaskItem, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.task) === JSON.stringify(nextProps.task);
+});
