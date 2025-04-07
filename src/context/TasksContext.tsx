@@ -66,6 +66,7 @@ const handleCreateTask = async (taskData) => {
     const realId = await createTask(taskData);
     // Atualização real após sucesso
     setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: realId } : t));
+    await refreshTasks();
     return realId;
   } catch (error) {
     // Rollback em caso de erro
