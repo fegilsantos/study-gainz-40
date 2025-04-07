@@ -93,6 +93,24 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>;
 };
 
+// Em TasksContext.tsx
+// Adicionar um novo estado para rastrear a última operação
+const [lastOperation, setLastOperation] = useState<{ type: string, id?: string, timestamp: number } | null>(null);
+
+// Modificar as funções handleCreateTask, handleUpdateTask e handleDeleteTask para atualizar este estado
+const handleCreateTask = async (...) => {
+  const taskId = await createTask(...);
+  if (taskId) {
+    setLastOperation({ type: 'create', id: taskId, timestamp: Date.now() });
+    await refreshTasks();
+  }
+  return taskId;
+};
+
+// Mesma abordagem para update e delete
+
+
+
 export const useTasks = (): TasksContextType => {
   const context = useContext(TasksContext);
   if (context === undefined) {
