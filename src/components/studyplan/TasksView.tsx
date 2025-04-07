@@ -36,21 +36,23 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
   useEffect(() => {
     if (loading) return;
     
-    const overdueTasksList: TaskWithDisplayDate[] = [];
+    
     const upcomingTasksList: TaskWithDisplayDate[] = [];
     
-    // Process overdue tasks (past 14 days that are not completed)
-    for (let i = 1; i <= 14; i++) {
-      const date = addDays(new Date(), -i);
-      const dateString = format(date, 'yyyy-MM-dd');
-      const tasksForDate = tasks.filter(task => 
-        task.date === dateString && !task.completed
-      );
-      
-      overdueTasksList.push(
-        ...tasksForDate.map(task => ({ ...task, displayDate: date }))
-      );
-    }
+    // Processar todas as tarefas atrasadas (qualquer data passada)
+    const allOverdue = tasks
+    .filter(task => {
+      const taskDate = parseISO(task.date);
+      return !task.completed && isPast(taskDate) && !isToday(taskDate);
+    })
+    .map(task => ({
+      ...task,
+      displayDate: parseISO(task.date) // Usar a data real da tarefa
+    }))
+    .sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime()); // Ordenar do mais antigo
+
+    // Limitar para no máximo 9 tarefas visíveis no componente de tarefas atrasadas
+    const overdueTasksList = allOverdue.slice(0, 9);
     
     // Process upcoming tasks (next 7 days)
     for (let i = 0; i < 7; i++) {
@@ -63,7 +65,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
       );
     }
     
-    setOverdueTasks(overdueTasksList);
+    setOverdueTasks(allOverdue);
     setUpcomingTasks(upcomingTasksList);
   }, [tasks, loading]);
   
@@ -201,7 +203,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
             </div>
           ) : (
             <div>
-              {upcomingTasks.map(task => renderTaskItem(task))}
+              {overdueTasks.slice(0, 9).map(task => renderTaskItem(task))}
             </div>
           )}
         </TabsContent>
