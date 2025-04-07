@@ -96,7 +96,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
             title: "Tarefa atualizada",
             description: "Suas alterações foram salvas com sucesso.",
           });
-          refreshTasks(); // Refresh tasks after update
+          
           onClose();
         }
       } else {
@@ -118,7 +118,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
             title: "Tarefa criada",
             description: "Sua nova tarefa foi adicionada com sucesso.",
           });
-          refreshTasks(); // Refresh tasks after creation
           onClose();
         }
       }
