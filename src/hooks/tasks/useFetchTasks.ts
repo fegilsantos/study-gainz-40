@@ -168,7 +168,7 @@ useEffect(() => {
   if (user && refreshCounter > 0) {
     fetchTasks(user);
   }
-}, [refreshCounter, fetchTasks]);
+}, [refreshCounter, fetchTasks,user]);
 
 
   return {
