@@ -20,6 +20,10 @@ const Dashboard: React.FC = () => {
   const [overallPerformance, setOverallPerformance] = useState<number>(0);
   const [loadingUserData, setLoadingUserData] = useState<boolean>(true);
   const [gamificationLevels, setGamificationLevels] = useState<Array<{id: number, name: string, max_xp: number}>>([]);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [modalDate, setModalDate] = useState<Date>(new Date());
+
   
   useEffect(() => {
     const fetchUserData = async () => {
@@ -70,6 +74,18 @@ const Dashboard: React.FC = () => {
     
     fetchUserData();
   }, [user]);
+
+  const handleTaskEdit = (task: Task, date: Date) => {
+  setSelectedTask(task);
+  setModalDate(date);
+  setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+  };
+
   
   // Calculate level based on gamification score and levels from database
   const calculateLevel = (score: number): {level: number, name: string, max_xp: number, min_xp: number} => {
@@ -258,8 +274,19 @@ const Dashboard: React.FC = () => {
       
       {/* Insights & Recommendations */}
       <div className="w-full glass rounded-2xl shadow-sm overflow-hidden border-l-4 border-l-amber-400">
-        <InsightsCard />
+        <InsightsCard onTaskEdit={handleTaskEdit}/>
       </div>
+      {/* Task Modal */}
+      {isModalOpen && (
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        task={selectedTask}
+        currentDate={modalDate}/>
+)}
+
+
+
       
       {/* Goals Component */}
       <GoalsCard />
