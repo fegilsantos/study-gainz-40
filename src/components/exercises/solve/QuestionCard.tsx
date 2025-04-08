@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Question, ExerciseAttempt } from '@/hooks/useSolveExercise';
 import { BookmarkIcon, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QuestionCardProps {
   question: Question;
@@ -24,6 +24,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   index,
 }) => {
   const [isAnswering, setIsAnswering] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleSelectAnswer = async (answerId: string) => {
     if (attempt.selectedAnswerId || isAnswering) return;
@@ -42,6 +43,20 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   const handleToggleReview = () => {
     onToggleReview(question.id);
   };
+
+  const getImageUrl = (path: string | undefined) => {
+    if (!path) return null;
+    
+    if (path.startsWith('http')) return path;
+    
+    const { data } = supabase.storage
+      .from('exercises')
+      .getPublicUrl(path);
+      
+    return data.publicUrl;
+  };
+
+  const imageUrl = question.image_url ? getImageUrl(question.image_url) : null;
 
   return (
     <Card className="w-full mb-6">
@@ -62,12 +77,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         <div className="mb-6">
           <div className="text-base" dangerouslySetInnerHTML={{ __html: question.content }} />
           
-          {question.image_url && (
+          {imageUrl && !imageError && (
             <div className="my-4">
               <img 
-                src={question.image_url} 
+                src={imageUrl} 
                 alt="Imagem da questão" 
                 className="max-w-full rounded-md border border-border"
+                onError={() => setImageError(true)}
               />
             </div>
           )}

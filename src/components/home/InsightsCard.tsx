@@ -1,210 +1,162 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Loader2, TrendingUp, BookOpen, CheckCircle, Calendar } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-import React, { useState } from 'react';
-import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon } from 'lucide-react';
-import { useSuggestions } from '@/hooks/useSuggestions';
-import { subjects } from '@/utils/mockData';
-import TasksView from '@/components/studyplan/TasksView';
-import { Task } from '@/types/task';
-import { Badge } from '@/components/ui/badge';
-import { useTasks } from '@/context/TasksContext';
-import { isPast, isToday, parseISO } from 'date-fns';
-
-interface InsightsCardProps {
-  onTaskEdit?: (task: Task, date: Date) => void;
+interface InsightData {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  description: string;
+  color: string;
 }
 
-const InsightsCard: React.FC<InsightsCardProps> = ({ onTaskEdit }) => {
-  const [activeTab, setActiveTab] = useState<'recommendations' | 'tasks'>('recommendations');
-  const [expanded, setExpanded] = useState(false);
-  const { insights, recommendations, loading } = useSuggestions();
-  const { tasks } = useTasks();
-  
-  // Count overdue tasks
-  const overdueTasksCount = tasks.filter(task => {
-    const taskDate = parseISO(task.date);
-    return !task.completed && (isPast(taskDate) && !isToday(taskDate));
-  }).length;
-  
-  // Format the count for display (limit to 9+)
-  const formattedOverdueCount = overdueTasksCount > 9 ? '9+' : overdueTasksCount.toString();
-  
-  const getIconForType = (type: string) => {
-    switch(type) {
-      case 'improvement':
-        return <TrendingUp className="w-4 h-4 text-emerald-500" />;
-      case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-amber-500" />;
-      case 'info':
-        return <Info className="w-4 h-4 text-blue-500" />;
-      default:
-        return <Info className="w-4 h-4 text-muted-foreground" />;
+const InsightsCard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string>('performance');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [insights, setInsights] = useState<InsightData[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchInsights(activeTab);
+    }
+  }, [activeTab, user]);
+
+  const fetchInsights = async (tab: string) => {
+    setLoading(true);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Generate different insights based on the active tab
+      let newInsights: InsightData[] = [];
+      
+      if (tab === 'performance') {
+        newInsights = [
+          {
+            title: 'Taxa de Acerto',
+            value: '78%',
+            icon: <TrendingUp className="h-4 w-4" />,
+            description: 'Últimos 30 dias',
+            color: 'text-green-500'
+          },
+          {
+            title: 'Questões Resolvidas',
+            value: 142,
+            icon: <CheckCircle className="h-4 w-4" />,
+            description: 'Total',
+            color: 'text-blue-500'
+          },
+          {
+            title: 'Tempo Médio',
+            value: '1m 42s',
+            icon: <Calendar className="h-4 w-4" />,
+            description: 'Por questão',
+            color: 'text-amber-500'
+          },
+          {
+            title: 'Matéria Destaque',
+            value: 'Matemática',
+            icon: <BookOpen className="h-4 w-4" />,
+            description: 'Melhor desempenho',
+            color: 'text-purple-500'
+          }
+        ];
+      } else if (activeTab === "recommendations" || activeTab === "tasks") {
+        // Different insights for recommendations tab
+        newInsights = [
+          {
+            title: 'Foco Recomendado',
+            value: 'Física',
+            icon: <TrendingUp className="h-4 w-4" />,
+            description: 'Baseado no desempenho',
+            color: 'text-red-500'
+          },
+          {
+            title: 'Tópico Sugerido',
+            value: 'Cinemática',
+            icon: <BookOpen className="h-4 w-4" />,
+            description: 'Para melhorar',
+            color: 'text-blue-500'
+          },
+          {
+            title: 'Tarefas Pendentes',
+            value: 3,
+            icon: <Calendar className="h-4 w-4" />,
+            description: 'Para hoje',
+            color: 'text-amber-500'
+          },
+          {
+            title: 'Revisões',
+            value: 12,
+            icon: <CheckCircle className="h-4 w-4" />,
+            description: 'Questões marcadas',
+            color: 'text-green-500'
+          }
+        ];
+      }
+      
+      setInsights(newInsights);
+    } catch (error) {
+      console.error('Error fetching insights:', error);
+      toast.error('Erro ao carregar insights');
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const getColorForSubject = (subjectName?: string) => {
-    if (!subjectName) return 'hsl(var(--muted))';
-    
-    const subject = subjects.find(s => 
-      s.name.toLowerCase() === subjectName.toLowerCase());
-    
-    return subject ? subject.color : 'hsl(var(--muted))';
-  };
-  
-  const getBorderColorForInsight = (type: string) => {
-    switch(type) {
-      case 'improvement':
-        return 'border-l-4 border-l-emerald-500';
-      case 'warning':
-        return 'border-l-4 border-l-amber-500';
-      case 'info':
-        return 'border-l-4 border-l-blue-500';
-      default:
-        return 'border-l-4 border-l-gray-400';
+
+  const renderTab = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
     }
-  };
-  
-  // Combine insights and recommendations for the recommendations tab
-  const combinedItems = [...insights, ...recommendations];
-  const displayItems = expanded ? combinedItems : combinedItems.slice(0, 4);
-  
-  if (loading && activeTab === 'recommendations') {
+
     return (
-      <div>
-        <div className="flex p-4 border-b border-border">
-          <button
-            onClick={() => setActiveTab('recommendations')}
-            className={`flex-1 pb-2 text-sm font-medium transition-all ${
-              activeTab === 'recommendations'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-          >
-            Recomendações
-          </button>
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`flex-1 pb-2 text-sm font-medium transition-all ${
-              activeTab === 'tasks'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-          >
-            Tarefas
-          </button>
-        </div>
-        <div className="p-4 flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-        </div>
+      <div className="grid grid-cols-2 gap-4">
+        {insights.map((insight, index) => (
+          <div key={index} className="bg-card border rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`${insight.color}`}>
+                {insight.icon}
+              </div>
+              <div className="text-xs text-muted-foreground">{insight.title}</div>
+            </div>
+            <div className="text-2xl font-bold">{insight.value}</div>
+            <div className="text-xs text-muted-foreground mt-1">{insight.description}</div>
+          </div>
+        ))}
       </div>
     );
-  }
+  };
 
   return (
-    <div>
-      <div className="flex p-4 border-b border-border">
-        <button
-          onClick={() => setActiveTab('recommendations')}
-          className={`flex-1 pb-2 text-sm font-medium transition-all ${
-            activeTab === 'recommendations'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-muted-foreground'
-          }`}
-        >
-          Recomendações
-        </button>
-        <div className="relative flex-1">
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`w-full pb-2 text-sm font-medium transition-all ${
-              activeTab === 'tasks'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-muted-foreground'
-            }`}
-          >
-            Tarefas
-          </button>
-          {overdueTasksCount > 0 && (
-            <Badge 
-              className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center text-xs font-semibold bg-red-500 text-white border-none" 
-              variant="destructive"
-            >
-              {formattedOverdueCount}
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {activeTab === 'recommendations' ? (
-        <div className="p-4 space-y-3">
-          {combinedItems.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma recomendação disponível ainda.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Resolver exercícios gerará recomendações personalizadas.
-              </p>
-            </div>
-          ) : (
-            <>
-              {displayItems.map((item) => {
-                const isInsight = insights.some(insight => insight.id === item.id);
-                
-                return (
-                  <div 
-                    key={item.id}
-                    className={`p-3 rounded-xl ${
-                      isInsight 
-                        ? `border ${getBorderColorForInsight(item.type || 'info')} bg-card` 
-                        : 'border border-l-4 border-green-200'
-                    }`}
-                    style={
-                      !isInsight && item.subject_name
-                        ? { 
-                            borderLeftColor: '#10b981', // emerald-500 color 
-                            borderColor: '#d1fae5' // emerald-100 color
-                          } 
-                        : {}
-                    }
-                  >
-                    <div className="flex items-start">
-                      <div className="mt-0.5 mr-3">
-                        {isInsight ? (
-                          getIconForType(item.type || 'info')
-                        ) : (
-                          <LightbulbIcon className="w-4 h-4 text-emerald-500" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium">{item.title}</h3>
-                        <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                        {!isInsight && item.subject_name && (
-                          <p className="text-xs font-medium mt-1 text-emerald-600">
-                            {item.subject_name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {combinedItems.length > 4 && (
-                <button
-                  onClick={() => setExpanded(!expanded)}
-                  className="w-full flex items-center justify-center py-2 text-xs text-muted-foreground hover:text-primary transition-all"
-                >
-                  {expanded ? 'Ver menos' : 'Ver mais'}
-                  <ChevronDown className={`ml-1 w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      ) : (
-        <TasksView onTaskEdit={onTaskEdit} />
-      )}
-    </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-semibold">Insights</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="performance" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="performance">Desempenho</TabsTrigger>
+            <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
+          </TabsList>
+          <TabsContent value="performance">
+            {renderTab()}
+          </TabsContent>
+          <TabsContent value="recommendations">
+            {renderTab()}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 

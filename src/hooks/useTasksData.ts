@@ -29,7 +29,8 @@ export const useTasksData = (refreshTrigger = 0) => {
       setFetchCount(prev => prev + 1);
       
       try {
-        await fetchTasks(user);
+        const tasksData = await fetchTasks(user);
+        setTasks(tasksData || []);
         setIsInitialized(true);
       } finally {
         setLoading(false);
