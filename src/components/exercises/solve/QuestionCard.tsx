@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Question, ExerciseAttempt } from '@/hooks/useSolveExercise';
 import { BookmarkIcon, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QuestionCardProps {
   question: Question;
@@ -43,6 +44,16 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     onToggleReview(question.id);
   };
 
+  const getImageUrl = (imagePath?: string) => {
+    if (!imagePath) return null;
+    
+    const { data } = supabase.storage
+      .from('exercises')
+      .getPublicUrl(imagePath);
+      
+    return data.publicUrl;
+  };
+
   return (
     <Card className="w-full mb-6">
       <CardContent className="pt-6">
@@ -62,10 +73,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         <div className="mb-6">
           <div className="text-base" dangerouslySetInnerHTML={{ __html: question.content }} />
           
-          {question.image_url && (
+          {(question.image_url || question.image_path) && (
             <div className="my-4">
               <img 
-                src={question.image_url} 
+                src={question.image_path ? getImageUrl(question.image_path) : question.image_url} 
                 alt="Imagem da questão" 
                 className="max-w-full rounded-md border border-border"
               />

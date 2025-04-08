@@ -16,6 +16,7 @@ export interface Question {
   content: string;
   explanation: string;
   image_url?: string;
+  image_path?: string;
   answers: Answer[];
 }
 
@@ -75,6 +76,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
                 content, 
                 explanation,
                 image_url,
+                image_path,
                 subject_id,
                 topic_id,
                 subtopic_id
@@ -119,6 +121,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
               content, 
               explanation,
               image_url,
+              image_path,
               answers (id, content, option_letter, is_correct)
             `)
             .in('id', questionIds)
@@ -143,6 +146,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
               content, 
               explanation,
               image_url,
+              image_path,
               answers (id, content, option_letter, is_correct)
             `)
             .limit(5);
@@ -180,6 +184,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           content: question.content,
           explanation: question.explanation,
           image_url: question.image_url,
+          image_path: question.image_path,
           answers: Array.isArray(question.answers) ? question.answers : []
         }));
 
