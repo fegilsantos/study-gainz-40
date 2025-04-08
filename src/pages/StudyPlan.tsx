@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Navigation from '@/components/layout/Navigation';
 import Timeline from '@/components/studyplan/Timeline';
-import TasksView from '@/components/studyplan/TasksView';
+import GoalsCard from '@/components/home/GoalsCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTasks } from '@/context/TasksContext';
 import TaskModal from '@/components/studyplan/task-modal/TaskModal';
@@ -47,23 +47,18 @@ const StudyPlan: React.FC = () => {
         <Tabs defaultValue="timeline" className="w-full">
           <TabsList className="w-full mb-6">
             <TabsTrigger value="timeline" className="flex-1">Cronograma</TabsTrigger>
-            <TabsTrigger value="tasks" className="flex-1">Tarefas</TabsTrigger>
+            <TabsTrigger value="goals" className="flex-1">Metas</TabsTrigger>
           </TabsList>
           
           <TabsContent value="timeline">
             <Timeline 
               key={`timeline-${refreshData}`} 
               onTaskUpdate={handleTaskUpdate}
-              onTaskEdit={handleTaskEdit}
             />
           </TabsContent>
           
-          <TabsContent value="tasks">
-            <TasksView 
-              key={`tasks-${refreshData}`} 
-              onTaskUpdate={handleTaskUpdate}
-              onTaskEdit={handleTaskEdit}
-            />
+          <TabsContent value="goals">
+            <GoalsCard />
           </TabsContent>
         </Tabs>
         

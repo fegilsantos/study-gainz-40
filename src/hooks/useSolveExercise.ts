@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +15,7 @@ export interface Question {
   id: string;
   content: string;
   explanation: string;
+  image_url?: string;
   answers: Answer[];
 }
 
@@ -72,6 +74,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
                 id, 
                 content, 
                 explanation,
+                image_url,
                 subject_id,
                 topic_id,
                 subtopic_id
@@ -115,6 +118,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
               id, 
               content, 
               explanation,
+              image_url,
               answers (id, content, option_letter, is_correct)
             `)
             .in('id', questionIds)
@@ -138,6 +142,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
               id, 
               content, 
               explanation,
+              image_url,
               answers (id, content, option_letter, is_correct)
             `)
             .limit(5);
@@ -174,6 +179,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           id: question.id,
           content: question.content,
           explanation: question.explanation,
+          image_url: question.image_url,
           answers: Array.isArray(question.answers) ? question.answers : []
         }));
 
