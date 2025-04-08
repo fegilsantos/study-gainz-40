@@ -288,7 +288,7 @@ const Dashboard: React.FC = () => {
       )}
       
       {/* Goals Component */}
-      <GoalsCard />
+     {/* <GoalsCard />*/}
       
     </div>
   );
