@@ -54,7 +54,6 @@ const StudyPlan: React.FC = () => {
             <Timeline 
               key={`timeline-${refreshData}`} 
               onTaskUpdate={handleTaskUpdate}
-              onTaskEdit={handleTaskEdit}
             />
           </TabsContent>
           

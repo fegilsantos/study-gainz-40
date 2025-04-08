@@ -64,12 +64,16 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     }
   };
 
-  const handleAnswerQuestion = async (questionId: string, answerId: string) => {
-    return await answerQuestion(questionId, answerId);
+  const handleAnswerSelect = async (answerId: string) => {
+    if (currentQuestion) {
+      await answerQuestion(currentQuestion.id, answerId);
+    }
   };
 
-  const handleReviewToggle = (questionId: string) => {
-    toggleReview(questionId);
+  const handleReviewToggle = async () => {
+    if (currentQuestion) {
+      await toggleReview(currentQuestion.id);
+    }
   };
 
   const triggerConfetti = () => {
@@ -180,13 +184,12 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
       <Progress value={progressPercentage} />
       
       {/* Question Card */}
-      {currentQuestion && currentAttempt && (
+      {currentQuestion && (
         <QuestionCard 
           question={currentQuestion}
           attempt={currentAttempt}
-          onAnswer={handleAnswerQuestion}
+          onAnswerSelect={handleAnswerSelect}
           onToggleReview={handleReviewToggle}
-          index={currentQuestionIndex}
         />
       )}
       

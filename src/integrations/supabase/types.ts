@@ -1034,7 +1034,6 @@ export type Database = {
           difficulty: number
           explanation: string
           id: string
-          image_url: string | null
           subject_id: number
           subtopic_id: number | null
           topic_id: number | null
@@ -1045,7 +1044,6 @@ export type Database = {
           difficulty?: number
           explanation: string
           id?: string
-          image_url?: string | null
           subject_id: number
           subtopic_id?: number | null
           topic_id?: number | null
@@ -1056,7 +1054,6 @@ export type Database = {
           difficulty?: number
           explanation?: string
           id?: string
-          image_url?: string | null
           subject_id?: number
           subtopic_id?: number | null
           topic_id?: number | null
