@@ -76,9 +76,9 @@ const Dashboard: React.FC = () => {
   }, [user]);
 
   const handleTaskEdit = (task: Task, date: Date) => {
-  setSelectedTask(task);
-  setModalDate(date);
-  setIsModalOpen(true);
+    setSelectedTask(task);
+    setModalDate(date);
+    setIsModalOpen(true);
   };
 
   const closeModal = () => {
@@ -274,19 +274,18 @@ const Dashboard: React.FC = () => {
       
       {/* Insights & Recommendations */}
       <div className="w-full glass rounded-2xl shadow-sm overflow-hidden border-l-4 border-l-amber-400">
-        <InsightsCard onTaskEdit={handleTaskEdit}/>
+        <InsightsCard onTaskEdit={handleTaskEdit} />
       </div>
+      
       {/* Task Modal */}
       {isModalOpen && (
-      <TaskModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        task={selectedTask}
-        currentDate={modalDate}/>
-)}
-
-
-
+        <TaskModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          task={selectedTask}
+          currentDate={modalDate}
+        />
+      )}
       
       {/* Goals Component */}
       <GoalsCard />

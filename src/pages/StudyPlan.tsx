@@ -6,10 +6,15 @@ import Timeline from '@/components/studyplan/Timeline';
 import TasksView from '@/components/studyplan/TasksView';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTasks } from '@/context/TasksContext';
+import TaskModal from '@/components/studyplan/task-modal/TaskModal';
+import { Task } from '@/types/task';
 
 const StudyPlan: React.FC = () => {
   const [refreshData, setRefreshData] = useState(0);
   const { refreshTasks } = useTasks();
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [modalDate, setModalDate] = useState<Date>(new Date());
   
   const handleTaskUpdate = () => {
     // Increment refresh counter to trigger rerender
@@ -22,6 +27,18 @@ const StudyPlan: React.FC = () => {
   useEffect(() => {
     refreshTasks();
   }, [refreshTasks, refreshData]);
+  
+  const handleTaskEdit = (task: Task, date: Date) => {
+    setSelectedTask(task);
+    setModalDate(date);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+    handleTaskUpdate(); // Refresh tasks after modal close
+  };
   
   return (
     <div className="min-h-screen pb-20">
@@ -36,17 +53,29 @@ const StudyPlan: React.FC = () => {
           <TabsContent value="timeline">
             <Timeline 
               key={`timeline-${refreshData}`} 
-              onTaskUpdate={handleTaskUpdate} 
+              onTaskUpdate={handleTaskUpdate}
+              onTaskEdit={handleTaskEdit}
             />
           </TabsContent>
           
           <TabsContent value="tasks">
             <TasksView 
               key={`tasks-${refreshData}`} 
-              onTaskUpdate={handleTaskUpdate} 
+              onTaskUpdate={handleTaskUpdate}
+              onTaskEdit={handleTaskEdit}
             />
           </TabsContent>
         </Tabs>
+        
+        {/* Task Modal */}
+        {isModalOpen && (
+          <TaskModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            task={selectedTask}
+            currentDate={modalDate}
+          />
+        )}
       </main>
       <Navigation />
     </div>

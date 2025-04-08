@@ -4,18 +4,18 @@ import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon } from 'luc
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { subjects } from '@/utils/mockData';
 import TasksView from '@/components/studyplan/TasksView';
-import TaskModal from '@/components/studyplan/task-modal/TaskModal';
 import { Task } from '@/types/task';
 import { Badge } from '@/components/ui/badge';
 import { useTasks } from '@/context/TasksContext';
 import { isPast, isToday, parseISO } from 'date-fns';
 
-const InsightsCard: React.FC = () => {
+interface InsightsCardProps {
+  onTaskEdit?: (task: Task, date: Date) => void;
+}
+
+const InsightsCard: React.FC<InsightsCardProps> = ({ onTaskEdit }) => {
   const [activeTab, setActiveTab] = useState<'recommendations' | 'tasks'>('recommendations');
   const [expanded, setExpanded] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [modalDate, setModalDate] = useState<Date>(new Date());
   const { insights, recommendations, loading } = useSuggestions();
   const { tasks } = useTasks();
   
@@ -61,19 +61,6 @@ const InsightsCard: React.FC = () => {
       default:
         return 'border-l-4 border-l-gray-400';
     }
-  };
-  
-  // Handle task selection for editing
-  const handleTaskEdit = (task: Task, date: Date) => {
-    setSelectedTask(task);
-    setModalDate(date);
-    setIsModalOpen(true);
-  };
-  
-  // Close the modal
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedTask(null);
   };
   
   // Combine insights and recommendations for the recommendations tab
@@ -215,17 +202,7 @@ const InsightsCard: React.FC = () => {
           )}
         </div>
       ) : (
-        <TasksView onTaskEdit={handleTaskEdit} />
-      )}
-
-      {/* Task Modal - Now outside the component hierarchy for better visibility */}
-      {isModalOpen && (
-        <TaskModal 
-          isOpen={isModalOpen} 
-          onClose={closeModal} 
-          task={selectedTask} 
-          currentDate={modalDate}
-        />
+        <TasksView onTaskEdit={onTaskEdit} />
       )}
     </div>
   );

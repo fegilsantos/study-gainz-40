@@ -8,7 +8,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTasks } from '@/context/TasksContext';
 import { Task } from '@/types/task';
 import { toast } from '@/hooks/use-toast';
-import TaskModal from '@/components/studyplan/task-modal/TaskModal';
 import { Badge } from '@/components/ui/badge';
 
 interface TasksViewProps {
@@ -22,8 +21,6 @@ interface TaskWithDisplayDate extends Task {
 }
 
 const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedTask, setSelectedTask] = useState<TaskWithDisplayDate | null>(null);
   const [overdueTasks, setOverdueTasks] = useState<TaskWithDisplayDate[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<TaskWithDisplayDate[]>([]);
   
@@ -37,14 +34,13 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
   useEffect(() => {
     if (loading) return;
     
-    
     const upcomingTasksList: TaskWithDisplayDate[] = [];
     
     // Processar todas as tarefas atrasadas (qualquer data passada)
     const allOverdue = tasks
     .filter(task => {
       const taskDate = parseISO(task.date);
-      return !task.completed && isPast(taskDate) && !isToday(taskDate);
+      return !task.completed && (isPast(taskDate) && !isToday(taskDate));
     })
     .map(task => ({
       ...task,
@@ -73,23 +69,10 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
   // Format the count for display (limit to 9+)
   const formattedOverdueCount = overdueTasks.length > 9 ? '9+' : overdueTasks.length.toString();
   
-  const openEditTaskModal = (task: TaskWithDisplayDate) => {
+  const handleTaskClick = (task: TaskWithDisplayDate) => {
     if (onTaskEdit) {
-      // Use the external edit handler if provided
       onTaskEdit(task, task.displayDate);
-    } else {
-      // Use internal modal if no external handler
-      setSelectedTask(task);
-      setIsModalOpen(true);
     }
-  };
-  
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedTask(null);
-    // Refresh tasks after modal closes
-    refreshTasks();
-    if (onTaskUpdate) onTaskUpdate();
   };
   
   const markAllAsCompleted = async () => {
@@ -126,7 +109,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
     return (
       <div 
         key={task.id}
-        onClick={() => openEditTaskModal(task)}
+        onClick={() => handleTaskClick(task)}
         className={`p-3 glass rounded-xl border-l-4 mb-3 cursor-pointer hover:shadow-sm transition-all ${
           task.completed ? 'opacity-70' : ''
         }`}
@@ -254,16 +237,6 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
           )}
         </TabsContent>
       </Tabs>
-      
-      {/* Modal - Only used if onTaskEdit prop is not provided */}
-      {!onTaskEdit && isModalOpen && selectedTask && (
-        <TaskModal 
-          isOpen={isModalOpen} 
-          onClose={closeModal} 
-          task={selectedTask} 
-          currentDate={selectedTask.displayDate}
-        />
-      )}
     </div>
   );
 };
