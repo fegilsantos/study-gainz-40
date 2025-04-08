@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { Task } from '@/types/task';
+import TaskModal from '@/components/studyplan/task-modal/TaskModal';
+
 
 const Dashboard: React.FC = () => {
   const { weakestSubject, strongestSubject, loading } = useSubjectPerformance();
