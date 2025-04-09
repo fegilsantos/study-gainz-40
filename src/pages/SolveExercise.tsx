@@ -13,9 +13,10 @@ const SolveExercise: React.FC = () => {
   const topicId = searchParams.get('topic');
   const subtopicId = searchParams.get('subtopic');
   const isReview = searchParams.get('review') === 'true';
+  const aiMode = searchParams.get('aiMode') as 'weak-points' | 'balanced' | 'recent' | null;
 
   // If no subject or subtopic is selected, redirect back to exercises page
-  if (!subjectId && !subtopicId) {
+  if (!subjectId && !subtopicId && !aiMode) {
     setTimeout(() => navigate('/exercises'), 100);
     return (
       <div className="min-h-screen pb-20">
@@ -29,7 +30,17 @@ const SolveExercise: React.FC = () => {
     );
   }
 
-  const title = isReview ? "Revisão de Exercícios" : "Resolver Exercícios";
+  let title = isReview ? "Revisão de Exercícios" : "Resolver Exercícios";
+  
+  if (aiMode) {
+    if (aiMode === 'weak-points') {
+      title = "Exercícios Pontos Fracos";
+    } else if (aiMode === 'recent') {
+      title = "Revisão de Conteúdo Recente";
+    } else {
+      title = "Exercícios Personalizados";
+    }
+  }
 
   return (
     <div className="min-h-screen pb-20">
@@ -40,6 +51,7 @@ const SolveExercise: React.FC = () => {
           topicId={topicId || ''}
           subtopicId={subtopicId || ''}
           isReview={isReview}
+          aiMode={aiMode || undefined}
         />
       </main>
     </div>

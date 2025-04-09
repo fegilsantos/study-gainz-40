@@ -22,7 +22,7 @@ const ExercisesContent: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>('');
   const [selectedSubtopic, setSelectedSubtopic] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('');
-  const [aiMode, setAiMode] = useState<'auto'>('auto');
+  const [aiMode, setAiMode] = useState<'weak-points' | 'balanced' | 'recent'>('balanced');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState<boolean>(true);
@@ -83,7 +83,21 @@ const ExercisesContent: React.FC = () => {
       if (selectedSubject) params.append('subject', selectedSubject);
       if (selectedTopic) params.append('topic', selectedTopic);
       if (selectedSubtopic) params.append('subtopic', selectedSubtopic);
-      params.append('mode', aiMode);
+      
+      navigate(`/solveExercise?${params.toString()}`);
+      setIsGenerating(false);
+    }, 500);
+  };
+  
+  const handleGenerateAIExercises = () => {
+    setIsGenerating(true);
+    
+    // Navigate to solve exercise page with query params and AI mode
+    setTimeout(() => {
+      const params = new URLSearchParams();
+      
+      if (selectedSubject) params.append('subject', selectedSubject);
+      params.append('aiMode', aiMode);
       
       navigate(`/solveExercise?${params.toString()}`);
       setIsGenerating(false);
@@ -193,9 +207,14 @@ const ExercisesContent: React.FC = () => {
               A IA irá analisar seu perfil e gerar questões personalizadas com base no seu desempenho e necessidades.
             </p>
             
-            <RadioGroup defaultValue="balanced" className="pt-1">
+            <RadioGroup 
+              defaultValue="balanced" 
+              className="pt-1"
+              value={aiMode}
+              onValueChange={(value) => setAiMode(value as 'weak-points' | 'balanced' | 'recent')}
+            >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="improvement" id="r1" />
+                <RadioGroupItem value="weak-points" id="r1" />
                 <Label htmlFor="r1" className="text-sm">Foco em pontos fracos</Label>
               </div>
               <div className="flex items-center space-x-2">
@@ -203,7 +222,7 @@ const ExercisesContent: React.FC = () => {
                 <Label htmlFor="r2" className="text-sm">Balanceado</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="review" id="r3" />
+                <RadioGroupItem value="recent" id="r3" />
                 <Label htmlFor="r3" className="text-sm">Revisão de conteúdo recente</Label>
               </div>
             </RadioGroup>
@@ -211,7 +230,7 @@ const ExercisesContent: React.FC = () => {
           <CardFooter>
             <Button 
               className="w-full" 
-              onClick={handleGenerateExercises}
+              onClick={handleGenerateAIExercises}
               disabled={isGenerating}
             >
               {isGenerating ? (
@@ -231,37 +250,6 @@ const ExercisesContent: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Simulados Card */}
-        {/* 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Simulados</CardTitle>
-            <CardDescription>Pratique com provas completas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select onValueChange={setSelectedExamType} value={selectedExamType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um vestibular" />
-              </SelectTrigger>
-              <SelectContent>
-                {examTypes.map(exam => (
-                  <SelectItem key={exam.id} value={exam.id}>
-                    {exam.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" disabled={!selectedExamType}>
-              <FileText className="mr-2" />
-              Iniciar Simulado
-            </Button>
-          </CardFooter>
-        </Card>
-        */}
-
-        
         {/* Review Questions Section - New */}
         <ReviewExercisesSection />
       </div>
