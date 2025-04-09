@@ -232,6 +232,7 @@ const ExercisesContent: React.FC = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Simulados Card */}
+        {/* 
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Simulados</CardTitle>
@@ -258,6 +259,8 @@ const ExercisesContent: React.FC = () => {
             </Button>
           </CardFooter>
         </Card>
+        */}
+
         
         {/* Review Questions Section - New */}
         <ReviewExercisesSection />
