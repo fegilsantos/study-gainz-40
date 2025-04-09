@@ -7,7 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 export interface Suggestion {
   id: number;
   title: string;
-  description: string;
+  subtitle?: string;
+  content?: string;
   type?: 'improvement' | 'warning' | 'info';
   subjectId?: number;
   subject_name?: string;
@@ -92,7 +93,8 @@ export const useSuggestions = () => {
           .map(item => ({
             id: item.id,
             title: item.Title || 'Sem título',
-            description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
+            subtitle: item.Subtitle,
+            content: item.LongSuggestion,
             type: mapPriorityToType(item.Priority),
             priority: item.Priority
           }))
@@ -122,7 +124,8 @@ export const useSuggestions = () => {
             return {
               id: item.id,
               title: item.Title || 'Sem título',
-              description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
+              subtitle: item.Subtitle,
+              content: item.LongSuggestion,
               subjectId: item.Subject_id,
               subject_name: subjectName,
               priority: item.Priority
@@ -173,6 +176,6 @@ export const useSuggestions = () => {
   return {
     insights,
     recommendations,
-    loading,
+    loading
   };
 };

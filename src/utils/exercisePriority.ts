@@ -20,10 +20,9 @@ export const prioritizeQuestionsByAttempts = async (
     // Get attempt counts for all questions
     const { data: attemptData, error } = await supabase
       .from('question_attempts')
-      .select('question_id, count(*)')
+      .select('question_id, count')
       .eq('person_id', personId)
-      .in('question_id', questionIds)
-      .group('question_id');
+      .in('question_id', questionIds);
 
     if (error) {
       console.error('Error fetching attempt data:', error);
@@ -74,6 +73,10 @@ export const prioritizeSubtopicsByPerformanceGap = async (personId: number, limi
       return [];
     }
 
+    if (!data) {
+      return [];
+    }
+
     // Calculate priority score for each subtopic
     const prioritizedSubtopics = data
       .map(item => {
@@ -116,6 +119,10 @@ export const getRecentSubtopics = async (personId: number, limit = 3): Promise<n
 
     if (error) {
       console.error('Error fetching recent activities:', error);
+      return [];
+    }
+
+    if (!data) {
       return [];
     }
 
