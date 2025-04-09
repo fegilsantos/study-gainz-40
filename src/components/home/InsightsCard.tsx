@@ -1,105 +1,210 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChevronDown, Info, TrendingUp, AlertTriangle, LightbulbIcon } from 'lucide-react';
 import { useSuggestions } from '@/hooks/useSuggestions';
+import { subjects } from '@/utils/mockData';
+import TasksView from '@/components/studyplan/TasksView';
+import { Task } from '@/types/task';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { useTasks } from '@/context/TasksContext';
+import { isPast, isToday, parseISO } from 'date-fns';
 
-const InsightsCard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'insights' | 'recommendations'>('insights');
-  const { suggestions, loading, error } = useSuggestions();
+interface InsightsCardProps {
+  onTaskEdit?: (task: Task, date: Date) => void;
+}
 
-  // Filter suggestions by type (strengths = insights, opportunities = recommendations)
-  const insights = suggestions.filter(suggestion => suggestion.type === 'strengths');
-  const recommendations = suggestions.filter(suggestion => suggestion.type === 'opportunities');
-
-  const renderSuggestions = (items: typeof suggestions, emptyMessage: string) => {
-    if (items.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-          <p>{emptyMessage}</p>
-        </div>
-      );
+const InsightsCard: React.FC<InsightsCardProps> = ({ onTaskEdit }) => {
+  const [activeTab, setActiveTab] = useState<'recommendations' | 'tasks'>('recommendations');
+  const [expanded, setExpanded] = useState(false);
+  const { insights, recommendations, loading } = useSuggestions();
+  const { tasks } = useTasks();
+  
+  // Count overdue tasks
+  const overdueTasksCount = tasks.filter(task => {
+    const taskDate = parseISO(task.date);
+    return !task.completed && (isPast(taskDate) && !isToday(taskDate));
+  }).length;
+  
+  // Format the count for display (limit to 9+)
+  const formattedOverdueCount = overdueTasksCount > 9 ? '9+' : overdueTasksCount.toString();
+  
+  const getIconForType = (type: string) => {
+    switch(type) {
+      case 'improvement':
+        return <TrendingUp className="w-4 h-4 text-emerald-500" />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+      case 'info':
+        return <Info className="w-4 h-4 text-blue-500" />;
+      default:
+        return <Info className="w-4 h-4 text-muted-foreground" />;
     }
-
-    return items.map((suggestion, index) => (
-      <div key={index} className="space-y-1 mb-4">
-        <div className="flex items-start gap-2">
-          <div className="flex-1">
-            <h3 className="font-medium">{suggestion.title}</h3>
-            {suggestion.subtitle && (
-              <p className="text-sm text-muted-foreground">{suggestion.subtitle}</p>
-            )}
-          </div>
-          {suggestion.subject && (
-            <Badge variant="outline" className="shrink-0 bg-primary/10">
-              {suggestion.subject}
-            </Badge>
-          )}
-        </div>
-        {suggestion.content && (
-          <p className="text-sm">{suggestion.content}</p>
-        )}
-      </div>
-    ));
   };
-
-  // Loading state
-  if (loading) {
+  
+  const getColorForSubject = (subjectName?: string) => {
+    if (!subjectName) return 'hsl(var(--muted))';
+    
+    const subject = subjects.find(s => 
+      s.name.toLowerCase() === subjectName.toLowerCase());
+    
+    return subject ? subject.color : 'hsl(var(--muted))';
+  };
+  
+  const getBorderColorForInsight = (type: string) => {
+    switch(type) {
+      case 'improvement':
+        return 'border-l-4 border-l-emerald-500';
+      case 'warning':
+        return 'border-l-4 border-l-amber-500';
+      case 'info':
+        return 'border-l-4 border-l-blue-500';
+      default:
+        return 'border-l-4 border-l-gray-400';
+    }
+  };
+  
+  // Combine insights and recommendations for the recommendations tab
+  const combinedItems = [...insights, ...recommendations];
+  const displayItems = expanded ? combinedItems : combinedItems.slice(0, 4);
+  
+  if (loading && activeTab === 'recommendations') {
     return (
-      <Card className="col-span-1 h-full">
-        <CardHeader>
-          <CardTitle className="text-base">Insights e Recomendações</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <Card className="col-span-1 h-full">
-        <CardHeader>
-          <CardTitle className="text-base">Insights e Recomendações</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center h-64 text-muted-foreground">
-          <p>Não foi possível carregar os dados.</p>
-        </CardContent>
-      </Card>
+      <div>
+        <div className="flex p-4 border-b border-border">
+          <button
+            onClick={() => setActiveTab('recommendations')}
+            className={`flex-1 pb-2 text-sm font-medium transition-all ${
+              activeTab === 'recommendations'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Recomendações
+          </button>
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`flex-1 pb-2 text-sm font-medium transition-all ${
+              activeTab === 'tasks'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Tarefas
+          </button>
+        </div>
+        <div className="p-4 flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="col-span-1 h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">
-          {activeTab === 'insights' ? 'Insights' : 'Recomendações'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs 
-          defaultValue="insights" 
-          className="space-y-4"
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as 'insights' | 'recommendations')}
+    <div>
+      <div className="flex p-4 border-b border-border">
+        <button
+          onClick={() => setActiveTab('recommendations')}
+          className={`flex-1 pb-2 text-sm font-medium transition-all ${
+            activeTab === 'recommendations'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
         >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
-          </TabsList>
-          <TabsContent value="insights" className="space-y-2">
-            {renderSuggestions(insights, "Nenhum insight disponível no momento.")}
-          </TabsContent>
-          <TabsContent value="recommendations" className="space-y-2">
-            {renderSuggestions(recommendations, "Nenhuma recomendação disponível no momento.")}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+          Recomendações
+        </button>
+        <div className="relative flex-1">
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`w-full pb-2 text-sm font-medium transition-all ${
+              activeTab === 'tasks'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground'
+            }`}
+          >
+            Tarefas
+          </button>
+          {overdueTasksCount > 0 && (
+            <Badge 
+              className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center text-xs font-semibold bg-red-500 text-white border-none" 
+              variant="destructive"
+            >
+              {formattedOverdueCount}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {activeTab === 'recommendations' ? (
+        <div className="p-4 space-y-3">
+          {combinedItems.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                Nenhuma recomendação disponível ainda.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Resolver exercícios gerará recomendações personalizadas.
+              </p>
+            </div>
+          ) : (
+            <>
+              {displayItems.map((item) => {
+                const isInsight = insights.some(insight => insight.id === item.id);
+                
+                return (
+                  <div 
+                    key={item.id}
+                    className={`p-3 rounded-xl ${
+                      isInsight 
+                        ? `border ${getBorderColorForInsight(item.type || 'info')} bg-card` 
+                        : 'border border-l-4 border-green-200'
+                    }`}
+                    style={
+                      !isInsight && item.subject_name
+                        ? { 
+                            borderLeftColor: '#10b981', // emerald-500 color 
+                            borderColor: '#d1fae5' // emerald-100 color
+                          } 
+                        : {}
+                    }
+                  >
+                    <div className="flex items-start">
+                      <div className="mt-0.5 mr-3">
+                        {isInsight ? (
+                          getIconForType(item.type || 'info')
+                        ) : (
+                          <LightbulbIcon className="w-4 h-4 text-emerald-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium">{item.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                        {!isInsight && item.subject_name && (
+                          <p className="text-xs font-medium mt-1 text-emerald-600">
+                            {item.subject_name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {combinedItems.length > 4 && (
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="w-full flex items-center justify-center py-2 text-xs text-muted-foreground hover:text-primary transition-all"
+                >
+                  {expanded ? 'Ver menos' : 'Ver mais'}
+                  <ChevronDown className={`ml-1 w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        <TasksView onTaskEdit={onTaskEdit} />
+      )}
+    </div>
   );
 };
 

@@ -411,27 +411,6 @@ export type Database = {
           },
         ]
       }
-      Config: {
-        Row: {
-          created_at: string
-          id: number
-          Name: string | null
-          Value: number | null
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          Name?: string | null
-          Value?: number | null
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          Name?: string | null
-          Value?: number | null
-        }
-        Relationships: []
-      }
       configurations: {
         Row: {
           created_at: string
@@ -1521,7 +1500,6 @@ export type Database = {
           Performance: number | null
           PersonId: number | null
           TopicId: number
-          Weight: number | null
         }
         Insert: {
           ClassId?: number | null
@@ -1531,7 +1509,6 @@ export type Database = {
           Performance?: number | null
           PersonId?: number | null
           TopicId: number
-          Weight?: number | null
         }
         Update: {
           ClassId?: number | null
@@ -1541,7 +1518,6 @@ export type Database = {
           Performance?: number | null
           PersonId?: number | null
           TopicId?: number
-          Weight?: number | null
         }
         Relationships: [
           {

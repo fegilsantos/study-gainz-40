@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { prioritizeQuestionsByAttempts, prioritizeSubtopicsByPerformanceGap, getRecentSubtopics } from '@/utils/exercisePriority';
 
 export interface Answer {
   id: string;
@@ -28,13 +27,7 @@ export interface ExerciseAttempt {
   needsReview: boolean;
 }
 
-export const useSolveExercise = (
-  subtopicId: string, 
-  topicId?: string, 
-  subjectId?: string, 
-  isReview = false,
-  focusMode?: 'weak-points' | 'balanced' | 'recent'
-) => {
+export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId?: string, isReview = false) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [attempts, setAttempts] = useState<Record<string, ExerciseAttempt>>({});
   const [loading, setLoading] = useState(true);
@@ -143,92 +136,6 @@ export const useSolveExercise = (
           
           fetchedQuestions = questions;
 
-        } else if (focusMode) {
-          // Handle AI-based question generation
-          let targetSubtopicIds: number[] = [];
-          
-          if (focusMode === 'weak-points') {
-            // Get subtopics with largest performance gaps
-            targetSubtopicIds = await prioritizeSubtopicsByPerformanceGap(person.id);
-          } else if (focusMode === 'recent') {
-            // Get recently studied subtopics
-            targetSubtopicIds = await getRecentSubtopics(person.id);
-          }
-          
-          if (targetSubtopicIds.length === 0 && subjectId) {
-            // Fallback to using the selected subject
-            const { data: subtopics } = await supabase
-              .from('Subtopic')
-              .select('id, TopicId, Topic:TopicId(SubjectId)')
-              .filter('Topic.SubjectId', 'eq', subjectId)
-              .limit(3);
-              
-            if (subtopics && subtopics.length > 0) {
-              targetSubtopicIds = subtopics.map(s => s.id);
-            }
-          }
-          
-          if (targetSubtopicIds.length === 0) {
-            // If still no subtopics, just get some questions from any subject
-            const { data: questions, error: questionsError } = await supabase
-              .from('questions')
-              .select(`
-                id, 
-                content, 
-                explanation,
-                image_url,
-                image_path,
-                answers (id, content, option_letter, is_correct)
-              `)
-              .limit(5);
-              
-            if (questionsError) {
-              console.error("Error fetching questions:", questionsError);
-              setError("Erro ao buscar questões recomendadas.");
-              setLoading(false);
-              return;
-            }
-            
-            fetchedQuestions = questions;
-          } else {
-            // Get questions for the selected subtopics
-            const { data: questions, error: questionsError } = await supabase
-              .from('questions')
-              .select(`
-                id, 
-                content, 
-                explanation,
-                image_url,
-                image_path,
-                answers (id, content, option_letter, is_correct)
-              `)
-              .in('subtopic_id', targetSubtopicIds)
-              .limit(10);
-              
-            if (questionsError) {
-              console.error("Error fetching questions:", questionsError);
-              setError("Erro ao buscar questões recomendadas.");
-              setLoading(false);
-              return;
-            }
-            
-            if (!questions || questions.length === 0) {
-              setError("Nenhuma questão encontrada para os tópicos prioritários.");
-              setLoading(false);
-              return;
-            }
-            
-            // Prioritize questions by attempt count
-            const questionIds = questions.map(q => q.id);
-            const prioritizedIds = await prioritizeQuestionsByAttempts(questionIds, person.id);
-            
-            // Reorder questions based on priority
-            const prioritizedQuestions = prioritizedIds.map(id => 
-              questions.find(q => q.id === id)!
-            ).filter(q => q); // Filter out any undefined
-            
-            fetchedQuestions = prioritizedQuestions.slice(0, 5); // Limit to 5 questions
-          }
         } else {
           // Regular question fetching for practice
           // Create query for questions based on the provided filters
@@ -241,7 +148,8 @@ export const useSolveExercise = (
               image_url,
               image_path,
               answers (id, content, option_letter, is_correct)
-            `);
+            `)
+            .limit(5);
           
           // Add filters based on available parameters
           if (subtopicId) {
@@ -252,7 +160,7 @@ export const useSolveExercise = (
             query = query.eq('subject_id', parseInt(subjectId));
           }
 
-          const { data, error: fetchError } = await query.limit(20); // Get more to prioritize
+          const { data, error: fetchError } = await query;
           
           if (fetchError) {
             console.error("Error fetching questions:", fetchError);
@@ -262,21 +170,12 @@ export const useSolveExercise = (
           }
 
           if (!data || data.length === 0) {
-            setError("Nenhuma questão encontrada para o conteúdo selecionado.");
+            setError("Nenhuma questão encontrada para o subtópico selecionado.");
             toast.error("Nenhuma questão encontrada");
             return;
           }
           
-          // Prioritize questions by attempt count
-          const questionIds = data.map(q => q.id);
-          const prioritizedIds = await prioritizeQuestionsByAttempts(questionIds, person.id);
-          
-          // Reorder questions based on priority
-          const prioritizedQuestions = prioritizedIds.map(id => 
-            data.find(q => q.id === id)!
-          ).filter(q => q); // Filter out any undefined
-          
-          fetchedQuestions = prioritizedQuestions.slice(0, 5); // Limit to 5 questions
+          fetchedQuestions = data;
         }
 
         // Format questions and answers
@@ -312,10 +211,10 @@ export const useSolveExercise = (
     };
 
     fetchQuestions();
-  }, [subtopicId, topicId, subjectId, isReview, focusMode, user]);
+  }, [subtopicId, topicId, subjectId, isReview, user]);
 
   // Answer a question
-  const answerQuestion = async (questionId: string, answerId: string): Promise<boolean> => {
+  const answerQuestion = async (questionId: string, answerId: string) => {
     try {
       // Find the question and selected answer
       const question = questions.find(q => q.id === questionId);
@@ -406,7 +305,7 @@ export const useSolveExercise = (
   };
 
   // Toggle need for review
-  const toggleReview = async (questionId: string): Promise<boolean> => {
+  const toggleReview = async (questionId: string) => {
     try {
       // 1. Verificar usuário primeiro
       if (!user) {

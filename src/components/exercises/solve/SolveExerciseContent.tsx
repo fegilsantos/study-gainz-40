@@ -9,22 +9,19 @@ import { Loader2, ArrowLeft, ArrowRight, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
 
 interface SolveExerciseContentProps {
   subtopicId: string;
   topicId?: string;
   subjectId?: string;
   isReview?: boolean;
-  aiMode?: 'weak-points' | 'balanced' | 'recent';
 }
 
 const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   subtopicId,
   topicId,
   subjectId,
-  isReview = false,
-  aiMode
+  isReview = false
 }) => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -38,7 +35,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     error,
     answerQuestion,
     toggleReview
-  } = useSolveExercise(subtopicId, topicId, subjectId, isReview, aiMode);
+  } = useSolveExercise(subtopicId, topicId, subjectId, isReview);
 
   // Calculate progress
   const totalQuestions = questions.length;
@@ -68,8 +65,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   };
 
   const handleAnswerSelect = async (questionId: string, answerId: string) => {
-    const success = await answerQuestion(questionId, answerId);
-    return success;
+    await answerQuestion(questionId, answerId);
   };
 
   const handleReviewToggle = (questionId: string) => {
@@ -130,17 +126,6 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     navigate('/exercises');
   };
 
-  // Function to get image URL from path
-  const getImageUrl = (path?: string) => {
-    if (!path) return undefined;
-    
-    const { data } = supabase.storage
-      .from('exercises')
-      .getPublicUrl(path);
-      
-    return data.publicUrl;
-  };
-
   // Get current question
   const currentQuestion = questions[currentQuestionIndex];
   const currentAttempt = currentQuestion ? attempts[currentQuestion.id] : null;
@@ -150,13 +135,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
-        <p className="text-lg">
-          {isReview 
-            ? 'Carregando questões para revisão...' 
-            : aiMode
-              ? 'Analisando seu perfil para gerar questões...' 
-              : 'Carregando questões...'}
-        </p>
+        <p className="text-lg">{isReview ? 'Carregando questões para revisão...' : 'Carregando questões...'}</p>
       </div>
     );
   }
@@ -177,10 +156,8 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
       <div className="flex flex-col items-center justify-center h-64">
         <p className="text-lg mb-4">
           {isReview 
-            ? 'Nenhuma questão para revisão encontrada.'
-            : aiMode
-              ? 'Não foi possível gerar questões personalizadas neste momento.'
-              : 'Nenhuma questão encontrada para o conteúdo selecionado.'}
+            ? 'Nenhuma questão para revisão encontrada.' 
+            : 'Nenhuma questão encontrada para o conteúdo selecionado.'}
         </p>
         <Button onClick={() => navigate('/exercises')}>Voltar para Exercícios</Button>
       </div>
@@ -205,12 +182,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
       {/* Question Card */}
       {currentQuestion && currentAttempt && (
         <QuestionCard 
-          question={{
-            ...currentQuestion,
-            image_url: currentQuestion.image_path 
-              ? getImageUrl(currentQuestion.image_path) 
-              : currentQuestion.image_url
-          }}
+          question={currentQuestion}
           attempt={currentAttempt}
           onAnswer={handleAnswerSelect}
           onToggleReview={handleReviewToggle}
