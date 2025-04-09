@@ -20,10 +20,10 @@ export const prioritizeQuestionsByAttempts = async (
     // Get attempt counts for all questions
     const { data: attemptData, error } = await supabase
       .from('question_attempts')
-      .select('question_id, count')
+      .select('question_id, count(*)')
       .eq('person_id', personId)
       .in('question_id', questionIds)
-      .count();
+      .group('question_id');
 
     if (error) {
       console.error('Error fetching attempt data:', error);
@@ -40,9 +40,7 @@ export const prioritizeQuestionsByAttempts = async (
     
     // Update with actual attempt counts
     attemptData?.forEach(item => {
-      if (item && item.question_id) {
-        attemptCounts[item.question_id] = parseInt(item.count || '0');
-      }
+      attemptCounts[item.question_id] = parseInt(item.count as unknown as string);
     });
 
     // Sort questions by attempt count (ascending)
@@ -65,7 +63,8 @@ export const prioritizeSubtopicsByPerformanceGap = async (personId: number, limi
         id,
         SubtopicId,
         Performance,
-        Goal
+        Goal,
+        Weight
       `)
       .eq('PersonId', personId)
       .not('SubtopicId', 'is', null);
@@ -75,16 +74,12 @@ export const prioritizeSubtopicsByPerformanceGap = async (personId: number, limi
       return [];
     }
 
-    if (!data || data.length === 0) {
-      return [];
-    }
-
     // Calculate priority score for each subtopic
     const prioritizedSubtopics = data
       .map(item => {
         const performance = item.Performance || 0;
         const goal = item.Goal || 0;
-        const weight = 1; // Default weight is 1 since Weight column doesn't exist
+        const weight = item.Weight || 1; // Default weight is 1 if null
         const gap = goal - performance;
         
         return {
@@ -92,8 +87,6 @@ export const prioritizeSubtopicsByPerformanceGap = async (personId: number, limi
           priorityScore: gap * weight
         };
       })
-      // Filter out invalid entries
-      .filter(item => item.subtopicId != null)
       // Sort by priority score (descending)
       .sort((a, b) => b.priorityScore - a.priorityScore)
       // Take only the top subtopics based on limit
@@ -126,10 +119,6 @@ export const getRecentSubtopics = async (personId: number, limit = 3): Promise<n
       return [];
     }
 
-    if (!data || data.length === 0) {
-      return [];
-    }
-
     // First prioritize by subtopics
     const recentSubtopics = data
       .filter(item => item.SubtopicId !== null)
@@ -151,7 +140,7 @@ export const getRecentSubtopics = async (personId: number, limit = 3): Promise<n
           .in('TopicId', recentTopics)
           .limit(limit - uniqueSubtopics.length);
         
-        if (!topicError && subtopicsFromTopics && subtopicsFromTopics.length > 0) {
+        if (!topicError && subtopicsFromTopics) {
           const additionalSubtopics = subtopicsFromTopics.map(item => item.id);
           uniqueSubtopics.push(...additionalSubtopics);
         }
@@ -165,25 +154,15 @@ export const getRecentSubtopics = async (personId: number, limit = 3): Promise<n
         .map(item => item.SubjectId);
       
       if (recentSubjects.length > 0) {
-        // We need to adjust this query to avoid the error
-        const { data: topics, error: topicsError } = await supabase
-          .from('Topic')
-          .select('id, SubjectId')
-          .in('SubjectId', recentSubjects);
-          
-        if (!topicsError && topics && topics.length > 0) {
-          const topicIds = topics.map(t => t.id);
-          
-          const { data: subtopicsFromSubjects, error: subjectError } = await supabase
-            .from('Subtopic')
-            .select('id')
-            .in('TopicId', topicIds)
-            .limit(limit - uniqueSubtopics.length);
-          
-          if (!subjectError && subtopicsFromSubjects && subtopicsFromSubjects.length > 0) {
-            const additionalSubtopics = subtopicsFromSubjects.map(item => item.id);
-            uniqueSubtopics.push(...additionalSubtopics);
-          }
+        const { data: subtopicsFromSubjects, error: subjectError } = await supabase
+          .from('Subtopic')
+          .select('id, TopicId, Topic:TopicId(SubjectId)')
+          .filter('Topic.SubjectId', 'in', `(${recentSubjects.join(',')})`)
+          .limit(limit - uniqueSubtopics.length);
+        
+        if (!subjectError && subtopicsFromSubjects) {
+          const additionalSubtopics = subtopicsFromSubjects.map(item => item.id);
+          uniqueSubtopics.push(...additionalSubtopics);
         }
       }
     }

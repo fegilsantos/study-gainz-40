@@ -8,10 +8,14 @@ import { Loader2 } from 'lucide-react';
 
 const InsightsCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'insights' | 'recommendations'>('insights');
-  const { insights, recommendations, loading, error } = useSuggestions();
+  const { suggestions, loading, error } = useSuggestions();
 
-  const renderSuggestions = (items: any[], emptyMessage: string) => {
-    if (!items || items.length === 0) {
+  // Filter suggestions by type (strengths = insights, opportunities = recommendations)
+  const insights = suggestions.filter(suggestion => suggestion.type === 'strengths');
+  const recommendations = suggestions.filter(suggestion => suggestion.type === 'opportunities');
+
+  const renderSuggestions = (items: typeof suggestions, emptyMessage: string) => {
+    if (items.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
           <p>{emptyMessage}</p>

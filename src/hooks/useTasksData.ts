@@ -19,7 +19,7 @@ export const useTasksData = (refreshTrigger = 0) => {
   
   // Use the extracted hooks
   const { fetchTasks } = useFetchTasks();
-  const { createTask, updateTask, deleteTask } = useTaskOperations();
+  const { createTask, updateTask, deleteTask } = useTaskOperations(user, toast);
   
   // Use useCallback to prevent recreation of this function on every render
   const fetchTasksData = useCallback(async () => {
@@ -29,12 +29,8 @@ export const useTasksData = (refreshTrigger = 0) => {
       setFetchCount(prev => prev + 1);
       
       try {
-        if (user) {
-          const tasksData = await fetchTasks(user);
-          if (tasksData) {
-            setTasks(tasksData);
-          }
-        }
+        const tasksData = await fetchTasks(user);
+        setTasks(tasksData);
         setIsInitialized(true);
       } finally {
         setLoading(false);
