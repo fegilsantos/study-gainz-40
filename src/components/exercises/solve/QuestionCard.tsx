@@ -48,7 +48,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     if (!imagePath) return null;
     
     const { data } = supabase.storage
-      .from('exercises')
+      .from('exerciseimages')
       .getPublicUrl(imagePath);
       
     return data.publicUrl;
