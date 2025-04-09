@@ -74,7 +74,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           <div className="text-base" dangerouslySetInnerHTML={{ __html: question.content }} />
           
           {(question.image_url || question.image_path) && (
-            <div className="my-4" flex justify-center>
+            <div className="my-4 flex justify-center">
               <img 
                 src={getImageUrl(question.image_path) } 
                 alt="Imagem da questão" 
