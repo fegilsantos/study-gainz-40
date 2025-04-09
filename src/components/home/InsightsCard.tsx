@@ -5,18 +5,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
-import { Task } from '@/types/task';
 
-interface InsightsCardProps {
-  onTaskEdit?: (task: Task, date: Date) => void;
-}
-
-const InsightsCard: React.FC<InsightsCardProps> = ({ onTaskEdit }) => {
+const InsightsCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'insights' | 'recommendations'>('insights');
-  const { insights, recommendations, loading } = useSuggestions();
+  const { suggestions, loading, error } = useSuggestions();
 
   // Filter suggestions by type (strengths = insights, opportunities = recommendations)
-  const renderSuggestions = (items: typeof insights, emptyMessage: string) => {
+  const insights = suggestions.filter(suggestion => suggestion.type === 'strengths');
+  const recommendations = suggestions.filter(suggestion => suggestion.type === 'opportunities');
+
+  const renderSuggestions = (items: typeof suggestions, emptyMessage: string) => {
     if (items.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
@@ -34,9 +32,9 @@ const InsightsCard: React.FC<InsightsCardProps> = ({ onTaskEdit }) => {
               <p className="text-sm text-muted-foreground">{suggestion.subtitle}</p>
             )}
           </div>
-          {suggestion.subject_name && (
+          {suggestion.subject && (
             <Badge variant="outline" className="shrink-0 bg-primary/10">
-              {suggestion.subject_name}
+              {suggestion.subject}
             </Badge>
           )}
         </div>
@@ -56,6 +54,20 @@ const InsightsCard: React.FC<InsightsCardProps> = ({ onTaskEdit }) => {
         </CardHeader>
         <CardContent className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Card className="col-span-1 h-full">
+        <CardHeader>
+          <CardTitle className="text-base">Insights e Recomendações</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-64 text-muted-foreground">
+          <p>Não foi possível carregar os dados.</p>
         </CardContent>
       </Card>
     );

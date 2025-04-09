@@ -1,13 +1,17 @@
+
 import React, { useEffect, useState } from 'react';
 import { TrendingDown, TrendingUp, BookOpen, AlertTriangle, Target } from 'lucide-react';
 import { useSubjectPerformance } from '@/hooks/useSubjectPerformance';
+import { userProfile } from '@/utils/mockData';
 import InsightsCard from './InsightsCard';
+import GoalsCard from './GoalsCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Task } from '@/types/task';
 import TaskModal from '@/components/studyplan/task-modal/TaskModal';
+
 
 const Dashboard: React.FC = () => {
   const { weakestSubject, strongestSubject, loading } = useSubjectPerformance();
@@ -20,6 +24,7 @@ const Dashboard: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [modalDate, setModalDate] = useState<Date>(new Date());
 
+  
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return;
@@ -80,6 +85,7 @@ const Dashboard: React.FC = () => {
     setIsModalOpen(false);
     setSelectedTask(null);
   };
+
   
   // Calculate level based on gamification score and levels from database
   const calculateLevel = (score: number): {level: number, name: string, max_xp: number, min_xp: number} => {
@@ -203,6 +209,7 @@ const Dashboard: React.FC = () => {
       
       {/* Subject Statistics */}
       <div className="grid grid-cols-2 gap-4">
+        {/* Precisa de Atenção */}
         <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-rose-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Precisa de Atenção</span>
@@ -233,6 +240,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         
+        {/* Melhor Desempenho */}
         <div className="col-span-1 glass rounded-2xl p-4 shadow-sm border-l-4 border-l-emerald-500">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Melhor Desempenho</span>
@@ -278,6 +286,10 @@ const Dashboard: React.FC = () => {
           currentDate={modalDate}
         />
       )}
+      
+      {/* Goals Component */}
+     {/* <GoalsCard />*/}
+      
     </div>
   );
 };
