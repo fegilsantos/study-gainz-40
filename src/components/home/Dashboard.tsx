@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingDown, TrendingUp, BookOpen, AlertTriangle, Target } from 'lucide-react';
 import { useSubjectPerformance } from '@/hooks/useSubjectPerformance';
-import { userProfile } from '@/utils/mockData';
 import InsightsCard from './InsightsCard';
 import GoalsCard from './GoalsCard';
 import { Button } from '@/components/ui/button';
@@ -10,8 +9,6 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Task } from '@/types/task';
-import TaskModal from '@/components/studyplan/task-modal/TaskModal';
-
 
 const Dashboard: React.FC = () => {
   const { weakestSubject, strongestSubject, loading } = useSubjectPerformance();
@@ -20,10 +17,6 @@ const Dashboard: React.FC = () => {
   const [overallPerformance, setOverallPerformance] = useState<number>(0);
   const [loadingUserData, setLoadingUserData] = useState<boolean>(true);
   const [gamificationLevels, setGamificationLevels] = useState<Array<{id: number, name: string, max_xp: number}>>([]);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [modalDate, setModalDate] = useState<Date>(new Date());
-
   
   useEffect(() => {
     const fetchUserData = async () => {
@@ -74,18 +67,6 @@ const Dashboard: React.FC = () => {
     
     fetchUserData();
   }, [user]);
-
-  const handleTaskEdit = (task: Task, date: Date) => {
-    setSelectedTask(task);
-    setModalDate(date);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedTask(null);
-  };
-
   
   // Calculate level based on gamification score and levels from database
   const calculateLevel = (score: number): {level: number, name: string, max_xp: number, min_xp: number} => {
@@ -139,7 +120,6 @@ const Dashboard: React.FC = () => {
   
   const levelData = calculateLevel(gamificationScore);
   const xpProgress = calculateXpProgress(gamificationScore, levelData);
-  const xpToNextLevel = levelData.max_xp - gamificationScore;
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -274,21 +254,8 @@ const Dashboard: React.FC = () => {
       
       {/* Insights & Recommendations */}
       <div className="w-full glass rounded-2xl shadow-sm overflow-hidden border-l-4 border-l-amber-400">
-        <InsightsCard onTaskEdit={handleTaskEdit} />
+        <InsightsCard />
       </div>
-      
-      {/* Task Modal */}
-      {isModalOpen && (
-        <TaskModal
-          isOpen={isModalOpen}
-          onClose={closeModal}
-          task={selectedTask}
-          currentDate={modalDate}
-        />
-      )}
-      
-      {/* Goals Component */}
-     {/* <GoalsCard />*/}
       
     </div>
   );

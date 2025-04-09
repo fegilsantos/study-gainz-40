@@ -7,10 +7,11 @@ import { useToast } from '@/hooks/use-toast';
 export interface Suggestion {
   id: number;
   title: string;
-  description: string;
-  type?: 'improvement' | 'warning' | 'info';
+  subtitle?: string;
+  content?: string;
+  type?: 'strengths' | 'opportunities' | 'improvement' | 'warning' | 'info';
   subjectId?: number;
-  subject_name?: string;
+  subject?: string;
   priority?: string;
 }
 
@@ -27,8 +28,8 @@ const priorityOrder = [
 
 export const useSuggestions = () => {
   const [loading, setLoading] = useState(true);
-  const [insights, setInsights] = useState<Suggestion[]>([]);
-  const [recommendations, setRecommendations] = useState<Suggestion[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -87,60 +88,61 @@ export const useSuggestions = () => {
           
         if (opportError) throw opportError;
         
-        // Process and sort insights data
-        const processedInsights = (strengthsData || [])
-          .map(item => ({
+        // Process all suggestions
+        const allSuggestions = [
+          ...(strengthsData || []).map(item => ({
             id: item.id,
             title: item.Title || 'Sem título',
-            description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
-            type: mapPriorityToType(item.Priority),
+            subtitle: item.Subtitle || '',
+            content: item.LongSuggestion || '',
+            type: 'strengths',
+            priority: item.Priority
+          })),
+          ...(opportData || []).map(item => ({
+            id: item.id,
+            title: item.Title || 'Sem título',
+            subtitle: item.Subtitle || '',
+            content: item.LongSuggestion || '',
+            type: 'opportunities',
+            subjectId: item.Subject_id,
             priority: item.Priority
           }))
-          .sort((a, b) => {
-            const priorityA = priorityOrder.indexOf(a.priority);
-            const priorityB = priorityOrder.indexOf(b.priority);
-            return priorityA - priorityB;
-          });
-
-        // Process and sort recommendations
-        const processedRecommendations = await Promise.all(
-          (opportData || []).map(async (item) => {
-            let subjectName = undefined;
-            
-            if (item.Subject_id) {
+        ];
+        
+        // Enhance opportunities with subject names
+        const processedSuggestions = await Promise.all(
+          allSuggestions.map(async (item) => {
+            if (item.subjectId) {
               const { data: subject } = await supabase
                 .from('Subject')
                 .select('Name')
-                .eq('id', item.Subject_id)
+                .eq('id', item.subjectId)
                 .single();
                 
               if (subject) {
-                subjectName = subject.Name;
+                return {
+                  ...item,
+                  subject: subject.Name
+                };
               }
             }
             
-            return {
-              id: item.id,
-              title: item.Title || 'Sem título',
-              description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
-              subjectId: item.Subject_id,
-              subject_name: subjectName,
-              priority: item.Priority
-            };
+            return item;
           })
         );
 
-        // Sort recommendations by priority
-        const sortedRecommendations = processedRecommendations.sort((a, b) => {
+        // Sort by priority
+        const sortedSuggestions = processedSuggestions.sort((a, b) => {
           const priorityA = priorityOrder.indexOf(a.priority);
           const priorityB = priorityOrder.indexOf(b.priority);
           return priorityA - priorityB;
         });
         
-        setInsights(processedInsights);
-        setRecommendations(sortedRecommendations);
+        setSuggestions(sortedSuggestions);
+        setError(null);
       } catch (error) {
         console.error('Error fetching suggestions:', error);
+        setError("Não foi possível buscar as sugestões.");
         toast({
           title: "Erro ao carregar sugestões",
           description: "Não foi possível buscar as sugestões.",
@@ -153,26 +155,16 @@ export const useSuggestions = () => {
 
     fetchSuggestions();
   }, [user, toast]);
-  
-  // Map priority to insight type
-  const mapPriorityToType = (priority: string | null): 'improvement' | 'warning' | 'info' => {
-    if (!priority) return 'info';
-    
-    switch (priority) {
-      case 'Muito Alta':
-      case 'Alta':
-        return 'warning';
-      case 'Muito Baixa':
-      case 'Baixa':
-        return 'improvement';
-      default:
-        return 'info';
-    }
-  };
+
+  // Filter suggestions by type
+  const insights = suggestions.filter(suggestion => suggestion.type === 'strengths');
+  const recommendations = suggestions.filter(suggestion => suggestion.type === 'opportunities');
 
   return {
+    suggestions,
     insights,
     recommendations,
     loading,
+    error
   };
 };
