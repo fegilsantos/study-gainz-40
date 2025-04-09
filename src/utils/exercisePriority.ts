@@ -17,12 +17,16 @@ export const prioritizeQuestionsByAttempts = async (
   if (!questionIds.length) return [];
   
   try {
-    // Get attempt counts for all questions
+    // Get attempt counts for all questions using aggregation
     const { data: attemptData, error } = await supabase
       .from('question_attempts')
-      .select('question_id, count(*)')
+      .select('question_id, count')
       .eq('person_id', personId)
       .in('question_id', questionIds)
+      .select(`
+        question_id,
+        count:count(*)
+      `, { count: 'exact' })
       .group('question_id');
 
     if (error) {
@@ -39,9 +43,16 @@ export const prioritizeQuestionsByAttempts = async (
     });
     
     // Update with actual attempt counts
-    attemptData?.forEach(item => {
-      attemptCounts[item.question_id] = parseInt(item.count as unknown as string);
-    });
+    if (attemptData) {
+      attemptData.forEach(item => {
+        // Ensure count is a number
+        const count = typeof item.count === 'number' 
+          ? item.count 
+          : parseInt(item.count as unknown as string);
+        
+        attemptCounts[item.question_id] = isNaN(count) ? 0 : count;
+      });
+    }
 
     // Sort questions by attempt count (ascending)
     return questionIds.sort((a, b) => attemptCounts[a] - attemptCounts[b]);
@@ -74,12 +85,18 @@ export const prioritizeSubtopicsByPerformanceGap = async (personId: number, limi
       return [];
     }
 
-    // Calculate priority score for each subtopic
+    if (!data) {
+      console.log('No subtopic performance data found');
+      return [];
+    }
+
+    // Calculate priority score for each subtopic with careful null handling
     const prioritizedSubtopics = data
+      .filter(item => item.SubtopicId !== null) // Filter out items without SubtopicId
       .map(item => {
-        const performance = item.Performance || 0;
-        const goal = item.Goal || 0;
-        const weight = item.Weight || 1; // Default weight is 1 if null
+        const performance = item.Performance ?? 0; // Use nullish coalescing
+        const goal = item.Goal ?? 0;
+        const weight = item.Weight ?? 1; // Default weight is 1 if null
         const gap = goal - performance;
         
         return {
@@ -119,6 +136,10 @@ export const getRecentSubtopics = async (personId: number, limit = 3): Promise<n
       return [];
     }
 
+    if (!data || data.length === 0) {
+      return [];
+    }
+
     // First prioritize by subtopics
     const recentSubtopics = data
       .filter(item => item.SubtopicId !== null)
@@ -154,15 +175,28 @@ export const getRecentSubtopics = async (personId: number, limit = 3): Promise<n
         .map(item => item.SubjectId);
       
       if (recentSubjects.length > 0) {
+        // Modified query to handle the relationship properly
         const { data: subtopicsFromSubjects, error: subjectError } = await supabase
           .from('Subtopic')
-          .select('id, TopicId, Topic:TopicId(SubjectId)')
-          .filter('Topic.SubjectId', 'in', `(${recentSubjects.join(',')})`)
+          .select(`
+            id, 
+            TopicId,
+            Topic:TopicId (
+              SubjectId
+            )
+          `)
           .limit(limit - uniqueSubtopics.length);
         
         if (!subjectError && subtopicsFromSubjects) {
-          const additionalSubtopics = subtopicsFromSubjects.map(item => item.id);
-          uniqueSubtopics.push(...additionalSubtopics);
+          // Filter subtopics to only include those from our recent subjects
+          const filteredSubtopics = subtopicsFromSubjects
+            .filter(item => 
+              item.Topic && 
+              recentSubjects.includes(item.Topic.SubjectId)
+            )
+            .map(item => item.id);
+          
+          uniqueSubtopics.push(...filteredSubtopics);
         }
       }
     }

@@ -7,10 +7,11 @@ import { useToast } from '@/hooks/use-toast';
 export interface Suggestion {
   id: number;
   title: string;
-  description: string;
-  type?: 'improvement' | 'warning' | 'info';
-  subjectId?: number;
-  subject_name?: string;
+  subtitle?: string;
+  content?: string;
+  type: 'strengths' | 'opportunities' | 'improvement' | 'warning' | 'info';
+  subject?: string;
+  subject_id?: number;
   priority?: string;
 }
 
@@ -29,6 +30,7 @@ export const useSuggestions = () => {
   const [loading, setLoading] = useState(true);
   const [insights, setInsights] = useState<Suggestion[]>([]);
   const [recommendations, setRecommendations] = useState<Suggestion[]>([]);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -88,11 +90,12 @@ export const useSuggestions = () => {
         if (opportError) throw opportError;
         
         // Process and sort insights data
-        const processedInsights = (strengthsData || [])
+        const processedInsights: Suggestion[] = (strengthsData || [])
           .map(item => ({
             id: item.id,
             title: item.Title || 'Sem título',
-            description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
+            subtitle: item.Subtitle,
+            content: item.LongSuggestion,
             type: mapPriorityToType(item.Priority),
             priority: item.Priority
           }))
@@ -103,7 +106,7 @@ export const useSuggestions = () => {
           });
 
         // Process and sort recommendations
-        const processedRecommendations = await Promise.all(
+        const processedRecommendations: Suggestion[] = await Promise.all(
           (opportData || []).map(async (item) => {
             let subjectName = undefined;
             
@@ -122,9 +125,11 @@ export const useSuggestions = () => {
             return {
               id: item.id,
               title: item.Title || 'Sem título',
-              description: item.Subtitle || item.LongSuggestion || 'Sem descrição',
-              subjectId: item.Subject_id,
-              subject_name: subjectName,
+              subtitle: item.Subtitle,
+              content: item.LongSuggestion,
+              type: 'opportunities' as const,
+              subject: subjectName,
+              subject_id: item.Subject_id,
               priority: item.Priority
             };
           })
@@ -139,8 +144,10 @@ export const useSuggestions = () => {
         
         setInsights(processedInsights);
         setRecommendations(sortedRecommendations);
-      } catch (error) {
-        console.error('Error fetching suggestions:', error);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching suggestions:', err);
+        setError(err instanceof Error ? err : new Error('Unknown error occurred'));
         toast({
           title: "Erro ao carregar sugestões",
           description: "Não foi possível buscar as sugestões.",
@@ -174,5 +181,6 @@ export const useSuggestions = () => {
     insights,
     recommendations,
     loading,
+    error
   };
 };
