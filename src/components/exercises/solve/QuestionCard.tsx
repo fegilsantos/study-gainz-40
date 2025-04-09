@@ -76,7 +76,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           {(question.image_url || question.image_path) && (
             <div className="my-4">
               <img 
-                src={question.image_path ? getImageUrl(question.image_path) : question.image_url} 
+                src={question.image_path ? getImageUrl(question.image_path) } 
                 alt="Imagem da questão" 
                 className="max-w-full rounded-md border border-border"
               />
