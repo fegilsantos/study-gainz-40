@@ -236,7 +236,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
             return;
           }
           
-          fetchedQuestions = data;
+          fetchedQuestions = selectedQuestions;
         }
 
         // Format questions and answers
