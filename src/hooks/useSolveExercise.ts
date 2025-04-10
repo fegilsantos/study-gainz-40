@@ -171,7 +171,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           // 2. Agora, buscamos as tentativas de resposta do usuário para calcular a frequência
           const { data: userAttempts, error: userAttemptsError } = await supabase
             .from('question_attempts')
-            .select('question_id, count')
+            .select('question_id')
             .eq('person_id', person.id)
             .in('question_id', availableQuestions.map(q => q.id));
           
