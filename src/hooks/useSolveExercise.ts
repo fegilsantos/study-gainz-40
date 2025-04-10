@@ -236,6 +236,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
             // Substituir toda a lógica de busca manual pela função reutilizável
             fetchedQuestions = await fetchLeastAnsweredQuestions(
               user.id, // Passa o ID do usuário diretamente
+              console.log(' user_Id'+user.id)
               { subtopicId, topicId, subjectId }, // Filtros
               5 // Limite padrão (opcional)
             );
