@@ -236,7 +236,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
 
         } else {
           try {
-            console.log(' user_Id'+user.id)
+            console.log(' Entrou aqui user_Id'+user.id);
             // Substituir toda a lógica de busca manual pela função reutilizável
             fetchedQuestions = await fetchLeastAnsweredQuestions(
               user.id, // Passa o ID do usuário diretamente
