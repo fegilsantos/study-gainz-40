@@ -132,6 +132,9 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+ console.log('is review'+ isReview);
+ console.log('usuario'+ user.Id);
+
   // Fetch questions when component mounts
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -159,8 +162,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         }
         
         let fetchedQuestions;
-        console.log('is review'+ isReview);
-        console.log('usuario'+ user.Id);
+
 
         if (isReview) {
           // Fetch questions marked for review
