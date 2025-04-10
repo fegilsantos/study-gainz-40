@@ -7,7 +7,7 @@ import SolveExerciseContent from '@/components/exercises/solve/SolveExerciseCont
 const SolveExercise: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  console.log('pelo menos aqui);
+  
   
   // Get the subject, topic, subtopic, and review parameters from the URL
   const subjectId = searchParams.get('subject');
