@@ -83,17 +83,16 @@ export const fetchLeastAnsweredQuestions = async (
     // 4. Buscar tentativas do usuário
     const { data: userAttempts, error: attemptsError } = await supabase
       .from('question_attempts')
-      .select('question_id, count(*) as attempt_count')
+      .select('question_id, count(*)')
       .eq('person_id', person.id)
       .in('question_id', availableQuestions.map(q => q.id))
-      .group('question_id'); // 👈 Adicionar agrupamento;
+      .group('question_id',{ count: 'exact' }); // 👈 Adicionar agrupamento;
 
     // 5. Calcular frequência de tentativas
     const attemptCounts = availableQuestions.reduce((acc, q) => {
-      // Encontra a tentativa correspondente na resposta da query
-      const attempt = userAttempts?.find(a => a.question_id === q.id);
-      acc[q.id] = attempt ? parseInt(attempt.attempt_count) : 0;
-      return acc;
+        const attempt = userAttempts?.find(a => a.question_id === q.id);
+        acc[q.id] = attempt ? (attempt as any).count : 0; // Type assertion needed
+        return acc;
     }, {} as Record<string, number>);
 
     // 6. Ordenar e selecionar questões
