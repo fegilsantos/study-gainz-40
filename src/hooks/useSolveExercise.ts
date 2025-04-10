@@ -159,6 +159,8 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
         }
         
         let fetchedQuestions;
+        console.log('is review'+ isReview);
+        console.log('usuario'+ user.Id);
 
         if (isReview) {
           // Fetch questions marked for review
