@@ -132,8 +132,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
- console.log('is review'+ isReview);
- console.log('usuario'+ user.id);
+ console.log('simples');
 
   // Fetch questions when component mounts
   useEffect(() => {
