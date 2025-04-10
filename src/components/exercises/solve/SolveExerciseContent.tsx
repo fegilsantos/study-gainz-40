@@ -27,6 +27,9 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+
+  console.log(subjectId);
+  console.log(isReview);
   
   const {
     questions,
