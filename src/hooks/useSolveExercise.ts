@@ -86,7 +86,7 @@ export const fetchLeastAnsweredQuestions = async (
       .select('question_id, count(*)')
       .eq('person_id', person.id)
       .in('question_id', availableQuestions.map(q => q.id))
-      .group('question_id'); // 👈 Adicionar agrupamento;
+      .group('question_attempts.question_id'); // 👈 Adicionar agrupamento;
 
     // 5. Calcular frequência de tentativas
     const attemptCounts = availableQuestions.reduce((acc, q) => {
