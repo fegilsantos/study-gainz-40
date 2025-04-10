@@ -27,6 +27,101 @@ export interface ExerciseAttempt {
   needsReview: boolean;
 }
 
+// Tipos necessários (ajuste conforme sua aplicação)
+interface QuestionQueryFilters {
+  subtopicId?: string;
+  topicId?: string;
+  subjectId?: string;
+}
+
+export interface QuestionWithAnswers {
+  id: string;
+  content: string;
+  explanation: string;
+  image_url?: string;
+  image_path?: string;
+  answers: Answer[];
+}
+
+export const fetchLeastAnsweredQuestions = async (
+  userId: string,
+  filters: QuestionQueryFilters,
+  limit: number = 5
+): Promise<QuestionWithAnswers[]> => {
+  try {
+    // 1. Buscar a pessoa associada ao usuário
+    const { data: person, error: personError } = await supabase
+      .from('Person')
+      .select('id')
+      .eq('ProfileId', userId)
+      .single();
+
+    if (personError || !person) {
+      throw new Error('Perfil de usuário não encontrado');
+    }
+
+    // 2. Construir query baseada nos filtros
+    let baseQuery = supabase
+      .from('questions')
+      .select('id, subject_id, topic_id, subtopic_id');
+
+    if (filters.subtopicId) {
+      baseQuery = baseQuery.eq('subtopic_id', parseInt(filters.subtopicId));
+    } else if (filters.topicId) {
+      baseQuery = baseQuery.eq('topic_id', parseInt(filters.topicId));
+    } else if (filters.subjectId) {
+      baseQuery = baseQuery.eq('subject_id', parseInt(filters.subjectId));
+    }
+
+    // 3. Buscar questões disponíveis
+    const { data: availableQuestions, error: availableError } = await baseQuery;
+
+    if (availableError || !availableQuestions?.length) {
+      throw new Error('Nenhuma questão disponível encontrada');
+    }
+
+    // 4. Buscar tentativas do usuário
+    const { data: userAttempts, error: attemptsError } = await supabase
+      .from('question_attempts')
+      .select('question_id')
+      .eq('person_id', person.id)
+      .in('question_id', availableQuestions.map(q => q.id));
+
+    // 5. Calcular frequência de tentativas
+    const attemptCounts = availableQuestions.reduce((acc, q) => {
+      acc[q.id] = userAttempts?.filter(a => a.question_id === q.id).length || 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // 6. Ordenar e selecionar questões
+    const sortedIds = Object.keys(attemptCounts).sort(
+      (a, b) => attemptCounts[a] - attemptCounts[b]
+    ).slice(0, limit);
+
+    // 7. Buscar detalhes das questões selecionadas
+    const { data: questions, error: questionsError } = await supabase
+      .from('questions')
+      .select(`
+        id, 
+        content, 
+        explanation,
+        image_url,
+        image_path,
+        answers (id, content, option_letter, is_correct)
+      `)
+      .in('id', sortedIds);
+
+    if (questionsError || !questions?.length) {
+      throw new Error('Erro ao buscar detalhes das questões');
+    }
+
+    return questions as QuestionWithAnswers[];
+  } catch (error) {
+    console.error('Error in fetchLeastAnsweredQuestions:', error);
+    throw error;
+  }
+};
+
 export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId?: string, isReview = false) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [attempts, setAttempts] = useState<Record<string, ExerciseAttempt>>({});
@@ -137,106 +232,20 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           fetchedQuestions = questions;
 
         } else {
-          // Modo regular para prática - modificado para buscar questões menos respondidas
-          
-          // 1. Primeiro, buscamos todas as questões disponíveis com base nos filtros
-          let allQuestionsQuery = supabase
-            .from('questions')
-            .select('id, subject_id, topic_id, subtopic_id');
-          
-          // Aplicamos os filtros baseados nos parâmetros disponíveis
-          if (subtopicId) {
-            allQuestionsQuery = allQuestionsQuery.eq('subtopic_id', parseInt(subtopicId));
-          } else if (topicId) {
-            allQuestionsQuery = allQuestionsQuery.eq('topic_id', parseInt(topicId));
-          } else if (subjectId) {
-            allQuestionsQuery = allQuestionsQuery.eq('subject_id', parseInt(subjectId));
-          }
-          
-          const { data: availableQuestions, error: availableQuestionsError } = await allQuestionsQuery;
-          
-          if (availableQuestionsError) {
-            console.error("Error fetching available questions:", availableQuestionsError);
-            setError("Erro ao buscar questões disponíveis.");
+          try {
+            // Substituir toda a lógica de busca manual pela função reutilizável
+            fetchedQuestions = await fetchLeastAnsweredQuestions(
+              user.id, // Passa o ID do usuário diretamente
+              { subtopicId, topicId, subjectId }, // Filtros
+              5 // Limite padrão (opcional)
+            );
+          } catch (error) {
+            console.error("Error in fetchLeastAnsweredQuestions:", error);
+            setError("Erro ao buscar questões para prática");
+            toast.error("Erro ao carregar questões");
             setLoading(false);
             return;
           }
-          
-          if (!availableQuestions || availableQuestions.length === 0) {
-            setError("Nenhuma questão encontrada para o conteúdo selecionado.");
-            setLoading(false);
-            return;
-          }
-          
-          // 2. Agora, buscamos as tentativas de resposta do usuário para calcular a frequência
-          const { data: userAttempts, error: userAttemptsError } = await supabase
-            .from('question_attempts')
-            .select('question_id')
-            .eq('person_id', person.id)
-            .in('question_id', availableQuestions.map(q => q.id));
-          
-          if (userAttemptsError) {
-            console.error("Error fetching user attempts:", userAttemptsError);
-            // Não interrompemos o fluxo aqui, apenas continuamos sem considerar as tentativas
-          }
-          
-          // 3. Calculamos a contagem de tentativas para cada questão
-          const attemptCounts: Record<string, number> = {};
-          
-          // Inicializamos todas as questões disponíveis com contagem zero
-          availableQuestions.forEach(q => {
-            attemptCounts[q.id] = 0;
-          });
-          
-          // Atualizamos a contagem com base nas tentativas do usuário
-          if (userAttempts) {
-            userAttempts.forEach(attempt => {
-              // Agrupamos por question_id e contamos
-              if (attempt.question_id in attemptCounts) {
-                attemptCounts[attempt.question_id]++;
-              }
-            });
-          }
-          
-          // 4. Ordenamos as questões pela contagem (menos respondidas primeiro)
-          const sortedQuestionIds = Object.keys(attemptCounts).sort((a, b) => {
-            return attemptCounts[a] - attemptCounts[b];
-          });
-          
-          // 5. Pegamos as 5 questões menos respondidas
-          const questionIdsToFetch = sortedQuestionIds.slice(0, 5);
-          
-          // 6. Buscamos os detalhes completos dessas questões
-          const { data: selectedQuestions, error: selectedQuestionsError } = await supabase
-            .from('questions')
-            .select(`
-              id, 
-              content, 
-              explanation,
-              image_url,
-              image_path,
-              answers (id, content, option_letter, is_correct)
-            `)
-            .in('id', questionIdsToFetch);
-          
-          
-
-          
-          
-          if (selectedQuestionsError) {
-            console.error("Error fetching questions:", selectedQuestionsError);
-            setError("Erro ao buscar questões. Por favor, tente novamente.");
-            toast.error("Erro ao buscar questões");
-            return;
-          }
-
-          if (!selectedQuestions || selectedQuestions.length === 0) {
-            setError("Nenhuma questão encontrada para o subtópico selecionado.");
-            toast.error("Nenhuma questão encontrada");
-            return;
-          }
-          
-          fetchedQuestions = selectedQuestions;
         }
 
         // Format questions and answers
