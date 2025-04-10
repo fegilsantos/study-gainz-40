@@ -137,9 +137,77 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           fetchedQuestions = questions;
 
         } else {
-          // Regular question fetching for practice
-          // Create query for questions based on the provided filters
-          let query = supabase
+          // Modo regular para prática - modificado para buscar questões menos respondidas
+          
+          // 1. Primeiro, buscamos todas as questões disponíveis com base nos filtros
+          let allQuestionsQuery = supabase
+            .from('questions')
+            .select('id, subject_id, topic_id, subtopic_id');
+          
+          // Aplicamos os filtros baseados nos parâmetros disponíveis
+          if (subtopicId) {
+            allQuestionsQuery = allQuestionsQuery.eq('subtopic_id', parseInt(subtopicId));
+          } else if (topicId) {
+            allQuestionsQuery = allQuestionsQuery.eq('topic_id', parseInt(topicId));
+          } else if (subjectId) {
+            allQuestionsQuery = allQuestionsQuery.eq('subject_id', parseInt(subjectId));
+          }
+          
+          const { data: availableQuestions, error: availableQuestionsError } = await allQuestionsQuery;
+          
+          if (availableQuestionsError) {
+            console.error("Error fetching available questions:", availableQuestionsError);
+            setError("Erro ao buscar questões disponíveis.");
+            setLoading(false);
+            return;
+          }
+          
+          if (!availableQuestions || availableQuestions.length === 0) {
+            setError("Nenhuma questão encontrada para o conteúdo selecionado.");
+            setLoading(false);
+            return;
+          }
+          
+          // 2. Agora, buscamos as tentativas de resposta do usuário para calcular a frequência
+          const { data: userAttempts, error: userAttemptsError } = await supabase
+            .from('question_attempts')
+            .select('question_id, count')
+            .eq('person_id', person.id)
+            .in('question_id', availableQuestions.map(q => q.id));
+          
+          if (userAttemptsError) {
+            console.error("Error fetching user attempts:", userAttemptsError);
+            // Não interrompemos o fluxo aqui, apenas continuamos sem considerar as tentativas
+          }
+          
+          // 3. Calculamos a contagem de tentativas para cada questão
+          const attemptCounts: Record<string, number> = {};
+          
+          // Inicializamos todas as questões disponíveis com contagem zero
+          availableQuestions.forEach(q => {
+            attemptCounts[q.id] = 0;
+          });
+          
+          // Atualizamos a contagem com base nas tentativas do usuário
+          if (userAttempts) {
+            userAttempts.forEach(attempt => {
+              // Agrupamos por question_id e contamos
+              if (attempt.question_id in attemptCounts) {
+                attemptCounts[attempt.question_id]++;
+              }
+            });
+          }
+          
+          // 4. Ordenamos as questões pela contagem (menos respondidas primeiro)
+          const sortedQuestionIds = Object.keys(attemptCounts).sort((a, b) => {
+            return attemptCounts[a] - attemptCounts[b];
+          });
+          
+          // 5. Pegamos as 5 questões menos respondidas
+          const questionIdsToFetch = sortedQuestionIds.slice(0, 5);
+          
+          // 6. Buscamos os detalhes completos dessas questões
+          const { data: selectedQuestions, error: selectedQuestionsError } = await supabase
             .from('questions')
             .select(`
               id, 
@@ -149,27 +217,20 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
               image_path,
               answers (id, content, option_letter, is_correct)
             `)
-            .limit(5);
+            .in('id', questionIdsToFetch);
           
-          // Add filters based on available parameters
-          if (subtopicId) {
-            query = query.eq('subtopic_id', parseInt(subtopicId));
-          } else if (topicId) {
-            query = query.eq('topic_id', parseInt(topicId));
-          } else if (subjectId) {
-            query = query.eq('subject_id', parseInt(subjectId));
-          }
+          
 
-          const { data, error: fetchError } = await query;
           
-          if (fetchError) {
-            console.error("Error fetching questions:", fetchError);
+          
+          if (selectedQuestionsError) {
+            console.error("Error fetching questions:", selectedQuestionsError);
             setError("Erro ao buscar questões. Por favor, tente novamente.");
             toast.error("Erro ao buscar questões");
             return;
           }
 
-          if (!data || data.length === 0) {
+          if (!selectedQuestions || selectedQuestions.length === 0) {
             setError("Nenhuma questão encontrada para o subtópico selecionado.");
             toast.error("Nenhuma questão encontrada");
             return;
