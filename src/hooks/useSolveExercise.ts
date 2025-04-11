@@ -84,6 +84,7 @@ export const fetchLeastAnsweredQuestions = async (
     if (availableError || !availableQuestions?.length) {
       throw new Error('Nenhuma questão disponível encontrada');
     }
+    const availableQuestionIds = availableQuestions.map(q => q.id);
     console.log('availableQuestions?.length '+ availableQuestions?.length);
     console.log("userAttempts result:", availableQuestions.map(q => q.id));
     console.log("Type of person.id:", typeof person.id, "Value:", person.id);
@@ -97,16 +98,22 @@ export const fetchLeastAnsweredQuestions = async (
       .from('question_attempts')
       .select('question_id')
       .eq('person_id', person.id)
-      .in('question_id', availableQuestions.map(q => q.id))
+      .in('question_id', availableQuestionIds)
       
 
     // 5. Calcular frequência de tentativas
-    const attemptCounts = availableQuestions.reduce((acc, q) => {
-      const attempt = userAttempts?.find(a => a.question_id === q.id);
-      acc[q.id] = attempt ? attempt.count : 0;
+    const attemptCounts = (userAttempts || []).reduce((acc, attempt) => {
+      acc[attempt.question_id] = (acc[attempt.question_id] || 0) + 1;
       return acc;
+    }, {} as Record<string, number>); // Initialize accumulator type
 
-    }, {} as Record<string, number>);
+    // Incluir questões que o usuário ainda não testou (count = 0)
+    availableQuestionIds.forEach(id => {
+      if (!attemptCounts[id]) {
+          attemptCounts[id] = 0;
+      }
+  });
+
 
     console.log('userAttempts?.length '+ userAttempts.length);
 
