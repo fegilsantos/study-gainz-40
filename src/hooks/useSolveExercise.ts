@@ -72,6 +72,11 @@ export const fetchLeastAnsweredQuestions = async (
     } else if (filters.subjectId) {
       baseQuery = baseQuery.eq('subject_id', parseInt(filters.subjectId));
     }
+    console.log('o filtro é subtopic_id'+ filters.subtopicId);
+    console.log('o filtro é topic_id'+ filters.topicId);
+    console.log('o filtro é subject_id'+ filters.subjectId);
+
+    //lha o subject_id'+ filters.subjectId);
 
     // 3. Buscar questões disponíveis
     const { data: availableQuestions, error: availableError } = await baseQuery;
