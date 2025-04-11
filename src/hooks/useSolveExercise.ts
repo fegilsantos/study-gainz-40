@@ -84,14 +84,21 @@ export const fetchLeastAnsweredQuestions = async (
     if (availableError || !availableQuestions?.length) {
       throw new Error('Nenhuma questão disponível encontrada');
     }
+    console.log('availableQuestions?.length '+ availableQuestions?.length);
+    console.log("userAttempts result:", availableQuestions.map(q => q.id));
+    console.log("Type of person.id:", typeof person.id, "Value:", person.id);
+            console.log("Type of question_id in availableQuestions:", typeof availableQuestions[0].id, "Value:", availableQuestions[0].id); // Assuming availableQuestions is not empty
+            // To check the type of question_id that will be used in the 'in' clause, you can check like this:
+            console.log("Type of question_id in availableQuestions map:", typeof availableQuestions.map(q => q.id)[0], "Value:", availableQuestions.map(q => q.id)[0]);
+
 
     // 4. Buscar tentativas do usuário
     const { data: userAttempts, error: attemptsError } = await supabase
       .from('question_attempts')
-      .select('question_id, count(*)')
+      .select('question_id')
       .eq('person_id', person.id)
       .in('question_id', availableQuestions.map(q => q.id))
-      .group('question_attempts.question_id'); // 👈 Adicionar agrupamento;
+      
 
     // 5. Calcular frequência de tentativas
     const attemptCounts = availableQuestions.reduce((acc, q) => {
@@ -100,6 +107,8 @@ export const fetchLeastAnsweredQuestions = async (
       return acc;
 
     }, {} as Record<string, number>);
+
+    console.log('userAttempts?.length '+ userAttempts.length);
 
     // 6. Ordenar e selecionar questões
     const sortedIds = Object.keys(attemptCounts).sort(
