@@ -39,9 +39,7 @@ This project is built with .
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/05e1dce9-06c2-4594-b675-9acfde25d4cf) and click on Share -> Publish.
 
 ## I want to use a custom domain - is that possible?
 
