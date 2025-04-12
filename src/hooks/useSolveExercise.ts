@@ -78,6 +78,8 @@ export const fetchLeastAnsweredQuestions = async (
 
     // 3. Buscar questões disponíveis
     const { data: availableQuestions, error: availableError } = await baseQuery;
+    console.log('quantidade questoes'+availableQuestions?.length);
+
 
     if (availableError || !availableQuestions?.length) {
       throw new Error('Nenhuma questão disponível encontrada');

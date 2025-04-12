@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Brain, FileText, Sparkles, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,12 +9,53 @@ import { toast } from 'sonner';
 import { useTopicData } from '@/hooks/useTopicData';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import ReviewExercisesSection from './ReviewExercisesSection';
+import ReviewExercisesSection from './ReviewExercisesSection'; // Import your AuthContext
+import { useAuth } from '@/context/AuthContext';
+// *** Import Alert Dialog components if you want a modal ***
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogCancel,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+//   AlertDialogTrigger,
+// } from "@/components/ui/alert-dialog"
+
 
 interface Subject {
   id: string;
   name: string;
 }
+
+
+
+// Define a type for the Activity data (adjust properties based on your actual table structure)
+interface Activity {
+  // Match types from types.ts Activity.Row
+  id: number;
+  Date: string | null;
+  // *** Corrected column name based on error hint ***
+  TIme: string | null; // Was 'Time', but error suggests 'TIme'
+  Status: Database["public"]["Enums"]["Activity status"] | null;
+  "Activity type": Database["public"]["Enums"]["Activity type"] | null;
+  Description: string | null;
+  SubjectId?: number | null;
+  TopicId?: number | null;
+  SubtopicId?: number | null;
+  PersonId: number | null;
+  ClassId?: number | null;
+  Duration?: number | null;
+  Title?: string | null;
+  "Responsible professor"?: number | null;
+  created_at: string;
+}
+
+
+
+
 
 const ExercisesContent: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -26,11 +66,17 @@ const ExercisesContent: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState<boolean>(true);
-  
+  const [selectedAiOption, setSelectedAiOption] = useState<string>('balanced'); // State for AI radio selection
+  // *** State for showing the modal ***
+  // const [showNoTasksModal, setShowNoTasksModal] = useState<boolean>(false);
+
+
   const navigate = useNavigate();
-  
+
   // Use the useTopicData hook to fetch related topic data
   const { availableTopics, availableSubtopics, loading } = useTopicData(selectedSubject, selectedTopic);
+  const { user, loading: authLoading } = useAuth(); // Get user from hook
+
 
   // Fetch subjects from Supabase
   useEffect(() => {
@@ -40,13 +86,13 @@ const ExercisesContent: React.FC = () => {
         const { data, error } = await supabase
           .from('Subject')
           .select('id, Name');
-          
+
         if (error) {
           console.error('Error fetching subjects:', error);
           toast.error('Erro ao carregar matérias');
           return;
         }
-        
+
         if (data && data.length > 0) {
           const formattedSubjects = data.map(subject => ({
             id: subject.id.toString(),
@@ -61,10 +107,10 @@ const ExercisesContent: React.FC = () => {
         setIsLoadingSubjects(false);
       }
     };
-    
+
     fetchSubjects();
   }, []);
-  
+
   // Mock exam types
   const examTypes = [
     { id: 'fuvest', name: 'FUVEST' },
@@ -72,19 +118,171 @@ const ExercisesContent: React.FC = () => {
     { id: 'enem', name: 'ENEM' },
     { id: 'unesp', name: 'UNESP' },
   ];
-  
+
+  const fetchRecentCompletedTasks = async (): Promise<Activity[]> => {
+
+    // 1. Check authentication status
+    if (authLoading) {
+      console.log("Auth context still loading...");
+      return []; // Wait until auth is loaded
+    }
+    if (!user) {
+      toast.error("Usuário não autenticado para buscar tarefas.");
+      console.error("User not found via useAuth hook.");
+      return [];
+    }
+
+    let personId: number | null = null;
+
+    // 2. Fetch the corresponding Person ID using the auth user's ID (ProfileId)
+    try {
+      const { data: personData, error: personError } = await supabase
+        .from('Person')
+        .select('id')
+        .eq('ProfileId', user.id) // Match Person's ProfileId with the auth user's ID
+        .single(); // Expecting only one Person per Profile
+
+      if (personError) {
+        // Handle cases where the person might not exist yet for a profile
+        if (personError.code === 'PGRST116') { // Code for "exactly one row expected" failed (0 rows)
+           toast.error("Perfil de usuário não encontrado.");
+           console.error("Person record not found for ProfileId:", user.id);
+        } else {
+           console.error("Error fetching person:", personError);
+           toast.error("Erro ao identificar o perfil do usuário.");
+        }
+        return []; // Can't proceed without PersonId
+      }
+
+      if (!personData) {
+         toast.error("Perfil de usuário não encontrado.");
+         console.error("No personData returned for ProfileId:", user.id);
+         return [];
+      }
+
+      personId = personData.id; // Store the Person ID
+
+    } catch (error) {
+      console.error("Unexpected error fetching person:", error);
+      toast.error("Erro inesperado ao buscar perfil.");
+      return [];
+    }
+
+    // 3. Fetch Activities using the obtained Person ID
+    if (!personId) {
+       // This check is slightly redundant if the above try/catch handles all exits, but good for clarity
+       toast.error("Não foi possível obter o ID do perfil para buscar tarefas.");
+       return [];
+    }
+
+    try {
+      // *** Corrected column name based on error hint ***
+      const { data, error } = await supabase
+        .from('Activity')
+        .select('*')
+        .eq('PersonId', personId)
+        .eq('Status', 'Done')
+        .neq('Activity type', 'Lição de casa')
+        .order('Date', { ascending: false })
+        .order('TIme', { ascending: false }) // Corrected from 'Time' to 'TIme'
+        .limit(3);
+
+      if (error) {
+        // This error log will now show the specific Supabase error if it occurs again
+        console.error('Error fetching recent activities:', error);
+        toast.error('Erro ao buscar tarefas recentes.');
+        return [];
+      }
+
+      // Ensure data is not null before returning
+      return data || [];
+
+    } catch (error) {
+      console.error('Error in fetchRecentCompletedTasks (Activity query):', error);
+      toast.error('Erro inesperado ao buscar tarefas.');
+      return [];
+    }
+  };
+
+
+  const handleGenerateAIQuestions = async () => {
+    setIsGenerating(true);
+    try {
+      if (selectedAiOption === 'review') {
+        const recentTasks = await fetchRecentCompletedTasks();
+
+        if (recentTasks.length > 0) {
+          // Select one random task from the fetched list
+          const randomIndex = Math.floor(Math.random() * recentTasks.length);
+          const selectedTask = recentTasks[randomIndex];
+
+
+          // Determine the ID and parameter to use
+          let selectedId: number | null = null;
+          let paramType: 'subtopic' | 'topic' | 'subject' | null = null;
+
+          if (selectedTask.SubtopicId) {
+            selectedId = selectedTask.SubtopicId;
+            paramType = 'subtopic';
+          } else if (selectedTask.TopicId) {
+            selectedId = selectedTask.TopicId;
+            paramType = 'topic';
+          } else if (selectedTask.SubjectId) {
+            selectedId = selectedTask.SubjectId;
+            paramType = 'subject';
+          }
+          
+
+          
+
+          if (selectedId && paramType ) {
+            
+            const newParams = new URLSearchParams(); // Create a NEW params object
+            newParams.append(paramType, selectedId.toString()); // Add the context (sub/topic/subject)
+            newParams.append('mode', aiMode); // CRUCIAL: Add mode=auto
+            navigate(`/solveExercise?${newParams.toString()}`);
+            setIsGenerating(false);
+          } else {
+            console.error("Não foi possível determinar o Subject, Topic ou Subtopic para a tarefa selecionada, ou usuário não autenticado.");
+            toast.error("Não foi possível iniciar a revisão: dados insuficientes ou usuário não autenticado.");
+          }
+
+        } else {
+          console.log('Nenhuma tarefa "Done" recente encontrada (não "Lição de casa").');
+          toast.info('Nenhuma tarefa concluída recentemente encontrada. Cadastre tarefas no seu plano de estudos.');
+          // setShowNoTasksModal(true); // If using modal
+        }
+      } else {
+        // Handle 'improvement' and 'balanced' options - No changes here
+        console.log(`Generating AI questions with option: ${selectedAiOption}`);
+        const params = new URLSearchParams();
+        params.append('aiOption', selectedAiOption);
+        navigate(`/solveExercise?${params.toString()}`);
+      }
+    } catch (error) {
+      console.error("Error during AI question generation:", error);
+      toast.error("Ocorreu um erro ao gerar as questões.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+
+
+
+
   const handleGenerateExercises = () => {
     setIsGenerating(true);
-    
+
     // Navigate to solve exercise page with query params
     setTimeout(() => {
       const params = new URLSearchParams();
-      
+
       if (selectedSubject) params.append('subject', selectedSubject);
       if (selectedTopic) params.append('topic', selectedTopic);
       if (selectedSubtopic) params.append('subtopic', selectedSubtopic);
       params.append('mode', aiMode);
-      
+
       navigate(`/solveExercise?${params.toString()}`);
       setIsGenerating(false);
     }, 500);
@@ -95,7 +293,7 @@ const ExercisesContent: React.FC = () => {
     setSelectedTopic('');
     setSelectedSubtopic('');
   };
-  
+
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -118,7 +316,7 @@ const ExercisesContent: React.FC = () => {
                 ))}
               </SelectContent>
             </Select>
-            
+
             {selectedSubject && (
               <Select onValueChange={setSelectedTopic} value={selectedTopic} disabled={loading}>
                 <SelectTrigger>
@@ -139,7 +337,7 @@ const ExercisesContent: React.FC = () => {
                 </SelectContent>
               </Select>
             )}
-            
+
             {selectedTopic && (
               <Select onValueChange={setSelectedSubtopic} value={selectedSubtopic} disabled={loading}>
                 <SelectTrigger>
@@ -162,9 +360,9 @@ const ExercisesContent: React.FC = () => {
             )}
           </CardContent>
           <CardFooter>
-            <Button 
-              className="w-full" 
-              disabled={!selectedSubject || isGenerating} 
+            <Button
+              className="w-full"
+              disabled={!selectedSubject || isGenerating}
               onClick={handleGenerateExercises}
             >
               {isGenerating ? (
@@ -192,8 +390,11 @@ const ExercisesContent: React.FC = () => {
             <p className="text-sm text-muted-foreground">
               A IA irá analisar seu perfil e gerar questões personalizadas com base no seu desempenho e necessidades.
             </p>
-            
-            <RadioGroup defaultValue="balanced" className="pt-1">
+
+            <RadioGroup defaultValue="balanced" className="pt-1"
+              value={selectedAiOption}
+              onValueChange={setSelectedAiOption}
+              >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="improvement" id="r1" />
                 <Label htmlFor="r1" className="text-sm">Foco em pontos fracos</Label>
@@ -209,9 +410,9 @@ const ExercisesContent: React.FC = () => {
             </RadioGroup>
           </CardContent>
           <CardFooter>
-            <Button 
-              className="w-full" 
-              onClick={handleGenerateExercises}
+            <Button
+              className="w-full"
+              onClick={handleGenerateAIQuestions}
               disabled={isGenerating}
             >
               {isGenerating ? (
@@ -229,10 +430,26 @@ const ExercisesContent: React.FC = () => {
           </CardFooter>
         </Card>
       </div>
-      
+
+      {/* *** Optional: Add AlertDialog component here for the modal *** */}
+      {/* <AlertDialog open={showNoTasksModal} onOpenChange={setShowNoTasksModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Nenhuma Tarefa Recente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cadastre tarefas no plano de estudos para gerar questões baseadas nos conteúdos recentes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowNoTasksModal(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog> */}
+
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Simulados Card */}
-        {/* 
+        {/*
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Simulados</CardTitle>
@@ -261,7 +478,7 @@ const ExercisesContent: React.FC = () => {
         </Card>
         */}
 
-        
+
         {/* Review Questions Section - New */}
         <ReviewExercisesSection />
       </div>

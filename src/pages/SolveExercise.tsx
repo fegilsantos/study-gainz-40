@@ -4,9 +4,14 @@ import Header from '@/components/layout/Header';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SolveExerciseContent from '@/components/exercises/solve/SolveExerciseContent';
 
+
+
+
 const SolveExercise: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const userId = searchParams.get('userId');
   const navigate = useNavigate();
+  
   
   
   // Get the subject, topic, subtopic, and review parameters from the URL
@@ -15,8 +20,14 @@ const SolveExercise: React.FC = () => {
   const subtopicId = searchParams.get('subtopic');
   const isReview = searchParams.get('review') === 'true';
 
+  console.log('subjectId', subjectId);
+  console.log('topicId', topicId);
+  console.log('subtopicId', subtopicId);
+  console.log('isReview', isReview);
+
+
   // If no subject or subtopic is selected, redirect back to exercises page
-  if (!subjectId && !subtopicId) {
+  if (!subjectId && !subtopicId && !topicId) {
     setTimeout(() => navigate('/exercises'), 100);
     return (
       <div className="min-h-screen pb-20">
