@@ -88,11 +88,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           {question.answers.map((answer) => {
             const isSelected = attempt.selectedAnswerId === answer.id;
             const isCorrect = answer.is_correct;
-            const showCorrectness = showResults || attempt.selectedAnswerId;
+            const showCorrectness = showResults;
             
             let bgColor = '';
             if (showCorrectness) {
-              if (isCorrect) {
+              if (isCorrect && attempt.selectedAnswerId) {
                 bgColor = 'bg-green-50 border-green-200';
               } else if (isSelected && !isCorrect) {
                 bgColor = 'bg-red-50 border-red-200';
@@ -114,7 +114,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                     {answer.option_letter}
                   </div>
                   <div className="flex-1">{answer.content}</div>
-                  {showCorrectness && (
+                  {showCorrectness && attempt.selectedAnswerId && (
                     <div className="ml-2">
                       {isCorrect ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />

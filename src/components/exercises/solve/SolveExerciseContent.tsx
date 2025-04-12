@@ -5,7 +5,7 @@ import { useSolveExercise } from '@/hooks/useSolveExercise';
 import QuestionCard from '@/components/exercises/solve/QuestionCard';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, ArrowLeft, ArrowRight, Home } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -190,6 +190,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
           onAnswer={handleAnswerSelect}
           onToggleReview={handleReviewToggle}
           index={currentQuestionIndex}
+          showResults={true}
         />
       )}
       
@@ -210,7 +211,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
             onClick={handleFinish}
             disabled={isRedirecting}
           >
-            <Home className="mr-2 h-4 w-4" />
+            <BookOpen className="mr-2 h-4 w-4" />
             {isRedirecting ? "Finalizando..." : "Finalizar"}
           </Button>
           
