@@ -72,9 +72,7 @@ export const fetchLeastAnsweredQuestions = async (
     } else if (filters.subjectId) {
       baseQuery = baseQuery.eq('subject_id', parseInt(filters.subjectId));
     }
-    console.log('o filtro é subtopic_id'+ filters.subtopicId);
-    console.log('o filtro é topic_id'+ filters.topicId);
-    console.log('o filtro é subject_id'+ filters.subjectId);
+
 
     //lha o subject_id'+ filters.subjectId);
 
@@ -85,13 +83,7 @@ export const fetchLeastAnsweredQuestions = async (
       throw new Error('Nenhuma questão disponível encontrada');
     }
     const availableQuestionIds = availableQuestions.map(q => q.id);
-    console.log('availableQuestions?.length '+ availableQuestions?.length);
-    console.log("userAttempts result:", availableQuestions.map(q => q.id));
-    console.log("Type of person.id:", typeof person.id, "Value:", person.id);
-            console.log("Type of question_id in availableQuestions:", typeof availableQuestions[0].id, "Value:", availableQuestions[0].id); // Assuming availableQuestions is not empty
-            // To check the type of question_id that will be used in the 'in' clause, you can check like this:
-            console.log("Type of question_id in availableQuestions map:", typeof availableQuestions.map(q => q.id)[0], "Value:", availableQuestions.map(q => q.id)[0]);
-
+ 
 
     // 4. Buscar tentativas do usuário
     const { data: userAttempts, error: attemptsError } = await supabase
@@ -114,8 +106,6 @@ export const fetchLeastAnsweredQuestions = async (
       }
   });
 
-
-    console.log('userAttempts?.length '+ userAttempts.length);
 
     // 6. Ordenar e selecionar questões
     const sortedIds = Object.keys(attemptCounts).sort(
@@ -153,7 +143,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
- console.log('simples');
+
 
   // Fetch questions when component mounts
   useEffect(() => {
@@ -260,7 +250,6 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
 
         } else {
           try {
-            console.log(' Entrou aqui user_Id'+user.id);
             // Substituir toda a lógica de busca manual pela função reutilizável
             fetchedQuestions = await fetchLeastAnsweredQuestions(
               user.id, // Passa o ID do usuário diretamente
