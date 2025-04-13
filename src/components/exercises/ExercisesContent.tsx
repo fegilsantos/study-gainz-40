@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ReviewExercisesSection from './ReviewExercisesSection'; // Import your AuthContext
 import { useAuth } from '@/context/AuthContext';
+import { calculateSubtopicPrioritiesForUser } from '@/utils/calculateSubtopicPriority';
 // *** Import Alert Dialog components if you want a modal ***
 // import {
 //   AlertDialog,
@@ -207,6 +208,7 @@ const ExercisesContent: React.FC = () => {
 
   const handleGenerateAIQuestions = async () => {
     setIsGenerating(true);
+    console.log('chegou'+selectedAiOption);
     try {
       if (selectedAiOption === 'review') {
         const recentTasks = await fetchRecentCompletedTasks();
@@ -253,12 +255,90 @@ const ExercisesContent: React.FC = () => {
           // setShowNoTasksModal(true); // If using modal
         }
       } else {
-        // Handle 'improvement' and 'balanced' options - No changes here
-        console.log(`Generating AI questions with option: ${selectedAiOption}`);
-        const params = new URLSearchParams();
-        params.append('aiOption', selectedAiOption);
-        navigate(`/solveExercise?${params.toString()}`);
-      }
+         // 1. Check authentication status and get personId (similar to fetchRecentCompletedTasks)
+         if (authLoading) {
+           console.log("Auth context still loading...");
+           toast.info("Aguarde o carregamento do perfil.");
+           return; 
+         }
+         if (!user) {
+           toast.error("Usuário não autenticado.");
+           console.error("User not found via useAuth hook.");
+           return;
+         }
+
+         let personId: number | null = null;
+         try {
+           const { data: personData, error: personError } = await supabase
+             .from('Person')
+             .select('id')
+             .eq('ProfileId', user.id)
+             .single();
+
+           if (personError) {
+             console.error("Error fetching person:", personError);
+             toast.error("Erro ao identificar o perfil do usuário.");
+             return;
+           }
+           if (!personData) {
+             toast.error("Perfil de usuário não encontrado.");
+             console.error("No personData returned for ProfileId:", user.id);
+             return;
+           }
+           personId = personData.id;
+
+         } catch (error) {
+           console.error("Unexpected error fetching person:", error);
+           toast.error("Erro inesperado ao buscar perfil.");
+           return;
+         }
+         console.log('entrou onde queria');
+         console.log(selectedAiOption);
+         console.log(personId);
+
+         if (selectedAiOption === 'improvement' && personId) {
+           const subtopicPriorities = await calculateSubtopicPrioritiesForUser(personId);
+           
+           if (subtopicPriorities.length > 0) {
+             // Get top 3 priorities
+             const top3 = subtopicPriorities.slice(0, 3);
+             
+             // Calculate total priority for weighted selection
+             const totalPriority = top3.reduce((sum, subtopic) => sum + Math.max(0, subtopic.priority), 0);
+
+             let selectedSubtopicId: number | null = null;
+
+             if (totalPriority > 0) {
+                // Weighted random selection
+                let random = Math.random() * totalPriority;
+                for (const subtopic of top3) {
+                  random -= Math.max(0, subtopic.priority);
+                  if (random <= 0) {
+                    selectedSubtopicId = subtopic.subtopicId;
+                    break;
+                  }
+                }
+             } else {
+               // If total priority is 0 (e.g., all priorities are negative or 0), select the first one
+               selectedSubtopicId = top3[0].subtopicId;
+             }
+             console.log('achei um subtópico'+selectedSubtopicId);
+
+             if (selectedSubtopicId) {
+               const params = new URLSearchParams();
+               params.append('subtopic', selectedSubtopicId.toString());
+               params.append('mode', aiMode);
+               navigate(`/solveExercise?${params.toString()}`);
+             }
+           }
+
+         } else {  // Handle 'balanced' option -  Keep existing logic
+           console.log(`Generating AI questions with option: ${selectedAiOption}`);
+           const params = new URLSearchParams();
+           params.append('aiOption', selectedAiOption);
+           navigate(`/solveExercise?${params.toString()}`);
+         }
+       }
     } catch (error) {
       console.error("Error during AI question generation:", error);
       toast.error("Ocorreu um erro ao gerar as questões.");
@@ -297,7 +377,57 @@ const ExercisesContent: React.FC = () => {
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Resolver Exercícios Card - Reduced Height */}
+
+        {/* Resolver Exercícios Card - Reduced Height */}{' '}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Perguntas com IA</CardTitle>
+            <CardDescription>Geradas pela inteligência artificial</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              A IA irá analisar seu perfil e gerar questões personalizadas com base no seu desempenho e necessidades.
+            </p>
+
+            <RadioGroup defaultValue="balanced" className="pt-1"
+              value={selectedAiOption}
+              onValueChange={setSelectedAiOption}
+              >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="improvement" id="r1" />
+                <Label htmlFor="r1" className="text-sm">Foco em pontos fracos</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="balanced" id="r2" />
+                <Label htmlFor="r2" className="text-sm">Balanceado</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="review" id="r3" />
+                <Label htmlFor="r3" className="text-sm">Revisão de conteúdo recente</Label>
+              </div>
+            </RadioGroup>
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full"
+              onClick={handleGenerateAIQuestions}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                  Analisando perfil...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2" />
+                  Gerar Questões Recomendadas
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+        {/* Perguntas com IA Card - Simplified without Topic tab */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Resolver Exercícios</CardTitle>
@@ -378,57 +508,8 @@ const ExercisesContent: React.FC = () => {
               )}
             </Button>
           </CardFooter>
-        </Card>
-
-        {/* Perguntas com IA Card - Simplified without Topic tab */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Perguntas com IA</CardTitle>
-            <CardDescription>Geradas pela inteligência artificial</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              A IA irá analisar seu perfil e gerar questões personalizadas com base no seu desempenho e necessidades.
-            </p>
-
-            <RadioGroup defaultValue="balanced" className="pt-1"
-              value={selectedAiOption}
-              onValueChange={setSelectedAiOption}
-              >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="improvement" id="r1" />
-                <Label htmlFor="r1" className="text-sm">Foco em pontos fracos</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="balanced" id="r2" />
-                <Label htmlFor="r2" className="text-sm">Balanceado</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="review" id="r3" />
-                <Label htmlFor="r3" className="text-sm">Revisão de conteúdo recente</Label>
-              </div>
-            </RadioGroup>
-          </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full"
-              onClick={handleGenerateAIQuestions}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <>
-                  <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-                  Analisando perfil...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2" />
-                  Gerar Questões Recomendadas
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
+        </Card>{' '}
+        
       </div>
 
       {/* *** Optional: Add AlertDialog component here for the modal *** */}
