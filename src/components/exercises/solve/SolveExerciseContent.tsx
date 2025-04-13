@@ -197,7 +197,7 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
       {/* Navigation Buttons */}
       <div className="flex justify-between pt-4">
         <Button 
-          variant="outline"
+          variant={allQuestionsAnswered ? "outline" : "default"}
           onClick={() => handleNavigationClick('prev')}
           disabled={currentQuestionIndex === 0}
         >
@@ -215,12 +215,12 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
             {isRedirecting ? "Finalizando..." : "Finalizar"}
           </Button>
           
-          <Button 
-            variant="outline"
+          <Button
+            variant={allQuestionsAnswered ? "outline" : "default"}
             onClick={() => handleNavigationClick('next')}
             disabled={currentQuestionIndex === questions.length - 1}
           >
-            Próxima
+            Avançar
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
