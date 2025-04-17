@@ -23,8 +23,8 @@ export const ChartTabs: React.FC<ChartTabsProps> = ({ children, activeTab, onCha
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {tab === 'topics' && 'Tópicos'}
-            {tab === 'trends' && 'Tendências'}
+            {tab === 'topics' && 'Desempenho'}
+            {tab === 'trends' && 'Evolução'}
           </button>
         ))}
       </div>

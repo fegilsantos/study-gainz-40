@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ChartTabs } from './charts/ChartTabs';
 import { TopicsChart } from './charts/TopicsChart';
 import TrendsChart from './charts/TrendsChart';
-import { ImprovementTips } from './charts/ImprovementTips';
+//import { ImprovementTips } from './charts/ImprovementTips';
 
 const PerformanceCharts: React.FC = () => {
   const [activeTab, setActiveTab] = useState('topics');
@@ -15,7 +15,7 @@ const PerformanceCharts: React.FC = () => {
         {activeTab === 'trends' && <TrendsChart />}
       </ChartTabs>
       
-      <ImprovementTips />
+     {/*<ImprovementTips />*/}
     </div>
   );
 };

@@ -173,10 +173,10 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
     <div className="space-y-4 animate-fade-in">
       <Tabs defaultValue="upcoming" className="w-full">
         <TabsList className="w-full mb-4">
-          <TabsTrigger value="upcoming" className="flex-1">Próximas Atividades</TabsTrigger>
+          <TabsTrigger value="upcoming" className="flex-1">Próximas Tarefas</TabsTrigger>
           <div className="relative flex-1">
             <TabsTrigger value="overdue" className="w-full">
-              Atividades Atrasadas
+              Tarefas Atrasadas
               {overdueTasks.length > 0 && (
                 <Badge 
                   className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center text-xs font-semibold bg-red-500 text-white border-none ml-2" 
@@ -195,7 +195,7 @@ const TasksView: React.FC<TasksViewProps> = ({ onTaskUpdate, onTaskEdit }) => {
               <div className="p-4 bg-muted rounded-full mb-4">
                 <Calendar className="w-6 h-6 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-medium">Nenhuma atividade próxima</h3>
+              <h3 className="text-lg font-medium">Nenhuma tarefa próxima</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-xs">
                 Adicione tarefas ao seu plano de estudos
               </p>

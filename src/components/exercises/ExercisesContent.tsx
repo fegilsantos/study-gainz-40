@@ -11,28 +11,40 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ReviewExercisesSection from './ReviewExercisesSection'; // Import your AuthContext
 import { useAuth } from '@/context/AuthContext';
-import { calculateSubtopicPrioritiesForUser } from '@/utils/calculateSubtopicPriority';
-// *** Import Alert Dialog components if you want a modal ***
-// import {
-//   AlertDialog,
-//   AlertDialogAction,
-//   AlertDialogCancel,
-//   AlertDialogContent,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-//   AlertDialogTrigger,
-// } from "@/components/ui/alert-dialog"
+import { calculateSubtopicPrioritiesForUser, findImportantDatesForUser } from '@/utils/calculateSubtopicPriority';
 
 
 interface Subject {
   id: string;
   name: string;
 }
+interface Config {
+  id: number;
+  Name: string;
+  Value: number;
+}
 
+const fetchConfigValue = async (configName: string): Promise<number | null> => {
+  try {
+    const { data, error } = await (supabase
+      .from('Config')
+      .select('Value')
+      .eq('Name', configName)
+      .single() as unknown as Promise<{ data: { Value: number } | null; error: any }>); // Explicit type assertion
 
+    if (error) {
+      console.error(`Error fetching config value for ${configName}:`, error);
+      return null;
+    }
 
+    console.log('achou'+data?.Value);
+
+    return data?.Value ?? null;
+  } catch (error) {
+    console.error(`Error in fetchConfigValue for ${configName}:`, error);
+    return null;
+  }
+};
 // Define a type for the Activity data (adjust properties based on your actual table structure)
 interface Activity {
   // Match types from types.ts Activity.Row
@@ -61,8 +73,8 @@ interface Activity {
 const ExercisesContent: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
-  const [selectedSubtopic, setSelectedSubtopic] = useState<string>('');
-  const [selectedExamType, setSelectedExamType] = useState<string>('');
+  const [selectedSubtopic, setSelectedSubtopic] = useState<string>(''); const [selectedExamType, setSelectedExamType] = useState<string>('');
+  const [configData, setConfigData] = useState<ConfigData | null>(null);
   const [aiMode, setAiMode] = useState<'auto'>('auto');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -70,6 +82,7 @@ const ExercisesContent: React.FC = () => {
   const [selectedAiOption, setSelectedAiOption] = useState<string>('balanced'); // State for AI radio selection
   // *** State for showing the modal ***
   // const [showNoTasksModal, setShowNoTasksModal] = useState<boolean>(false);
+  const [theoricalThreshold, setTheoricalThreshold] = useState<number>(14); // New state variable
 
 
   const navigate = useNavigate();
@@ -84,6 +97,7 @@ const ExercisesContent: React.FC = () => {
     const fetchSubjects = async () => {
       setIsLoadingSubjects(true);
       try {
+
         const { data, error } = await supabase
           .from('Subject')
           .select('id, Name');
@@ -112,13 +126,7 @@ const ExercisesContent: React.FC = () => {
     fetchSubjects();
   }, []);
 
-  // Mock exam types
-  const examTypes = [
-    { id: 'fuvest', name: 'FUVEST' },
-    { id: 'unicamp', name: 'UNICAMP' },
-    { id: 'enem', name: 'ENEM' },
-    { id: 'unesp', name: 'UNESP' },
-  ];
+
 
   const fetchRecentCompletedTasks = async (): Promise<Activity[]> => {
 
@@ -146,19 +154,19 @@ const ExercisesContent: React.FC = () => {
       if (personError) {
         // Handle cases where the person might not exist yet for a profile
         if (personError.code === 'PGRST116') { // Code for "exactly one row expected" failed (0 rows)
-           toast.error("Perfil de usuário não encontrado.");
-           console.error("Person record not found for ProfileId:", user.id);
+          toast.error("Perfil de usuário não encontrado.");
+          console.error("Person record not found for ProfileId:", user.id);
         } else {
-           console.error("Error fetching person:", personError);
-           toast.error("Erro ao identificar o perfil do usuário.");
+          console.error("Error fetching person:", personError);
+          toast.error("Erro ao identificar o perfil do usuário.");
         }
         return []; // Can't proceed without PersonId
       }
 
       if (!personData) {
-         toast.error("Perfil de usuário não encontrado.");
-         console.error("No personData returned for ProfileId:", user.id);
-         return [];
+        toast.error("Perfil de usuário não encontrado.");
+        console.error("No personData returned for ProfileId:", user.id);
+        return [];
       }
 
       personId = personData.id; // Store the Person ID
@@ -171,9 +179,9 @@ const ExercisesContent: React.FC = () => {
 
     // 3. Fetch Activities using the obtained Person ID
     if (!personId) {
-       // This check is slightly redundant if the above try/catch handles all exits, but good for clarity
-       toast.error("Não foi possível obter o ID do perfil para buscar tarefas.");
-       return [];
+      // This check is slightly redundant if the above try/catch handles all exits, but good for clarity
+      toast.error("Não foi possível obter o ID do perfil para buscar tarefas.");
+      return [];
     }
 
     try {
@@ -208,7 +216,7 @@ const ExercisesContent: React.FC = () => {
 
   const handleGenerateAIQuestions = async () => {
     setIsGenerating(true);
-    console.log('chegou'+selectedAiOption);
+    console.log('chegou' + selectedAiOption);
     try {
       if (selectedAiOption === 'review') {
         const recentTasks = await fetchRecentCompletedTasks();
@@ -233,12 +241,12 @@ const ExercisesContent: React.FC = () => {
             selectedId = selectedTask.SubjectId;
             paramType = 'subject';
           }
-          
 
-          
 
-          if (selectedId && paramType ) {
-            
+
+
+          if (selectedId && paramType) {
+
             const newParams = new URLSearchParams(); // Create a NEW params object
             newParams.append(paramType, selectedId.toString()); // Add the context (sub/topic/subject)
             newParams.append('mode', aiMode); // CRUCIAL: Add mode=auto
@@ -255,90 +263,214 @@ const ExercisesContent: React.FC = () => {
           // setShowNoTasksModal(true); // If using modal
         }
       } else {
-         // 1. Check authentication status and get personId (similar to fetchRecentCompletedTasks)
-         if (authLoading) {
-           console.log("Auth context still loading...");
-           toast.info("Aguarde o carregamento do perfil.");
-           return; 
-         }
-         if (!user) {
-           toast.error("Usuário não autenticado.");
-           console.error("User not found via useAuth hook.");
-           return;
-         }
+        // 1. Check authentication status and get personId (similar to fetchRecentCompletedTasks)
+        if (authLoading) {
+          console.log("Auth context still loading...");
+          toast.info("Aguarde o carregamento do perfil.");
+          return;
+        }
+        if (!user) {
+          toast.error("Usuário não autenticado.");
+          console.error("User not found via useAuth hook.");
+          return;
+        }
 
-         let personId: number | null = null;
-         try {
-           const { data: personData, error: personError } = await supabase
-             .from('Person')
-             .select('id')
-             .eq('ProfileId', user.id)
-             .single();
+        let personId: number | null = null;
+        try {
+          const { data: personData, error: personError } = await supabase
+            .from('Person')
+            .select('id')
+            .eq('ProfileId', user.id)
+            .single();
 
-           if (personError) {
-             console.error("Error fetching person:", personError);
-             toast.error("Erro ao identificar o perfil do usuário.");
-             return;
-           }
-           if (!personData) {
-             toast.error("Perfil de usuário não encontrado.");
-             console.error("No personData returned for ProfileId:", user.id);
-             return;
-           }
-           personId = personData.id;
+          if (personError) {
+            console.error("Error fetching person:", personError);
+            toast.error("Erro ao identificar o perfil do usuário.");
+            return;
+          }
+          if (!personData) {
+            toast.error("Perfil de usuário não encontrado.");
+            console.error("No personData returned for ProfileId:", user.id);
+            return;
+          }
+          personId = personData.id;
 
-         } catch (error) {
-           console.error("Unexpected error fetching person:", error);
-           toast.error("Erro inesperado ao buscar perfil.");
-           return;
-         }
-         console.log('entrou onde queria');
-         console.log(selectedAiOption);
-         console.log(personId);
+        } catch (error) {
+          console.error("Unexpected error fetching person:", error);
+          toast.error("Erro inesperado ao buscar perfil.");
+          return;
+        }
+        console.log('entrou onde queria');
+        console.log(selectedAiOption);
+        console.log(personId);
 
-         if (selectedAiOption === 'improvement' && personId) {
-           const subtopicPriorities = await calculateSubtopicPrioritiesForUser(personId);
+        if (selectedAiOption === 'improvement' && personId) {
+          const subtopicPriorities = await calculateSubtopicPrioritiesForUser(personId);
+
+          if (subtopicPriorities.length > 0) {
+            // Get top 3 priorities
+            const selectedSubtopicId = getSelectedSubtopicId(subtopicPriorities);
+
+            console.log('Selected subtopic ID:', selectedSubtopicId);
+
+            // Call solveExercise
+            if (selectedSubtopicId) {
+              const params = new URLSearchParams();
+              params.append('subtopic', selectedSubtopicId.toString());
+              params.append('mode', aiMode);
+              navigate(`/solveExercise?${params.toString()}`);
+            }
+          }
+
+        } else {  // Handle 'balanced' option -  Keep existing logic
+          if (personId) { // Ensure personId is valid before calling
+            const importantDates = await findImportantDatesForUser(personId); // Call the function here!
+
            
-           if (subtopicPriorities.length > 0) {
-             // Get top 3 priorities
-             const top3 = subtopicPriorities.slice(0, 3);
-             
-             // Calculate total priority for weighted selection
-             const totalPriority = top3.reduce((sum, subtopic) => sum + Math.max(0, subtopic.priority), 0);
+            let firstPhaseIntensive = await fetchConfigValue("First_phase_intensive");
+            let theoricalThreshold = await fetchConfigValue("Theorical_threshold");
 
-             let selectedSubtopicId: number | null = null;
+            if (firstPhaseIntensive ==null){
+              firstPhaseIntensive = 30;
+            }
+            if (theoricalThreshold ==null){
+              theoricalThreshold = 120;
+            }
+        
 
-             if (totalPriority > 0) {
-                // Weighted random selection
-                let random = Math.random() * totalPriority;
-                for (const subtopic of top3) {
-                  random -= Math.max(0, subtopic.priority);
-                  if (random <= 0) {
-                    selectedSubtopicId = subtopic.subtopicId;
-                    break;
-                  }
+            
+
+            console.log("valor de firstPhaseIntensive"+firstPhaseIntensive);
+            console.log("valor de theoricalThreshold"+theoricalThreshold);
+
+
+            // 2. Calculate the condition
+            const today: Date = new Date(); // Explicit type
+            const minFirstPhase: Date | null | undefined = importantDates?.minFirstPhaseDate; // Explicit type
+
+            let shouldFocusOnWeaknesses: boolean = false; // Explicit type
+            if (minFirstPhase instanceof Date) { // Type guard
+              const intensiveStart: Date = new Date(minFirstPhase); // Explicit type
+              intensiveStart.setDate(minFirstPhase.getDate() - firstPhaseIntensive);
+
+              shouldFocusOnWeaknesses = today > intensiveStart && today <= minFirstPhase;
+            }
+            console.log(shouldFocusOnWeaknesses + ' é a condicao');
+
+            // Calculate isWithinExamPeriod
+            let isWithinExamPeriod: boolean = false;
+            const maxSecondPhase: Date | null | undefined = importantDates?.maxSecondPhaseDate;
+            if (minFirstPhase instanceof Date && maxSecondPhase instanceof Date) {
+              isWithinExamPeriod = today >= minFirstPhase && today <= maxSecondPhase;
+            }
+            console.log(isWithinExamPeriod + ' é a condicao do periodo de prova');
+
+            // Calculate isBeforeIntensivePeriod
+            let isBeforeIntensivePeriod: boolean = false;
+            if (minFirstPhase instanceof Date) {
+              const thresholdDate: Date = new Date(minFirstPhase);
+              thresholdDate.setDate(minFirstPhase.getDate() - theoricalThreshold);
+              isBeforeIntensivePeriod = today < thresholdDate;
+            }
+            console.log(isBeforeIntensivePeriod + ' é a condicao antes do periodo intensivo');
+            
+
+            if (shouldFocusOnWeaknesses ) {
+              const subtopicPriorities = await calculateSubtopicPrioritiesForUser(personId);
+              if (subtopicPriorities.length > 0) {
+                const selectedSubtopicId = getSelectedSubtopicId(subtopicPriorities);
+                if (selectedSubtopicId) {
+                  const params = new URLSearchParams();
+                  params.append('subtopic', selectedSubtopicId.toString());
+                  params.append('mode', aiMode);
+                  navigate(`/solveExercise?${params.toString()}`);
                 }
-             } else {
-               // If total priority is 0 (e.g., all priorities are negative or 0), select the first one
-               selectedSubtopicId = top3[0].subtopicId;
-             }
-             console.log('achei um subtópico'+selectedSubtopicId);
+              }
+            }
+            else if (isWithinExamPeriod ) {
+              const subtopicPriorities = await calculateSubtopicPrioritiesForUser(personId);
+              if (subtopicPriorities.length > 0) {
+                const selectedSubtopicId = getSelectedSubtopicId(subtopicPriorities);
+                if (selectedSubtopicId) {
+                  console.log('esse é o subtópico'+ selectedSubtopicId);
+                  const params = new URLSearchParams();
+                  params.append('subtopic', selectedSubtopicId.toString());
+                  params.append('mode', aiMode);
+                  params.append('difficulty', '3');
+                  navigate(`/solveExercise?${params.toString()}`);
+                }
+              }
+            }
+            else if (isBeforeIntensivePeriod ) {
+              const recentTasks = await fetchRecentCompletedTasks();
+              //procura tarefas recentes
 
-             if (selectedSubtopicId) {
-               const params = new URLSearchParams();
-               params.append('subtopic', selectedSubtopicId.toString());
-               params.append('mode', aiMode);
-               navigate(`/solveExercise?${params.toString()}`);
-             }
-           }
-
-         } else {  // Handle 'balanced' option -  Keep existing logic
-           console.log(`Generating AI questions with option: ${selectedAiOption}`);
-           const params = new URLSearchParams();
-           params.append('aiOption', selectedAiOption);
-           navigate(`/solveExercise?${params.toString()}`);
-         }
-       }
+              if (recentTasks.length > 0) {
+                // Select one random task from the fetched list
+                const randomIndex = Math.floor(Math.random() * recentTasks.length);
+                const selectedTask = recentTasks[randomIndex];
+      
+      
+                // Determine the ID and parameter to use
+                let selectedId: number | null = null;
+                let paramType: 'subtopic' | 'topic' | 'subject' | null = null;
+      
+                if (selectedTask.SubtopicId) {
+                  selectedId = selectedTask.SubtopicId;
+                  paramType = 'subtopic';
+                } else if (selectedTask.TopicId) {
+                  selectedId = selectedTask.TopicId;
+                  paramType = 'topic';
+                } else if (selectedTask.SubjectId) {
+                  selectedId = selectedTask.SubjectId;
+                  paramType = 'subject';
+                }
+      
+      
+      
+      
+                if (selectedId && paramType) {
+      
+                  const newParams = new URLSearchParams(); // Create a NEW params object
+                  newParams.append(paramType, selectedId.toString()); // Add the context (sub/topic/subject)
+                  newParams.append('mode', aiMode); // CRUCIAL: Add mode=auto
+                  navigate(`/solveExercise?${newParams.toString()}`);
+                  setIsGenerating(false);
+                } else {
+                  console.error("Não foi possível determinar o Subject, Topic ou Subtopic para a tarefa selecionada, ou usuário não autenticado.");
+                  toast.error("Não foi possível iniciar a revisão: dados insuficientes ou usuário não autenticado.");
+                }
+      
+              }else {
+                console.log('Nenhuma tarefa "Done" recente encontrada (não "Lição de casa").');
+              console.log('entrou aqui tbm?');
+              const subtopicPriorities = await calculateSubtopicPrioritiesForUser(personId);
+              if (subtopicPriorities.length > 0) {
+                const selectedSubtopicId = getSelectedSubtopicId(subtopicPriorities);
+                if (selectedSubtopicId) {
+                  const params = new URLSearchParams();
+                  params.append('subtopic', selectedSubtopicId.toString());
+                  params.append('mode', aiMode);
+                  navigate(`/solveExercise?${params.toString()}`);
+                }
+              }
+            } }
+            else {
+              console.log('ou sera que foi aqui');
+              const subtopicPriorities = await calculateSubtopicPrioritiesForUser(personId);
+              if (subtopicPriorities.length > 0) {
+                const selectedSubtopicId = getSelectedSubtopicId(subtopicPriorities);
+                if (selectedSubtopicId) {
+                  const params = new URLSearchParams();
+                  params.append('subtopic', selectedSubtopicId.toString());
+                  params.append('mode', aiMode);
+                  navigate(`/solveExercise?${params.toString()}`);
+                }
+              }
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("Error during AI question generation:", error);
       toast.error("Ocorreu um erro ao gerar as questões.");
@@ -347,6 +479,34 @@ const ExercisesContent: React.FC = () => {
     }
   };
 
+  // Function to select subtopic ID based on priority
+  const getSelectedSubtopicId = (subtopicPriorities: { subtopicId: number; priority: number; }[]): number | null => {
+    const top3 = subtopicPriorities.slice(0, 3);
+
+    if (top3.length === 0) {
+      console.warn("No subtopics found for priority selection.");
+      return null;
+    }
+
+    // Calculate total priority for weighted selection
+    const totalPriority = top3.reduce((sum, subtopic) => sum + Math.max(0, subtopic.priority), 0);
+
+    if (totalPriority > 0) {
+      // Weighted random selection
+      let random = Math.random() * totalPriority;
+      for (const subtopic of top3) {
+        random -= Math.max(0, subtopic.priority);
+        if (random <= 0) {
+          return subtopic.subtopicId;
+        }
+      }
+    } else {
+      // If total priority is 0 (e.g., all priorities are negative or 0), select the first one
+      console.warn("Subtopic priorities are all negative or zero, selecting first available subtopic.");
+      return top3[0].subtopicId;
+    }
+    return null; // Should not reach here, but for safety
+  };
 
 
 
@@ -381,18 +541,18 @@ const ExercisesContent: React.FC = () => {
         {/* Resolver Exercícios Card - Reduced Height */}{' '}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Perguntas com IA</CardTitle>
-            <CardDescription>Geradas pela inteligência artificial</CardDescription>
+            <CardTitle className="text-base">Exercícios com o Edu</CardTitle>
+            <CardDescription>Escolhidos pela inteligência artificial</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              A IA irá analisar seu perfil e gerar questões personalizadas com base no seu desempenho e necessidades.
+              O Edu irá analisar seu desempenho e selecionar questões personalizadas para atingir as suas metas.
             </p>
 
             <RadioGroup defaultValue="balanced" className="pt-1"
               value={selectedAiOption}
               onValueChange={setSelectedAiOption}
-              >
+            >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="improvement" id="r1" />
                 <Label htmlFor="r1" className="text-sm">Foco em pontos fracos</Label>
@@ -509,7 +669,7 @@ const ExercisesContent: React.FC = () => {
             </Button>
           </CardFooter>
         </Card>{' '}
-        
+
       </div>
 
       {/* *** Optional: Add AlertDialog component here for the modal *** */}

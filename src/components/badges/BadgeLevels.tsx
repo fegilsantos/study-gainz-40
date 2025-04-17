@@ -122,7 +122,7 @@ const BadgeLevels: React.FC = () => {
         
         <div className="glass rounded-xl p-5">
           <p className="text-sm text-muted-foreground mb-4">
-            Complete tarefas, melhore seu desempenho e ganhe pontos para subir de nível!
+            Complete tarefas e exercícios, melhore seu desempenho e ganhe pontos para subir de nível!
             Cada nível desbloqueará novas conquistas e funcionalidades.
           </p>
           

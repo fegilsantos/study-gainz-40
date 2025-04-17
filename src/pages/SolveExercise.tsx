@@ -18,12 +18,31 @@ const SolveExercise: React.FC = () => {
   const subjectId = searchParams.get('subject');
   const topicId = searchParams.get('topic');
   const subtopicId = searchParams.get('subtopic');
+  const difficulty = searchParams.get('difficulty');
   const isReview = searchParams.get('review') === 'true';
+
+
+// --- FIX: Convert difficulty string to number ---
+let difficultyNum: number | undefined = undefined;
+if (difficulty) {
+  const parsed = parseInt(difficulty, 10); // Use base 10
+  if (!isNaN(parsed)) { // Check if parsing was successful
+    difficultyNum = parsed;
+  } else {
+    console.warn(`Invalid difficulty parameter found in URL: "${difficultyStr}". Ignoring.`);
+    // Optional: redirect or show error if difficulty is mandatory and invalid
+  }
+}
+// --- End of FIX ---
+
+
+
 
   console.log('subjectId', subjectId);
   console.log('topicId', topicId);
   console.log('subtopicId', subtopicId);
   console.log('isReview', isReview);
+  console.log('difdifdif', difficultyNum);
 
 
   // If no subject or subtopic is selected, redirect back to exercises page
@@ -52,6 +71,7 @@ const SolveExercise: React.FC = () => {
           topicId={topicId || ''}
           subtopicId={subtopicId || ''}
           isReview={isReview}
+          difficulty={difficultyNum}
         />
       </main>
     </div>

@@ -11,7 +11,7 @@ const Navigation: React.FC = () => {
     { icon: Calendar, label: 'Plano', path: '/studyplan' },
     { icon: BarChart2, label: 'Análise', path: '/analysis' },
     { icon: BookOpen, label: 'Exercícios', path: '/exercises' },
-    { icon: Award, label: 'Badges', path: '/badges' }
+    //{ icon: Award, label: 'Conquistas', path: '/badges' }
   ];
   
   return (

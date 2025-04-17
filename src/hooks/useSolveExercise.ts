@@ -18,6 +18,7 @@ export interface Question {
   image_url?: string;
   image_path?: string;
   answers: Answer[];
+
 }
 
 export interface ExerciseAttempt {
@@ -45,8 +46,9 @@ export interface QuestionWithAnswers {
 
 export const fetchLeastAnsweredQuestions = async (
   userId: string,
-  filters: QuestionQueryFilters,
-  limit: number = 5
+  filters: QuestionQueryFilters, 
+  limit: number = 5,
+  difficulty?: number
 ): Promise<QuestionWithAnswers[]> => {
   try {
     // 1. Buscar a pessoa associada ao usuário
@@ -63,7 +65,7 @@ export const fetchLeastAnsweredQuestions = async (
     // 2. Construir query baseada nos filtros
     let baseQuery = supabase
       .from('questions')
-      .select('id, subject_id, topic_id, subtopic_id');
+      .select('id, subject_id, topic_id, subtopic_id,difficulty');
 
     if (filters.subtopicId) {
       baseQuery = baseQuery.eq('subtopic_id', parseInt(filters.subtopicId));
@@ -73,8 +75,11 @@ export const fetchLeastAnsweredQuestions = async (
       baseQuery = baseQuery.eq('subject_id', parseInt(filters.subjectId));
     }
 
+    if(difficulty){
+      baseQuery = baseQuery.eq('difficulty',difficulty)
+    }
 
-    //lha o subject_id'+ filters.subjectId);
+  
 
     // 3. Buscar questões disponíveis
     const { data: availableQuestions, error: availableError } = await baseQuery;
@@ -123,6 +128,7 @@ export const fetchLeastAnsweredQuestions = async (
         explanation,
         image_url,
         image_path,
+        difficulty,
         answers (id, content, option_letter, is_correct)
       `)
       .in('id', sortedIds);
@@ -138,12 +144,13 @@ export const fetchLeastAnsweredQuestions = async (
   }
 };
 
-export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId?: string, isReview = false) => {
+export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId?: string, isReview = false, difficulty?: number) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [attempts, setAttempts] = useState<Record<string, ExerciseAttempt>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  console.log('dificuldade'+difficulty);
 
 
 
@@ -193,7 +200,8 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
                 image_path,
                 subject_id,
                 topic_id,
-                subtopic_id
+                subtopic_id,
+                difficulty
               )
             `)
             .eq('person_id', person.id)
@@ -236,6 +244,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
               explanation,
               image_url,
               image_path,
+              difficulty,
               answers (id, content, option_letter, is_correct)
             `)
             .in('id', questionIds)
@@ -252,12 +261,13 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
 
         } else {
           try {
+            console.log('aqui chegou a difficulty'+difficulty);
             // Substituir toda a lógica de busca manual pela função reutilizável
             fetchedQuestions = await fetchLeastAnsweredQuestions(
               user.id, // Passa o ID do usuário diretamente
               { subtopicId, topicId, subjectId }, // Filtros
-              5 // Limite padrão (opcional)
-            );
+              5, // Limite padrão (opcional)
+              difficulty);
           } catch (error) {
             console.error("Error in fetchLeastAnsweredQuestions:", error);
             setError("Erro ao buscar questões para prática");
@@ -300,7 +310,7 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
     };
 
     fetchQuestions();
-  }, [subtopicId, topicId, subjectId, isReview, user]);
+  }, [subtopicId, topicId, subjectId, isReview, user,difficulty]);
 
   // Answer a question
   const answerQuestion = async (questionId: string, answerId: string) => {

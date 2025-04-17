@@ -15,21 +15,25 @@ interface SolveExerciseContentProps {
   topicId?: string;
   subjectId?: string;
   isReview?: boolean;
+  difficulty?: number; // Added difficulty prop
+
 }
 
 const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
   subtopicId,
   topicId,
   subjectId,
-  isReview = false
-}) => {
+  isReview = false,
+  difficulty // Added difficulty prop
+
+}) => { // Updated to accept difficulty
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   console.log(subjectId);
-  console.log(isReview);
+  console.log(isReview); 
   
   const {
     questions,
@@ -38,7 +42,8 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
     error,
     answerQuestion,
     toggleReview
-  } = useSolveExercise(subtopicId, topicId, subjectId, isReview);
+
+  } = useSolveExercise(subtopicId, topicId, subjectId, isReview, difficulty);
 
   // Calculate progress
   const totalQuestions = questions.length;
@@ -184,14 +189,17 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
       
       {/* Question Card */}
       {currentQuestion && currentAttempt && (
-        <QuestionCard 
-          question={currentQuestion}
-          attempt={currentAttempt}
-          onAnswer={handleAnswerSelect}
-          onToggleReview={handleReviewToggle}
-          index={currentQuestionIndex}
-          showResults={true}
-        />
+        <>
+          {console.log(`Question ID: ${currentQuestion.id}, Difficulty: ${currentQuestion.difficulty}`)}
+          <QuestionCard 
+            question={currentQuestion}
+            attempt={currentAttempt}
+            onAnswer={handleAnswerSelect}
+            onToggleReview={handleReviewToggle}
+            index={currentQuestionIndex}
+            showResults={true}
+          />
+        </> 
       )}
       
       {/* Navigation Buttons */}
@@ -279,6 +287,6 @@ const SolveExerciseContent: React.FC<SolveExerciseContentProps> = ({
       </Dialog>
     </div>
   );
-};
+}; 
 
 export default SolveExerciseContent;

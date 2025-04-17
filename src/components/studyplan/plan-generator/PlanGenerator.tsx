@@ -20,9 +20,9 @@ const PlanGenerator: React.FC<PlanGeneratorProps> = ({
             <Brain className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-medium">Plano de Estudos com IA</h3>
+            <h3 className="font-medium">Plano de Estudos com Edu</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Gere um plano personalizado com base no seu perfil e metas
+              Gere um plano personalizado com base no seu desempenho e metas
             </p>
           </div>
         </div>

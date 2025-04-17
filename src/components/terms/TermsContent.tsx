@@ -29,7 +29,7 @@ const TermsContent = () => {
           <section className="space-y-2">
             <h3 className="font-bold">3. Contas e Registro</h3>
             <p>
-              Para usar determinadas funcionalidades do Serviço, você precisará criar uma conta. Você é responsável por manter a confidencialidade de sua senha e é inteiramente responsável por todas as atividades realizadas com sua conta.
+              Para usar determinadas funcionalidades do Serviço, você precisará criar uma conta. Você é responsável por manter a confidencialidade de sua senha e é inteiramente responsável por todas as tarefas realizadas com sua conta.
             </p>
           </section>
           

@@ -83,7 +83,7 @@ const DateNavigation: React.FC<DateNavigationProps> = ({
           variant="outline" 
           size="icon" 
           className="rounded-full" 
-          aria-label="Gerar plano de estudos com IA"
+          aria-label="Gerar plano de estudos com Edu"
           onClick={generateAIStudyPlan}
           disabled={isGeneratingPlan}
         >

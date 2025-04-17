@@ -48,7 +48,7 @@ export const TopicsChart: React.FC = () => {
   if (!subjectData.length) {
     return (
       <div className="glass p-6 rounded-2xl">
-        <h3 className="text-lg font-medium mb-4">Desempenho por Matéria e Tópico</h3>
+        <h3 className="text-lg font-medium mb-4">Desempenho por Matéria </h3>
         <div className="text-center py-8">
           <p className="text-muted-foreground">
             Ainda não há dados de desempenho disponíveis.
@@ -59,11 +59,12 @@ export const TopicsChart: React.FC = () => {
         </div>
       </div>
     );
+
   }
   
   return (
     <div className="glass p-6 rounded-2xl">
-      <h3 className="text-lg font-medium mb-4">Desempenho por Matéria e Tópico</h3>
+      <h3 className="text-lg font-medium mb-4">Desempenho por Matéria </h3>
       
       <div className="mb-6 pb-6 border-b border-border">
         <div className="h-[300px]">
@@ -98,7 +99,7 @@ export const TopicsChart: React.FC = () => {
       </div>
       
       <div className="space-y-5">
-        <h4 className="font-medium text-sm">Detalhamento por Tópicos</h4>
+        <h4 className="font-medium text-sm">Desempenho por Tópico</h4>
         
         <SubjectsList 
           subjects={subjectData} 

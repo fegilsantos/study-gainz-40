@@ -88,7 +88,7 @@ const ExerciseSessionContent: React.FC<ExerciseSessionContentProps> = ({
   const triggerConfetti = () => {
     const duration = 3000;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
 
     const randomInRange = (min: number, max: number) => {
       return Math.random() * (max - min) + min;
