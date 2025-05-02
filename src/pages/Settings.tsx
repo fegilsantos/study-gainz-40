@@ -150,10 +150,10 @@ const Settings = () => {
       <Header title="Configurações" showBack />
       <main className="px-4 py-6 max-w-lg mx-auto">
         <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
+          <TabsList className="grid grid-cols-2 mb-6">
             <TabsTrigger value="password">Senha</TabsTrigger>
             <TabsTrigger value="email">E-mail</TabsTrigger>
-            <TabsTrigger value="phone">Telefone</TabsTrigger>
+            {/*<TabsTrigger value="phone">Telefone</TabsTrigger>*/}
           </TabsList>
           
           <TabsContent value="password">

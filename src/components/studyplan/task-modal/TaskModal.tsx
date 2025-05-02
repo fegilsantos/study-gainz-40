@@ -63,6 +63,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    
     if (!title.trim()) {
       toast({
         title: "Título obrigatório",
@@ -74,7 +75,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, task, currentDat
     
     try {
       // Format the taskDate to 'yyyy-MM-dd'
-      const formattedDate = format(taskDate, 'yyyy-MM-dd');
+      const formattedDate = taskDate;
       
       if (task) {
         // Update existing task

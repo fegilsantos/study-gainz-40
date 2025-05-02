@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import MaskedInput from 'react-input-mask';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -17,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface ProfileFormValues {
   name: string;
@@ -26,6 +26,16 @@ interface ProfileFormValues {
   gender: string;
   birthdate: string;
 }
+
+// Função para aplicar a máscara de telefone
+const formatPhone = (value: string) => {
+  if (!value) return '';
+  
+  value = value.replace(/\D/g, ''); // Remove tudo que não é dígito
+  value = value.replace(/^(\d{2})(\d)/g, '($1) $2'); // Coloca parênteses em volta dos 2 primeiros dígitos
+  value = value.replace(/(\d{5})(\d)/, '$1-$2'); // Coloca hífen depois do 5º dígito
+  return value.substring(0, 15); // Limita o tamanho
+};
 
 const AccountForm = () => {
   const { toast } = useToast();
@@ -79,7 +89,7 @@ const AccountForm = () => {
         });
       } finally {
         setIsLoading(false);
-      }
+      };
     };
 
     fetchProfile();
@@ -98,6 +108,7 @@ const AccountForm = () => {
           address: values.address,
           gender: values.gender,
           birthdate: values.birthdate || null,
+          Phone: values.phone,
         })
         .eq('id', user.id);
 
@@ -116,7 +127,7 @@ const AccountForm = () => {
       });
     } finally {
       setIsLoading(false);
-    }
+    };
   };
 
   return (
@@ -165,7 +176,16 @@ const AccountForm = () => {
                 <FormItem>
                   <FormLabel>Telefone</FormLabel>
                   <FormControl>
-                    <Input placeholder="(00) 00000-0000" {...field} disabled />
+                     <Input
+                      
+                      placeholder="(99) 99999-9999"
+                      {...field}
+                      onChange={(e) => {
+                        const formatted = formatPhone(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                      
+                      />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

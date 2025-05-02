@@ -285,12 +285,14 @@ const Auth = () => {
                     <div className="w-full border-t border-muted"></div>
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                  {/* 
+                   <span className="bg-background px-2 text-muted-foreground">
                       Ou continue com
                     </span>
+                    */}
                   </div>
                 </div>
-                
+                {/* 
                 <Button
                   variant="outline"
                   type="button"
@@ -301,6 +303,7 @@ const Auth = () => {
                   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="mr-2 h-4 w-4" />
                   Google
                 </Button>
+                */}
               </>
             )}
           </CardContent>

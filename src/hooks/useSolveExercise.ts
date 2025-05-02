@@ -394,6 +394,15 @@ export const useSolveExercise = (subtopicId: string, topicId?: string, subjectId
           toast.error("Erro ao atualizar status de revisão");
         }
       }
+      
+        
+      
+
+
+
+
+
+
 
       return true;
     } catch (err: any) {

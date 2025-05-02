@@ -72,6 +72,8 @@ export const useTaskOperations = (user: User | null, toast: any) => {
 
       if (personError) throw personError;
       if (!person) return false;
+      const formattedDate = updates.date;
+      console.log('Date ff'+formattedDate);
 
       // Prepare the update object for Supabase
       const updateData: Record<string, any> = {
@@ -84,7 +86,7 @@ export const useTaskOperations = (user: User | null, toast: any) => {
       
       // If date is being updated, use it directly without modifying
       if (updates.date !== undefined) {
-        updateData.Date = updates.date;
+        updateData.Date = formattedDate;
       }
       
       if (updates.startTime !== undefined) updateData.TIme = updates.startTime;
